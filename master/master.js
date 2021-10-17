@@ -43,11 +43,18 @@ Machine = require('./machine.js');
 Matron = require('./matron.js');
 TheMatron = new Matron.Matron();
 
-// kludgy options for transitional usage
-TheMatron.tagDBFile = Fs.existsSync("/boot/uboot/SG_tag_database.sqlite") ?
-    "/boot/uboot/SG_tag_database.sqlite"
-    :
-    "/boot/uboot/SG_tag_database.csv";
+// Figure out the tag database file location, iterating through a number of locations
+tdb_locs = [
+    "/data/config/SG_tag_database.sqlite",  // new preferred location
+    "/data/config/SG_tag_database.csv",
+]
+TheMatron.tagDBFile = tdb_locs[tdb_locs.length-1]  // default/fall-back location
+for (const f of tdb_locs) {
+    if (Fs.existsSync(f)) {
+        TheMatron.tagDBFile = f
+        break
+    }
+}
 
 // Load singleton objects
 GPS           = new (require('./gps.js').GPS)       (TheMatron);
@@ -62,11 +69,10 @@ RTLSDR        = require("./rtlsdr.js");
 
 //WavMaker      = require('./wavmaker.js');
 
+// Figure out the location of the deployment.txt file
 Deployment = new (require("./deployment.js").Deployment) (
  [
-     "/boot/uboot/deployment.txt",
-     "/media/SD_card/deployment.txt",
-     "/home/pi/proj/sensorgnome/plans/deployment.txt"
+     "/data/config/deployment.txt",  // new preferred location
  ]);
 
 // replace "-" with "_" in deployment short label, so filenames

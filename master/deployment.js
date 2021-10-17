@@ -19,7 +19,10 @@ Fs=require("fs");
 
 Deployment = function(pathlist) {
 
-    pathlist = (pathlist || []).concat("./defaultDeployment.txt");
+    // Removed looking for defaultDeployment.txt, users expect to find the default in one of
+    // the conventional locations for editing, so initially it needs to be copied there somehow
+    // and having a "hidden" fall-back here is just confusing.
+    //pathlist = (pathlist || []).concat("./defaultDeployment.txt");
 
 //    console.log("pathlist is " + JSON.stringify(pathlist));
     var okay = false;
