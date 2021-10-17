@@ -462,7 +462,7 @@ function onTagDB(resp) {
 
 var sensorgnomeInit = function() {
     $(document).ready(function() {
-        socket = io.connect();
+        socket = io();
         $("#maintitle").text('I am your SensorGnome');
         socket.on('machineinfo', onMachineinfo);
         socket.on('newVahData', onNewVahData);

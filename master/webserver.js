@@ -338,9 +338,9 @@ WebServer.prototype.start = function () {
     this.app.use(Multer({ dest: './uploads/'}).any());
     //this.app = Connect();
     this.server = Http.createServer(this.app);
-    this.io = Io.listen(this.server);
+    this.io = new Io.Server(this.server);
 
-    this.io.sockets.on('connection', this.this_handleWebConnection);
+    this.io.on('connection', this.this_handleWebConnection);
 
     // Configuration
     var self = this;
