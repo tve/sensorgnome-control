@@ -1,4 +1,0 @@
-#! /bin/bash
-# Debian package post-install script
-# Ensure we have all necessary npm packages
-npm install

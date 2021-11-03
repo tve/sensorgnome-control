@@ -1,5 +1,5 @@
 /*
-  master.js - the main sensorgnome service which launches data acquisition according to
+  main.js - the main sensorgnome service which launches data acquisition according to
   a stored program.  This service is restarted every 60 seconds (as set in its systemd
   file) if it stops or fails.
 */
@@ -15,7 +15,7 @@ function quitProcess () {
     if (doneQuit)
         return;
     doneQuit = true;
-    console.log("Exiting from master.js!\n");
+    console.log("Exiting from main.js!\n");
     TheMatron.emit("quit");
     setTimeout(function() {process.exit(0)}, 3000);
 };

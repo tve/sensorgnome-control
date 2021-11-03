@@ -2,6 +2,7 @@
   an object for talking to a simple C program that returns realtime
   and monotonic system clocks with minimal lag between them
 
+  Seems unused? -TvE 2021/11/02
 */
 
 Clock = function(matron, prog, period) {

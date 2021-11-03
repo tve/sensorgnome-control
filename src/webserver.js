@@ -203,7 +203,7 @@ WebServer.prototype.pushSGBooted = function (err, stdout, stderr) {
 };
 
 WebServer.prototype.requestedSGBoot = function () {
-    console.log("Requested master restart\n");
+    console.log("Requested sg-control restart\n");
     ChildProcess.exec("(sleep 3; sudo reboot) &", this.this_pushSGBooted);
 }
 

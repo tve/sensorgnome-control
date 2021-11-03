@@ -102,8 +102,6 @@ var GPS;
 var tagBuf=[];
 var VAHBuf=[];
 var lsDataFilesScrollTop;
-var masterStatusScrollTop;
-
 
 function onMachineinfo (data) {
     $("#bootcount").text(0 + parseInt(data.machine.bootCount));
