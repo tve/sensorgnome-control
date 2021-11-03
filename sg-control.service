@@ -1,0 +1,20 @@
+[Unit]
+Description=Sensorgnome main control process.
+WorkingDirectory=/opt/sensorgnome/control
+After=sg-boot, sg-gps-link, chrony, sg-usb-init, sg-wifi-init, gestures
+
+[Service]
+Type=exec
+#FIXME: if ! grep -q NO_AUTO_FCD_UPDATE /data/config/deployment.txt; then
+#ExecStartPre=/opt/sensorgnome/fcd/update_fcd_firmware.sh
+ExecStartPre=/bin/bash -c 'echo "*** Starting sensorgnome control app $(date)" >/var/log/nodelog.txt'
+Environment=NODE_ENV=production
+Environment=VAMP_PATH=/opt/vamp
+Environment=LC_ALL="C.UTF-8"
+ExecStart=/usr/bin/nice -n -15 "/usr/bin/node ./main.js >>/var/log/nodelog.txt 2>&1"
+ExecStartPost=/usr/bin/killall -KILL rtl_tcp vamp-alsa-host chronyc
+Restart=always
+RestartSec=60
+
+[Install]
+WantedBy=multi-user.target
