@@ -1,0 +1,43 @@
+name: Build package
+
+on: [push]
+
+env:
+  S3_PATH: s3.voneicken.com/motus-builds/${{github.repository}}
+  S3_REGION: us-west-2
+
+permissions:
+  id-token: write
+  contents: write
+
+jobs:
+  build-all:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          path: .
+      - run: echo "GIT_DESC=$(git describe --tags --dirty --always)" >>$GITHUB_ENV
+      - name: Generate .deb packages
+        run: ./gen-package.sh
+        shell: bash
+      - run: ls -ls packages
+      - uses: actions/upload-artifact@v2
+        with:
+          name: deb-packages
+          path: packages
+      - name: Configure AWS Credentials
+        # See https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
+        uses: aws-actions/configure-aws-credentials@master
+        with:
+          role-to-assume: arn:aws:iam::635201719205:role/Github-actions-motus
+          role-session-name: GithubActionsMotus
+          aws-region: ${{ env.S3_REGION }}
+      - name: Upload .debs to AWS S3 repo
+        run: |
+          aws s3 sync packages s3://${{env.S3_PATH}}/$GIT_DESC/
+      - name: Link to packages on S3
+        run: |
+          echo "https://${{env.S3_PATH}}/$GIT_DESC/"
+          echo "::notice title=Packages::https://${{env.S3_PATH}}/$GIT_DESC/"
