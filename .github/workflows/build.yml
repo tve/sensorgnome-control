@@ -3,8 +3,8 @@ name: Build package
 on: [push]
 
 env:
-  S3_PATH: s3.voneicken.com/motus-builds/${{github.repository}}
-  S3_REGION: us-west-2
+  S3_PATH: motus-builds/${{github.repository}}
+  S3_REGION: us-east-2
 
 permissions:
   id-token: write
@@ -36,7 +36,7 @@ jobs:
           aws-region: ${{ env.S3_REGION }}
       - name: Upload .debs to AWS S3 repo
         run: |
-          aws s3 sync packages s3://${{env.S3_PATH}}/$GIT_DESC/
+          aws s3 sync --acl public-read packages s3://${{env.S3_PATH}}/$GIT_DESC/
       - name: Link to packages on S3
         run: |
           echo "https://${{env.S3_PATH}}/$GIT_DESC/"
