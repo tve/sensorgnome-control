@@ -3,7 +3,7 @@ DESTDIR=build-temp
 rm -rf $DESTDIR
 mkdir $DESTDIR
 
-(cd src; npm install)
+(cd src; npm update)
 
 DEST=$DESTDIR/opt/sensorgnome/control
 install -d $DEST
