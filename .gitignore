@@ -1,1 +1,3 @@
-node_modules/
+*.deb
+build-temp
+node_modules
