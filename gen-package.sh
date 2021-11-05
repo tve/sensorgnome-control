@@ -1,21 +1,29 @@
 #! /bin/bash -e
 DESTDIR=build-temp
-rm -rf $DESTDIR
+sudo rm -rf $DESTDIR
 mkdir $DESTDIR
 
-(cd src; npm update)
+# npm update to pull in the latest versions of all dependencies
+(cd src; npm --no-fund update)
 
-DEST=$DESTDIR/opt/sensorgnome/control
-install -d $DEST
-cp -r src $DEST
+# install the control application files as user pi=1000
+SG=$DESTDIR/opt/sensorgnome
+install -d $SG/control
+cp -r src/* $SG/control
+sudo chown -R 1000:1000 $SG/control
 
-install -d $DESTDIR/data/config
-install -m 644 defaultDeployment.txt $DESTDIR/data/config/DEPLOYMENT.TXT
-install -d $DESTDIR/etc/systemd/system
-install -m 644 *.service $DESTDIR/etc/systemd/system
+# install default deployment file into templates dir
+# (can't install to /data/config 'cause that may be on FAT32 and dpkg will fail setting perms)
+sudo install -d $DESTDIR/opt/sensorgnome/templates -o 1000 -g 1000
+sudo install -o 1000 -g 1000 -m 644 default-deployment.txt $DESTDIR/opt/sensorgnome/templates/deployment.txt
+
+# service file should be owned by root
+sudo install -d $DESTDIR/etc/systemd/system -o 0 -g 0
+sudo install -m 644 -o 0 -g 0 *.service $DESTDIR/etc/systemd/system
 
 cp -r DEBIAN $DESTDIR
+sed -e "/^Version/s/:.*/: $(date +%Y.%j)/" -i $DESTDIR/DEBIAN/control # set version: YYYY.DDD
 mkdir -p packages
-dpkg-deb -v --build $DESTDIR packages/sg-control.deb
-# dpkg-deb --contents packages/sg-control.deb
-ls -lh packages/sg-control.deb
+dpkg-deb --build $DESTDIR packages
+# dpkg-deb --contents packages
+ls -lh packages

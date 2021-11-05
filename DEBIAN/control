@@ -1,9 +1,9 @@
 Package: sg-control
-Version: 1.0
+Version: 0
 Architecture: armhf
 Essential: no
-Depends: 
-Homepage: https://github.com/sensorgnome-control
+Depends: nodejs
+Homepage: https://github.com/sensorgnome/sensorgnome-control
 Maintainer: TvE (tvoneicken@gmail.com)
 Description: Sensorgnome main control process
   Orchestrates all tag detection, processing, transmission and web activities.

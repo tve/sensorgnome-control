@@ -1,20 +1,20 @@
 [Unit]
 Description=Sensorgnome main control process.
-WorkingDirectory=/opt/sensorgnome/control
-After=sg-boot, sg-gps-link, chrony, sg-usb-init, sg-wifi-init, gestures
+After=sg-boot sg-gps-link chronyd sg-usb-init
+Requires=sg-boot sg-gps-link chronyd sg-usb-init
 
 [Service]
 Type=exec
-#FIXME: if ! grep -q NO_AUTO_FCD_UPDATE /data/config/deployment.txt; then
-#ExecStartPre=/opt/sensorgnome/fcd/update_fcd_firmware.sh
-ExecStartPre=/bin/bash -c 'echo "*** Starting sensorgnome control app $(date)" >/var/log/nodelog.txt'
+WorkingDirectory=/opt/sensorgnome/control
 Environment=NODE_ENV=production
-Environment=VAMP_PATH=/opt/vamp
+Environment=NODE_PATH=/opt/sensorgnome/control
 Environment=LC_ALL="C.UTF-8"
-ExecStart=/usr/bin/nice -n -15 "/usr/bin/node ./main.js >>/var/log/nodelog.txt 2>&1"
-ExecStartPost=/usr/bin/killall -KILL rtl_tcp vamp-alsa-host chronyc
+ExecStartPre=/bin/bash -c 'echo "*** Starting sensorgnome control app $(date)" >/var/log/nodelog.txt'
+ExecStartPre=-/usr/bin/ln -s /data/SGdata /media/SD_card
+ExecStart=/bin/bash -c "nice -n -15 node main >>/var/log/nodelog.txt 2>&1"
+ExecStartPost=-/usr/bin/killall -KILL rtl_tcp vamp-alsa-host chronyc
 Restart=always
-RestartSec=60
+RestartSec=60s
 
 [Install]
 WantedBy=multi-user.target

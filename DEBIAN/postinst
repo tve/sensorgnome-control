@@ -1,6 +1,14 @@
 #! /bin/bash -ex
 echo "Running sg-control postinst in $(pwd)"
-MISC=/opt/sensorgnome/control # would be nice to derive that from some env var...
+SG=/opt/sensorgnome # would be nice to derive that from some env var...
+
+# install the default deployment.txt if there is none
+# some trickery to get a case-insensitive match of deployment.txt
+DC=/data/config
+if ! echo $DC/* | egrep -iq /deployment.txt; then
+    echo "Installing default deployment.txt"
+    cp $SG/templates/deployment.txt $DC/deployment.txt
+fi
 
 # enable and start/restart units
 for U in sg-control; do
