@@ -7,6 +7,7 @@ SG=/opt/sensorgnome # would be nice to derive that from some env var...
 DC=/data/config
 if ! echo $DC/* | egrep -iq /deployment.txt; then
     echo "Installing default deployment.txt"
+    mkdir -p $DC
     cp $SG/templates/deployment.txt $DC/deployment.txt
 fi
 
