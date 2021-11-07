@@ -20,11 +20,11 @@ var bootCount = "" + (Fs.existsSync(bootCountFile) ?
                       0);
 bootCount = "00000".substring(0, 6 - bootCount.length) + bootCount;
 
-var versionFile = "/boot/uboot/SENSORGNOME_VERSION.TXT";
+var versionFile = "/etc/sensorgnome_version";
 var version;
 
 if (Fs.existsSync(versionFile))
-    version = (new Date(Number(Fs.readFileSync(versionFile).toString().split(",")[0])*1000)).toUTCString();
+    version = Fs.readFileSync(versionFile).toString();
 else
     version = "UNKNOWN";
 

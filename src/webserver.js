@@ -259,7 +259,10 @@ WebServer.prototype.requestedGPSFix = function () {
 
 WebServer.prototype.sendMachineInfo = function () {
     if (this.sock) {
-        this.sock.emit('machineinfo', {machine: Machine, uptime:Fs.readFileSync("/proc/uptime").toString()});
+        this.sock.emit('machineinfo', {
+            machine: Machine,
+            uptime: Fs.readFileSync("/proc/uptime").toString(),
+        });
     }
 };
 

@@ -23,7 +23,7 @@
     <p>
       My machine ID is <span id="machine_id">.<blink>.</blink>.</span>.
       <br>
-      I'm running the <span id="version">.<blink>.</blink>. </span> software release.
+      I'm running the <span id="version">.<blink>.</blink>. </span> software build.
       <br>
       I have restarted <span id="bootcount">.<blink>.</blink>.</span> times since the last software update.
       <br>
@@ -154,9 +154,8 @@
         <a name="tagDB"></a>
         <b> Tag Database</b>
         <br>
-        <p> This file shows the database of tags known to this SensorGnome. <br> The database is stored on the shared drive as <br> <b> \\192.168.7.2\boot\<span id="tag-database-name"></span>  </b> <br> which is on the SENSORGNOME disk of the microSD card. <br>
-          These tags are known to this sensorgnome:<br><br>
-              <span style="font-size:100%;font-family:monospace"><b>&nbsp;&nbsp;&nbsp;ID&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Freq.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Offset&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;BI&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Project</b></span><br>
+        <p> The following tags are known to this sensorgnome:<br><br>
+          <span style="font-size:100%;font-family:monospace"><b>&nbsp;&nbsp;&nbsp;ID&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Freq.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Offset&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;BI&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Project</b></span><br>
           <textarea id="tagDBText" rows=20 cols=50 readonly></textarea>
           <br>
           <button type="button" onclick="socket.emit('getTagDB')">Reload Tag Database Listing</button>
@@ -166,8 +165,9 @@
       <div id="softwareupdate">
         <b> SensorGnome Software Update</b>
         <br>
+        <p><b>Not currently functioning...</b></p>
         <form id="updateUploadForm" action="/upload_software_update", method="POST", enctype="multipart/form-data">
-          <p> Please browse to the update file (called <i>sensorgnome_update.tar.bz2</i>):
+          <p> Please browse to the update file (called <i>TBD...</i>):
             <input type="file" name="update_archive" size=60></input>
             <br>
             <br>
