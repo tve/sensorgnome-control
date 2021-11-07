@@ -45,6 +45,7 @@ TagFinder.prototype.childDied = function(code, signal) {
             setTimeout(this.this_spawnChild, 5000);
         }
         this.inDieHandler = false;
+        console.log("Tag finder died");
     }
 };
 
@@ -52,7 +53,9 @@ TagFinder.prototype.spawnChild = function() {
     if (this.quitting)
         return;
 
-    var child = ChildProcess.spawn(this.prog, this.params.concat("-c", "8", this.tagFile))
+    var p = this.params.concat("-c", "8", this.tagFile);
+    console.log("Starting ", this.prog, " ", p.join(" "));
+    var child = ChildProcess.spawn(this.prog, p)
         .on("exit", this.this_childDied)
         .on("error", this.this_childDied);
 
