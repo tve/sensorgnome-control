@@ -10,7 +10,7 @@ Environment=NODE_ENV=production
 Environment=NODE_PATH=/opt/sensorgnome/control
 Environment=LC_ALL="C.UTF-8"
 ExecStartPre=/bin/bash -c 'echo "*** Starting sensorgnome control app $(date)" >/var/log/nodelog.txt'
-ExecStartPre=-/usr/bin/ln -s /data/SGdata /media/SD_card
+ExecStartPre=-/usr/bin/ln -s /data /media/SD_card
 ExecStart=/bin/bash -c "nice -n -15 node main >>/var/log/nodelog.txt 2>&1"
 ExecStartPost=-/usr/bin/killall -KILL rtl_tcp vamp-alsa-host chronyc
 Restart=always
