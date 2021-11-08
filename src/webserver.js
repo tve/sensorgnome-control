@@ -179,7 +179,9 @@ WebServer.prototype.pushPlan = function () {
 };
 
 WebServer.prototype.requestedTagDB = function() {
-    if (this.matron.tagDBFile.match(/sqlite$/))
+    if (! this.matron.tagDBFile)
+        this.this_pushTagDB("No tag database file found");
+    else if (this.matron.tagDBFile.match(/sqlite$/))
         ChildProcess.exec("/usr/bin/sqlite3 " + this.matron.tagDBFile +  " 'select proj,id,tagFreq,dfreq-1000*(tagFreq-fcdFreq) as dfreq,bi from tags order by proj,tagFreq,id,bi'", this.this_pushTagDB);
     else
         Fs.readFile(this.matron.tagDBFile, this.this_pushTagDB);
@@ -187,7 +189,8 @@ WebServer.prototype.requestedTagDB = function() {
 
 WebServer.prototype.pushTagDB = function(err, data) {
     if (this.sock) {
-        var obj = {err: err, file:Path.basename(this.matron.tagDBFile), data:data ? data.toString(): "ERROR"};
+        let f = this.matron.tagDBFile ? Path.basename(this.matron.tagDBFile) : "";
+        var obj = {err: err, file: f, data:data ? data.toString(): "ERROR"};
         this.sock.emit('tagDB', obj);
     }
 };
@@ -267,7 +270,7 @@ WebServer.prototype.sendMachineInfo = function () {
 };
 
 WebServer.prototype.clientDisconnected = function () {
-    console.log("Got to client disconnected.\n");
+    console.log("WS client disconnected");
     if (this.sock) {
         this.matron.removeListener('gotGPSFix'    , this.this_pushGPSFix);
         this.matron.removeListener('gotTag'       , this.this_pushTag);
@@ -302,7 +305,7 @@ WebServer.prototype.setParamError = function (data) {
 // Web Sockets
 
 WebServer.prototype.handleWebConnection = function (socket) {
-    console.log("host: received connection to push socket");
+    console.log("WS client connected", socket.handshake.address);
     this.sock = socket;
     socket.on('disconnect'    , this.this_clientDisconnected);
     socket.on('error'         , this.this_clientDisconnected);

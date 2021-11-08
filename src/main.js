@@ -43,19 +43,6 @@ Machine = require('./machine.js');
 Matron = require('./matron.js');
 TheMatron = new Matron.Matron();
 
-// Figure out the tag database file location, iterating through a number of locations
-tdb_locs = [
-    "/data/config/SG_tag_database.sqlite",  // new preferred location
-    "/data/config/SG_tag_database.csv",
-]
-TheMatron.tagDBFile = tdb_locs[tdb_locs.length-1]  // default/fall-back location
-for (const f of tdb_locs) {
-    if (Fs.existsSync(f)) {
-        TheMatron.tagDBFile = f
-        break
-    }
-}
-
 // Load singleton objects
 GPS           = new (require('./gps.js').GPS)       (TheMatron);
 HubMan        = new (require('./hubman.js').HubMan) (TheMatron, "/dev/sensorgnome");
@@ -66,25 +53,29 @@ Schedule      = require('./schedule.js');
 Sensor        = require('./sensor.js');
 USBAudio      = require("./usbaudio.js");
 RTLSDR        = require("./rtlsdr.js");
+CornellTagXCVR= require("./cornelltagxcvr.js");
 
 //WavMaker      = require('./wavmaker.js');
 
 // Figure out the location of the deployment.txt file
-Deployment = new (require("./deployment.js").Deployment) (
- [
-     "/data/config/deployment.txt",  // new preferred location
- ]);
+Deployment = new (require("./deployment.js").Deployment)(
+    [
+        "/data/config/deployment.txt",  // new preferred location
+    ]);
 
 // replace "-" with "_" in deployment short label, so filenames
 // use "-" only for delimiting fields
 
 Deployment.shortLabel = Deployment.shortLabel.replace(/-/g,"_");
 
-TagFinder     = new (require('./tagfinder.js').TagFinder) (TheMatron,
-                                                           "/usr/bin/find_tags_unifile",
-                                                           TheMatron.tagDBFile,
-                                                           Deployment.module_options.find_tags.params
-                                                          );
+TagFinder = new (require('./tagfinder.js').TagFinder)(
+    TheMatron,
+    "/usr/bin/find_tags_unifile",
+    [
+        "/data/config/SG_tag_database.sqlite",  // new preferred location
+        "/data/config/SG_tag_database.csv"],
+    Deployment.module_options.find_tags.params
+);
 
 DataSaver     = new (require('./datasaver.js').DataSaver) (TheMatron);
 
@@ -92,9 +83,12 @@ SafeStream    = require('./safestream.js').SafeStream;
 
 AllOut = new SafeStream(TheMatron, "all", ".txt", 1000000, 3600);
 
+LifetagOut = new SafeStream(TheMatron, "ctt", ".txt", 1000000, 3600);
+
 Uploader = new (require('./uploader.js').Uploader) (TheMatron);
 
 Relay = new (require('./relay.js').Relay) (TheMatron, 59000);
+
 
 var clockNotSet = true;
 
@@ -103,7 +97,8 @@ function do_nothing(err, stdout, stderr) {
 
 TheMatron.on("gotGPSFix", function(fix) {
     AllOut.write("G," + fix.time + "," + fix.lat + "," + fix.lon + "," + fix.alt + "\n" );
-//ugly hack to set date from gps if gps has fix but system clock not set
+    LifetagOut.write("G," + fix.time + "," + fix.lat + "," + fix.lon + "," + fix.alt + "\n" );
+    //ugly hack to set date from gps if gps has fix but system clock not set
     if (clockNotSet && (new Date()).getFullYear() < 2013) {
         console.log("Trying to set time to " + fix.time + "\n");
         ChildProcess.exec("date --utc -s @" + fix.time, do_nothing);

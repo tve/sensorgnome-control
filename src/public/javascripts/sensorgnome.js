@@ -146,16 +146,42 @@ function onNewVahData (data) {
         elt[0].scrollTop = top;
 };
 
-function onGotTag (data) {
-    tagBuf = tagBuf.concat(data.split(/\n/));
-    var line="";
+function onGotLifetag(data) {
+    alert('got lifetag '+data);
+}
+    
+function checkLifeTag(data) {
+    var vals = data.split(',');
+    if (vals.length == 4) {
+        return {
+            port: vals[0],
+            received_at: vals[1].replace(/[ZT]/g, " "),
+            tag: vals[2],
+            rssi: parseInt(vals[3])
+        }
+    }
+    return null;
+}
+
+function onGotTag(data, lifetag = false) {
     var elt = $("#taglog");
     var top = elt[0].scrollTop;
-    while (tagBuf.length) {
-        var hit = tagBuf.shift().split(/,/);
-        if (hit.length == 13) {
-            line += (new Date(parseFloat(hit[1]) * 1000)).toISOString().replace(/[ZT]/g," ").substr(11);
-            line += "ant " + hit[0] + " " + hit[2] + " + " + hit[3] + " kHz " + hit[5] + " / " + hit[7] + " dB\n";
+    var line = "";
+
+    var lifetag = checkLifeTag(data);
+    if (lifetag) {
+        line = lifetag.received_at.replace(/^\S+\s/, "") + 'port ' + lifetag.port.substr(1) +
+            ' ' + lifetag.tag + '@434Mhz ' + lifetag.rssi + 'dB\n';
+    } else {
+        tagBuf = tagBuf.concat(data.split(/\n/));
+        while (tagBuf.length) {
+            var hit = tagBuf.shift().split(/,/);
+            if (hit.length == 13) {
+                let d = new Date(parseFloat(hit[1]) * 1000);
+                line += d.toISOString().replace(/(^.*T)|Z/g, "") +
+                    " ant  " + hit[0] + " " + hit[2] + " + " + hit[3] + "kHz " + 
+                    hit[5] + "/" + hit[7] + "dB\n";
+            }
         }
     }
     elt.append(line);
@@ -277,6 +303,11 @@ function onDevinfo (data) {
             txt = "USB audio device: " + d["name"];
             txt += '<span id="raw_audio_span' + slot + '"><audio id="raw_audio' + slot + '" src="/raw_audio?dev=' + slot + '&fm=0&random=' + Math.random() +'" preload="none"></audio></span> <button id="raw_audio_button' + slot + '" type="button" onclick="listenToRaw(' + slot + ')">Listen</button>';
             break;
+
+        case "CornellTagXCVR":
+            txt = devList[slot]["name"];
+            break;
+            
         default:
             txt = "unknown";
         }

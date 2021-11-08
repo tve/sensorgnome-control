@@ -24,16 +24,22 @@ Matron = function() {
 Util.inherits(Matron, Events.EventEmitter);
 
 Matron.prototype.devAdded = function(dev) {
-//DEBUG: console.log("Got devAdded " + JSON.stringify(dev) + "\n");
+    console.log("New device found: " + dev.path);
+
     var devPlan = Deployment.lookup(dev.attr.port, dev.attr.type);
     if (devPlan) {
-//DEBUG: console.log("Got plan " + JSON.stringify(devPlan));
+        //console.log("Got plan " + JSON.stringify(devPlan));
         this.devices[dev.attr.port] = Sensor.getSensor(this, dev, devPlan);
+    }
+
+    // for CornellTagXCVR, we don't require or use a plan
+    if (dev.attr.type == "CornellTagXCVR") {
+        this.devices[dev.attr.port] = new CornellTagXCVR.CornellTagXCVR(this, dev, null);
     }
 };
 
 Matron.prototype.devRemoved = function(dev) {
-//DEBUG: console.log("Got devRemoved " + JSON.stringify(dev) + "\n");
+    console.log("Device removed: " + dev.path);
     if (this.devices[dev.attr.port]) {
         this.devices[dev.attr.port] = null;
     };

@@ -3,14 +3,15 @@
   emitting gotTag messages.
 */
 
-function TagFinder(matron, prog, tagFile, params) {
-    this.matron = matron;
-    this.prog = prog;
-    this.tagFile = tagFile;
-    this.params = params || [];
-    this.child = null;
-    this.quitting = false;
-    this.inDieHandler = false;
+function TagFinder(matron, prog, tagFiles, params) {
+    this.matron             = matron;
+    this.prog               = prog;
+    this.tagFiles           = tagFiles;
+    this.params             = params || [];
+    this.noTagFile          = false; // used to print no-tag-file error once
+    this.child              = null;
+    this.quitting           = false;
+    this.inDieHandler       = false;
     this.this_spawnChild    = this.spawnChild.bind(this);
     this.this_quit          = this.quit.bind(this);
     this.this_childDied     = this.childDied.bind(this);
@@ -53,7 +54,29 @@ TagFinder.prototype.spawnChild = function() {
     if (this.quitting)
         return;
 
-    var p = this.params.concat("-c", "8", this.tagFile);
+    // see whether we can find a tag file
+    this.matron.tagDBFile = null;
+    for (let tf of this.tagFiles) {
+        if (Fs.existsSync(tf)) {
+            this.matron.tagDBFile = tf;
+            break;
+        }
+    }
+    
+    // if we have no tag file, print an error once, and then sleep for a bit a retry
+    if (! this.matron.tagDBFile) {
+        if (! this.noTagFile) {
+            console.log("No tag database for tag finder, looking at " + this.tagFiles.join(", "));
+            this.noTagFile = true;
+        }
+
+        setTimeout(this.this_spawnChild, 10000);
+        return;
+    }
+    this.noTagFile = false;
+
+    // launch the tag finder process
+    var p = this.params.concat("-c", "8", this.matron.tagDBFile);
     console.log("Starting ", this.prog, " ", p.join(" "));
     var child = ChildProcess.spawn(this.prog, p)
         .on("exit", this.this_childDied)
