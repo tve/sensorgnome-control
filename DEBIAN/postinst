@@ -1,4 +1,4 @@
-#! /bin/bash -ex
+#! /bin/bash -e
 echo "Running sg-control postinst in $(pwd)"
 SG=/opt/sensorgnome # would be nice to derive that from some env var...
 
@@ -28,5 +28,12 @@ for U in sg-control; do
             # cleaned up on purge. Also remove old symlinks.
             deb-systemd-helper update-state $U >/dev/null || true
         fi
+    fi
+
+    # Restart service, if it is running
+    systemctl daemon-reload
+    if systemctl is-active --quiet $U.service; then
+        echo "Restarting $U.service"
+        systemctl restart $U.service
     fi
 done
