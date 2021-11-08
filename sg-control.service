@@ -1,7 +1,7 @@
 [Unit]
 Description=Sensorgnome main control process.
-After=sg-boot sg-gps-link chronyd sg-usb-init
-Requires=sg-boot sg-gps-link chronyd sg-usb-init
+After=sg-boot.service sg-gps-link.service chronyd.service sg-usb-init.service
+Requires=sg-boot.service sg-gps-link.service chronyd.service sg-usb-init.service
 
 [Service]
 Type=exec
