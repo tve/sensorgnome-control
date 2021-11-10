@@ -171,7 +171,7 @@ function onGotTag(data, lifetag = false) {
     var lifetag = checkLifeTag(data);
     if (lifetag) {
         line = lifetag.received_at.replace(/^\S+\s/, "") + 'port ' + lifetag.port.substr(1) +
-            ' ' + lifetag.tag + '@434Mhz ' + lifetag.rssi + 'dB\n';
+            ' ' + lifetag.tag + ' @434Mhz ' + lifetag.rssi + 'dB\n';
     } else {
         tagBuf = tagBuf.concat(data.split(/\n/));
         while (tagBuf.length) {
@@ -263,7 +263,7 @@ function onDevinfo (data) {
         $("#storageSummary").text(devList.storage);
     };
     var gotGPS = false;
-    for (var slot = -1; slot <= 10; ++slot) {
+    for (var slot = -1; slot <= 100; ++slot) {
         if (! devList[slot])
             continue;
         var d = devList[slot];
@@ -311,7 +311,9 @@ function onDevinfo (data) {
         default:
             txt = "unknown";
         }
-        $('#devinfo').append('<li><b>' + (slot > 0 ? "USB Hub Port " + slot + ": " : "Directly Attached: ") + '</b>&nbsp;&nbsp' + txt + '</li>');
+        let sl = slot > 0 ? "USB Port " + slot : "Directly Attached";
+        let pp = slot > 0 && d["port_path"] ? " (" + d["port_path"] + ")" : ""
+        $('#devinfo').append('<li><b>' + sl + "</b>" + pp + ':&nbsp;&nbsp' + txt + '</li>');
     }
 
     $('#devListRefresh').text("Refresh Device List");
