@@ -149,7 +149,7 @@ WebServer.prototype.pushDeviceInfo = function (err, stdout, stderr) {
 }
 
 WebServer.prototype.deviceInfoChanged = function () {
-    ChildProcess.exec("/opt/sensorgnome/udev-usb/get_hub_devices.pl", this.this_pushDeviceInfo);
+    ChildProcess.exec("/opt/sensorgnome/udev-usb/get-hub-devices.py", this.this_pushDeviceInfo);
 }
 
 WebServer.prototype.pushLSFiles = function (err, stdout, stderr) {
