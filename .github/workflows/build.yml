@@ -52,3 +52,6 @@ jobs:
         run: |
           echo "https://${{env.S3_PATH}}/$GIT_REF/"
           echo "::notice title=Packages::https://${{env.S3_PATH}}/$GIT_REF/"
+          for p in $(cd packages; echo *.deb); do
+            echo "::notice title=Package::https://${{env.S3_PATH}}/$GIT_REF/$p"
+          done
