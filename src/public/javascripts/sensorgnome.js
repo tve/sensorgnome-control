@@ -319,7 +319,7 @@ function onDevinfo (data) {
             } else {
                 sl += '<span style="color: red">' + slot + '</span>';
             }
-            if (d["port_path"]) pp = " (" + d["port_path"] + ")"
+            if (d["port_path"]) pp = " (" + d["port_path"].replaceAll("_",".") + ")"
         }
         $('#devinfo').append('<li><b>' + sl + "</b>" + pp + ':&nbsp;&nbsp' + txt + '</li>');
     }
