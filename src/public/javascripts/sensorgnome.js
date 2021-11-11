@@ -311,8 +311,16 @@ function onDevinfo (data) {
         default:
             txt = "unknown";
         }
-        let sl = slot > 0 ? "USB Port " + slot : "Directly Attached";
-        let pp = slot > 0 && d["port_path"] ? " (" + d["port_path"] + ")" : ""
+        let sl = "Directly Attached", pp = "";
+        if (slot > 0) {
+            sl = "USB Port ";
+            if (slot < 10) {
+                sl += slot;
+            } else {
+                sl += '<span style="color: red">' + slot + '</span>';
+            }
+            if (d["port_path"]) pp = " (" + d["port_path"] + ")"
+        }
         $('#devinfo').append('<li><b>' + sl + "</b>" + pp + ':&nbsp;&nbsp' + txt + '</li>');
     }
 
