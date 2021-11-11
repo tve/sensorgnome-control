@@ -22,7 +22,7 @@ sudo install -d $DESTDIR/etc/systemd/system -o 0 -g 0
 sudo install -m 644 -o 0 -g 0 *.service $DESTDIR/etc/systemd/system
 
 cp -r DEBIAN $DESTDIR
-sed -e "/^Version/s/:.*/: $(date +%Y.%j)/" -i $DESTDIR/DEBIAN/control # set version: YYYY.DDD
+sed -e "/^Version/s/:.*/: $(TZ=PST8PDT date +%Y.%j)/" -i $DESTDIR/DEBIAN/control # set version: YYYY.DDD
 mkdir -p packages
 dpkg-deb --build $DESTDIR packages
 # dpkg-deb --contents packages
