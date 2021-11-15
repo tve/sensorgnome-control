@@ -141,8 +141,10 @@ WebServer.prototype.pushDeviceInfo = function (err, stdout, stderr) {
 
         var devs = HubMan.getDevs();
         for (d in devs) {
-            if (info[d])
+            if (info[d] && devs[d]) // got errors where devs[d] is null !?
                 info[d].settings = devs[d].settings
+            else if (info[d])
+                console.log("Ooops: devs[d] is null? d=" + d + " info[d]=" + JSON.stringify(info[d]));
         }
 	this.sock.emit('devinfo', info);
     }
