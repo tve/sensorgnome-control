@@ -256,7 +256,8 @@ function onDevinfo (data) {
 
     var isd = devList["SD_card"];
     if (isd) {
-        $('#devinfo').append("<li><b>Internal:</b> micro SD card with size = " + (isd["size"] * 1024 / 1e9).toFixed() + "GB;   Used = " + isd["used_percent"] + "</li>");
+        $('#devinfo').append("<li><b>Internal:</b> micro SD card /data size=" + isd["size"] +
+                "; Used=" + isd["use%"] + "</li>");
     }
 
     if (devList.storage) {
@@ -266,62 +267,64 @@ function onDevinfo (data) {
     for (var slot = -1; slot <= 100; ++slot) {
         if (! devList[slot])
             continue;
-        var d = devList[slot];
-        var txt;
-        switch (d.type) {
-        case "disk":
-            var part = d["partitions"];
-            if (part.length == 1) {
-                txt = "Disk: \"" + part[0]["name"] + "\":  Size = " + (part[0]["size"] * 1024 / 1e9).toFixed() + "GB Used = " + part[0]["used_percent"];
-            } else {
-                txt = "Disk with partitions: ";
-                for (var dev in part)
-                    txt += "\"" + part[dev]["name"] + "\":  Size = " + (part[dev]["size"] * 1024 / 1e9).toFixed(3) + " Used = " + part[dev]["used_percent"]+ ";   ";
-            }
-            break;
-        case "rtlsdr":
-            if (devList[slot].settings && devList[slot].settings.frequency) {
-                d["frequency"] = devList[slot].settings.frequency;
-            }
-            txt = d["name"] + ': ' + d["mfg"] + ' : ' + d["prod"] + ' (' + d["vidpid"] + ') @ <a id="radio_freq' + slot + '\">' + d["frequency"] + '</a><span id="raw_audio_span' + slot + '"><audio id="raw_audio' + slot + '" src="/raw_audio?dev=' + slot + '&fm=0&random=' + Math.random() +'" preload="none"></audio></span> <button id="raw_audio_button' + slot + '" type="button" onclick="listenToRaw(' + slot + ')">Listen</button>';
-            txt += '&nbsp;&nbsp;<input id="set_freq_button' + slot + '" type="text" size = 8></input><button onclick="setFreq(' + slot + ')">Set Freq. In MHz</button>' + '<button type="button" onclick="rtlsdrParams(' + slot + ')">All Settings...</button>';
-            break;
-        case "fcd":
-            if (devList[slot].settings && devList[slot].settings.frequency) {
-                d["frequency"] = devList[slot].settings.frequency;
-            }
-            txt = d["name"] + ' tuned to <a id="radio_freq' + slot + '\">' + d["frequency"] + '</a><span id="raw_audio_span' + slot + '"><audio id="raw_audio' + slot + '" src="/raw_audio?dev=' + slot + '&fm=0&random=' + Math.random() +'" preload="none"></audio></span> <button id="raw_audio_button' + slot + '" type="button" onclick="listenToRaw(' + slot + ')">Listen</button>';
-            txt += '&nbsp;&nbsp;<input id="set_freq_button' + slot + '" type="text" size = 8></input><button onclick="setFreq(' + slot + ')">Set Freq. In MHz</button>';
-            break;
-        case "gps":
-            txt = d["name"];
-            GPS = d;
-            gotGPS = true;
-            break;
+        try {
+            var d = devList[slot];
+            var txt;
+            switch (d.type) {
+            case "disk":
+                var part = d["partitions"];
+                if (part.length == 1) {
+                    txt = "Disk: \"" + part[0]["name"] + "\":  Size=" + part[0]["size"] + " Used=" + part[0]["use%"];
+                } else {
+                    txt = "Disk with partitions: ";
+                    for (var dev in part)
+                        txt += "\"" + part[dev]["name"] + "\":  Size=" + part[dev]["size"] + " Used=" + part[dev]["use%"]+ ";   ";
+                }
+                break;
+            case "rtlsdr":
+                if (devList[slot].settings && devList[slot].settings.frequency) {
+                    d["frequency"] = devList[slot].settings.frequency;
+                }
+                txt = d["name"] + ': ' + d["mfg"] + ' : ' + d["prod"] + ' (' + d["vidpid"] + ') @ <a id="radio_freq' + slot + '\">' + d["frequency"] + '</a><span id="raw_audio_span' + slot + '"><audio id="raw_audio' + slot + '" src="/raw_audio?dev=' + slot + '&fm=0&random=' + Math.random() +'" preload="none"></audio></span> <button id="raw_audio_button' + slot + '" type="button" onclick="listenToRaw(' + slot + ')">Listen</button>';
+                txt += '&nbsp;&nbsp;<input id="set_freq_button' + slot + '" type="text" size = 8></input><button onclick="setFreq(' + slot + ')">Set Freq. In MHz</button>' + '<button type="button" onclick="rtlsdrParams(' + slot + ')">All Settings...</button>';
+                break;
+            case "fcd":
+                if (devList[slot].settings && devList[slot].settings.frequency) {
+                    d["frequency"] = devList[slot].settings.frequency;
+                }
+                txt = d["name"] + ' tuned to <a id="radio_freq' + slot + '\">' + d["frequency"] + '</a><span id="raw_audio_span' + slot + '"><audio id="raw_audio' + slot + '" src="/raw_audio?dev=' + slot + '&fm=0&random=' + Math.random() +'" preload="none"></audio></span> <button id="raw_audio_button' + slot + '" type="button" onclick="listenToRaw(' + slot + ')">Listen</button>';
+                txt += '&nbsp;&nbsp;<input id="set_freq_button' + slot + '" type="text" size = 8></input><button onclick="setFreq(' + slot + ')">Set Freq. In MHz</button>';
+                break;
+            case "gps":
+                txt = d["name"];
+                GPS = d;
+                gotGPS = true;
+                break;
 
-        case "usbAudio":
-            txt = "USB audio device: " + d["name"];
-            txt += '<span id="raw_audio_span' + slot + '"><audio id="raw_audio' + slot + '" src="/raw_audio?dev=' + slot + '&fm=0&random=' + Math.random() +'" preload="none"></audio></span> <button id="raw_audio_button' + slot + '" type="button" onclick="listenToRaw(' + slot + ')">Listen</button>';
-            break;
+            case "usbAudio":
+                txt = "USB audio device: " + d["name"];
+                txt += '<span id="raw_audio_span' + slot + '"><audio id="raw_audio' + slot + '" src="/raw_audio?dev=' + slot + '&fm=0&random=' + Math.random() +'" preload="none"></audio></span> <button id="raw_audio_button' + slot + '" type="button" onclick="listenToRaw(' + slot + ')">Listen</button>';
+                break;
 
-        case "CornellTagXCVR":
-            txt = devList[slot]["name"];
-            break;
-            
-        default:
-            txt = "unknown";
-        }
-        let sl = "Directly Attached", pp = "";
-        if (slot > 0) {
-            sl = "USB Port ";
-            if (slot < 10) {
-                sl += slot;
-            } else {
-                sl += '<span style="color: red">' + slot + '</span>';
+            case "CornellTagXCVR":
+                txt = devList[slot]["name"];
+                break;
+                
+            default:
+                txt = "unknown";
             }
-            if (d["port_path"]) pp = " (" + d["port_path"].replaceAll("_",".") + ")"
-        }
-        $('#devinfo').append('<li><b>' + sl + "</b>" + pp + ':&nbsp;&nbsp' + txt + '</li>');
+            let sl = "Directly Attached", pp = "";
+            if (slot > 0) {
+                sl = "USB Port ";
+                if (slot < 10) {
+                    sl += slot;
+                } else {
+                    sl += '<span style="color: red">' + slot + '</span>';
+                }
+                if (d["port_path"]) pp = " (" + d["port_path"].replaceAll("_",".") + ")"
+            }
+            $('#devinfo').append('<li><b>' + sl + "</b>" + pp + ':&nbsp;&nbsp' + txt + '</li>');
+        } catch {}
     }
 
     $('#devListRefresh').text("Refresh Device List");
