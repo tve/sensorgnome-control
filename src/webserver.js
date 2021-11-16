@@ -8,11 +8,12 @@
 
 var Express = require('express'),
 Connect = require('connect'),
-Multer  = require('multer'),
+Multer  = require('multer'),  // multi-part upload middleware
 MethodOverride = require('method-override'),
 ErrorHandler = require('errorhandler'),
 Io = require('socket.io'),
 Http = require('http');
+Morgan = require("morgan")  // request logger middleware
 
 function WebServer(matron) {
     this.matron = matron;
@@ -343,6 +344,7 @@ WebServer.prototype.handleWebConnection = function (socket) {
 WebServer.prototype.start = function () {
 
     this.app = Express();
+    this.app.use(Morgan('combined'))
     this.app.use(Multer({ dest: './uploads/'}).any());
     //this.app = Connect();
     this.server = Http.createServer(this.app);
