@@ -1,5 +1,5 @@
 #! /bin/bash -e
-SG_HOST=sg-eth
+SG_HOST=${1:-sg-eth}
 ./gen-package.sh
 PKG=$(ls -r packages | head -1)
 scp packages/$PKG pi@$SG_HOST:
