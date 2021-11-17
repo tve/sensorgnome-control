@@ -11,6 +11,13 @@ if ! echo $DC/* | egrep -iq /deployment.txt; then
     cp $SG/templates/deployment.txt $DC/deployment.txt
 fi
 
+# install the default tag database if there is none
+if [[ ! -f $DC/SG_tag_database.sqlite ]]; then
+    echo "Installing default tag database"
+    mkdir -p $DC
+    cp $SG/templates/SG_tag_database.sqlite $DC
+fi
+
 # enable and start/restart units
 for U in sg-control; do
     # code from debhelper's postinst-systemd-enable template
