@@ -344,7 +344,7 @@ WebServer.prototype.handleWebConnection = function (socket) {
 WebServer.prototype.start = function () {
 
     this.app = Express();
-    this.app.use(Morgan('combined'))
+    this.app.use(Morgan('tiny'))
     this.app.use(Multer({ dest: './uploads/'}).any());
     //this.app = Connect();
     this.server = Http.createServer(this.app);
