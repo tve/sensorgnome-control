@@ -8,6 +8,7 @@
   via an FTDI FT232 USB serial adapter running at 115200 bps raw.  Tag
   detections are printed as XXXXXXXX\r\n where X are hex digits.
   The CTT LifeTag Motus Adapter reports detections as XXXXXXXX,RSSI\r\n.
+  The CTT LifeTag Motus Adapter V2 reports detections as XXXXXXXXCC,RSSI\r\n where CC is a checksum.
 
   This module watches for such strings, and emits gotTag events of the form:
 
