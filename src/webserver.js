@@ -216,16 +216,12 @@ WebServer.prototype.requestedSGBoot = function () {
 WebServer.prototype.pushVAHStatus = function (data) {
     if (this.sock) {
 	try {
-            // add current date/time
-            data.date = (new Date()).getTime() / 1000;
-
-            // add GPS PPS counter, if it exists
-            var interrupts = Fs.readFileSync("/proc/interrupts").toString();
-            var ppsCount = / +([0-9]+) .*pps.-1/.exec(interrupts);
-            if (ppsCount)
-                data.ppsCount = ppsCount[1] ? ppsCount[1] : 0;
-            data.clockSyncDigits = GPS.clockSyncDigits;
-	    this.sock.emit('vahstatus', data);
+        // add current date/time and time/GPS-related info
+        data.date = (new Date()).getTime() / 1000;
+        data.timeSource = GPS.timeSource;
+        data.RMSError = GPS.RMSError != null ? Math.abs(GPS.RMSError) : null;
+        data.GPSstate = GPS.GPSstate;
+        this.sock.emit('vahstatus', data);
 	} catch (e) {
 	    console.log("Unable to display status of vamp-alsa-server process!");
 	}

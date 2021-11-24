@@ -28,15 +28,16 @@
       I have restarted <span id="bootcount">.<blink>.</blink>.</span> times since the last software update.
       <br>
       I have been running for <span id="uptime">.<blink>.</blink>.</span> since the last restart.
-      <div id="GPSfix" style="display:none">
-        <p>
+      <p>
+        My GPS status is: <span id="gpsstatus">.<blink>.</blink>.</span><br>
+        <span id="GPSfix" style="display:none">
           I am located at
           &nbsp; <span id="gpslat">.<blink>.</blink>.</span>
           &nbsp; &nbsp;  <span id="gpslong">.<blink>.</blink>.</span>
           &nbsp; &nbsp;  <span id="gpsalt"> .<blink>.</blink>.</span>
           <button type="button" onclick="socket.emit('gpsfix');">Update GPS fix</button>
-      </div>
-    <p>
+        </span>
+      <p>
       My clock says it is &nbsp; <span id="sgtime">.<blink>.</blink>. </span>
 
       <div id="setClock" style="display:none">

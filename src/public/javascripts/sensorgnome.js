@@ -366,18 +366,22 @@ function onLsdata (data) {
 
 function onVahstatus (status) {
     var date = status.date;
+    // update GPS status
+    var color = status.GPSstate.includes("fix") ? "green" : "red";
+    $('#gpsstatus').html('<span style="color: ' + color + '">' + status.GPSstate + '</span>');
+    // update time info
     var timeTxt = (new Date(date * 1000)).toISOString().replace("T", "    ").replace("Z", " UTC");
-    if (GPS && GPS.name.match(/PPS/) && status.ppsCount !== null) {
-        timeTxt += (status.clockSyncDigits < 0) ? ' clock not yet set by GPS ' : (' accurate to ' + Math.pow(10, -status.clockSyncDigits) + ' seconds');
-        var ppsOK = false;
-        var ppsDiff = status.ppsCount - (VAHstatus ? VAHstatus.ppsCount : 0);
-        if ((!VAHstatus) || (ppsDiff > 1 && Math.abs(ppsDiff - (status.date - VAHstatus.date)) < 2)) {
-            ppsOK = true;
-            setTimeout(function() {$('#pps').css('color', 'black');}, 1000);
+    if (status.timeSource == "unknown") {
+        timeTxt += " but it is not synchronized"
+    } else {
+        timeTxt += " synchronized to " + status.timeSource;
+        if (status.RMSError != null) {
+            let e = (status.RMSError*1000.0).toFixed(3)
+            timeTxt += " with an RMS error of " + e + "ms";
         }
-        timeTxt += (' <span id="pps" style="color: ' + (ppsOK ? "green" : "red") + '">PPS ' + (ppsOK ? "present" : "missing") + '</span>');
     }
     $('#sgtime').html(timeTxt);
+
     var tabHdr="<table><tr><th>USB Port #</th><th>Hardware<br>Frame Rate (kHz)<br>Obs. / Set</th><th>Plugin<br>Frame Rate (kHz)<br>Obs. / Set</th><th>Channels</th><th>Plugin</th><th>Current<br>Feature Detection Rate<br>pulses per minute</th><th>Long-term<br>Feature Detection Rate<br>pulses per minute</th><th>(Re)Started</th></tr>";
     var txt = "";
     for (n in status) {
