@@ -2,21 +2,18 @@
 echo "Running sg-control postinst in $(pwd)"
 SG=/opt/sensorgnome # would be nice to derive that from some env var...
 
-# install the default deployment.txt if there is none
-# some trickery to get a case-insensitive match of deployment.txt
-DC=/data/config
-if ! echo $DC/* | egrep -iq /deployment.txt; then
-    echo "Installing default deployment.txt"
-    mkdir -p $DC
-    cp $SG/templates/deployment.txt $DC/deployment.txt
-fi
-
-# install the default tag database if there is none
-if [[ ! -f $DC/SG_tag_database.sqlite ]]; then
-    echo "Installing default tag database"
-    mkdir -p $DC
-    cp $SG/templates/SG_tag_database.sqlite $DC
-fi
+# install deployment.txt and tag database if not there
+SRC=$SG/templates
+for f in deployment.txt SG_tag_database.sqlite; do
+    if [[ -d /data/config ]]; then
+        # $SRC/$f exists, so this must be an update, put it there unless it exists
+        [[ -f /data/config/$f ]] || cp $SRC/$f /data/config
+    else
+        # $SRC/$f does not exist, so this must be a fresh install, put it into /boot
+        # it will be copied to $SRC on first boot
+        [[ -f /boot/$f ]] || cp $SRC/$f /boot
+    fi
+done
 
 # enable and start/restart units
 for U in sg-control; do

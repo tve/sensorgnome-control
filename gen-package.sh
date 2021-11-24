@@ -12,10 +12,9 @@ install -d $SG/control
 cp -r src/* $SG/control
 sudo chown -R 1000:1000 $SG/control
 
-# install default deployment file into templates dir
-# (can't install to /data/config 'cause that may be on FAT32 and dpkg will fail setting perms)
+# install default deployment file and tag database into templates dir
 sudo install -d $DESTDIR/opt/sensorgnome/templates -o 1000 -g 1000
-sudo install -o 1000 -g 1000 -m 644 deployment.txt SG_tag_database.sqlite $DESTDIR/opt/sensorgnome/templates
+sudo install -m 644 deployment.txt SG_tag_database.sqlite $DESTDIR/opt/sensorgnome/templates
 
 # service file should be owned by root
 sudo install -d $DESTDIR/etc/systemd/system -o 0 -g 0
