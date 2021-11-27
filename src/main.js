@@ -4,7 +4,6 @@
   file) if it stops or fails.
 */
 
-
 // process.on("uncaughtException", function(err) {
 //      console.log('Caught exception: ' + err);
 // });
@@ -45,9 +44,11 @@ TheMatron = new Matron.Matron();
 
 // Load singleton objects
 GPS           = new (require('./gps.js').GPS)       (TheMatron);
+Chrony        = new (require('./chrony.js').Chrony) (TheMatron);
 HubMan        = new (require('./hubman.js').HubMan) (TheMatron, "/dev/sensorgnome");
 VAH           = new (require('./vah.js').VAH)       (TheMatron, "/usr/bin/vamp-alsa-host", "VAH.sock");
 WebServer     = new (require('./webserver.js')).WebServer(TheMatron);
+FlexDash      = new (require('./flexdash.js')).FlexDash(TheMatron);
 
 Schedule      = require('./schedule.js');
 Sensor        = require('./sensor.js');
@@ -125,6 +126,7 @@ Uploader.start();
 // start the GPS reader
 
 GPS.start(Deployment.acquire.gps.secondsBetweenFixes);
+Chrony.start();
 
 // Now that all listeners for devAdded events have been registered, we
 // can start HubMan.
@@ -133,7 +135,8 @@ HubMan.start();
 
 // Start the webserver
 
-WebServer.start();
+WebServer.start(FlexDash);
+FlexDash.start(WebServer);
 
 // Start the tagFinder
 

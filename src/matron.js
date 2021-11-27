@@ -47,7 +47,7 @@ Matron.prototype.devRemoved = function(dev) {
 
 Matron.prototype.VAHdied = function() {
     // destroy device objects, since device server has died
-    this.devices.length = 0;
+    this.devices.length = 0;  // FIXME: should not remove non-alsa devices!
 };
 
 exports.Matron = Matron;

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<!-- For development load FlexDash from Vite:
+     http://core2.voneicken.com:3000/?sio=http://sg.voneicken.com/fd -->
+<html lang="en">
+  <head>
+    <!-- where to load flexdash from, the filename at the end of the path is irrelevant
+         note that if a data connection to a HTTP/WS page is to be made then FlexDash itself
+         also has to come from HTTP, not HTTPS -->
+    <base href="http://s3.amazonaws.com/s3.voneicken.com/flexdash/0.2.4/index.html" />
+    <meta charset="UTF-8" />
+    <link rel="icon" href="./favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      flexdash_options = {
+        // dashboard title, shows up in top-nav and in browser window title
+        title: 'SG',
+
+        // theme, default is light, alternative is dark
+        theme: 'light',
+
+        // primary data connection, pick one of sio or ws
+        sio: window.location.origin + '/fd', // socket.io
+        //ws: 'wss://core2.voneicken.com:1880/io/flexdash', // websocket
+
+        // not yet implemented...
+        //widgets: [ '/foo/bar' ],
+      }
+    </script>
+    <script type="module" crossorigin src="./start.js"></script>
+  </head>
+  <body>
+    <div id="app"></div>
+  </body>
+</html>

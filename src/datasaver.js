@@ -82,7 +82,7 @@ DataSaver.prototype.getRelPath = function (source, timestamp) {
       so a subsequent function can fill in time once it is known.
     */
     timestamp = timestamp || (new Date()).getTime() / 1000;
-    tscode = GPS.timeStampCode();
+    tscode = Chrony.timeStampCode();
     var dayPart;
     if (timestamp == "%") {
         date = "%Y-%m-%dT%H-%M-%S%QQQQQQ" + tscode;

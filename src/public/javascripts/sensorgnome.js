@@ -367,7 +367,7 @@ function onLsdata (data) {
 function onVahstatus (status) {
     var date = status.date;
     // update GPS status
-    var color = status.GPSstate.includes("fix") ? "green" : "red";
+    var color = "black" // status.GPSstate.includes("fix") ? "green" : "red";
     $('#gpsstatus').html('<span style="color: ' + color + '">' + status.GPSstate + '</span>');
     // update time info
     var timeTxt = (new Date(date * 1000)).toISOString().replace("T", "    ").replace("Z", " UTC");

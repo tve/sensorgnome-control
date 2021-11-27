@@ -107,12 +107,13 @@ HubMan = function(matron, root) {
             // we assume the watch is active once Fs.watch returns, so
             // the following should guarantee an event has been emitted
             // for every device.
-            enumeratePreExistingDevices();
+            this.enumeratePreExistingDevices();
         } catch (e) {
+            console.log("Hubman start:", e)
             // presumably we failed because /dev/sensorgnome doesn't
             // exist; wait 10 seconds for user to plug in a hub and
             // try again.
-            setTimeout(this.this_start, 10000);
+            setTimeout(()=>this.start(), 10000);
         };
     };
 
@@ -120,7 +121,7 @@ HubMan = function(matron, root) {
     this.getDevs = function() {
         return devs;
     };
-
+/* TvE: is this really needed???
     this.VAHstarted =  function() {
         // if device server restarted, re-start all devices as appropriate
         this.enumeratePreExistingDevices();
@@ -145,6 +146,7 @@ HubMan = function(matron, root) {
 
     matron.on("VAHstarted", this.this_VAHstarted);
     matron.on("VAHdied", this.this_VAHdied);
+*/
 
 };
 
