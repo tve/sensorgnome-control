@@ -10,26 +10,35 @@
     GPS failure.  read from /etc/bootcount; taken modulo 1e6, and left
     padded with '0's to 6 digits
 
+  - also gets general information about filesystem usage (df)
 */
 
-var machineID = Fs.readFileSync("/etc/sensorgnome_id").toString().substring(0, 12);
+exports.machineID = Fs.readFileSync("/etc/sensorgnome_id").toString().substring(0, 12)
+
 var bootCountFile = "/etc/bootcount"
-var bootCount = (Fs.existsSync(bootCountFile) ?
-                      Number(Fs.readFileSync(bootCountFile).toString()) % (1000000)
-                      :
-                      0);
-//bootCount = "00000".substring(0, 6 - bootCount.length) + bootCount;
+exports.bootCount = Fs.existsSync(bootCountFile) ?
+    Number(Fs.readFileSync(bootCountFile).toString()) % (1000000) : 0
 
 var versionFile = "/etc/sensorgnome_version";
-var version;
 
-if (Fs.existsSync(versionFile))
-    version = Fs.readFileSync(versionFile).toString();
-else
-    version = "UNKNOWN";
+exports.version = Fs.existsSync(versionFile) ? Fs.readFileSync(versionFile).toString() : "UNKNOWN"
 
-exports.machineID = machineID;
-exports.bootCount = bootCount;
-exports.version = version;
+function getDiskUsage() {
+  ChildProcess.exec("findmnt --df --json --real", (err, stdout) => {
+    if (err) {
+      console.log("Error in df:", err)
+      return
+    }
+    try {
+      var df = JSON.parse(stdout).filesystems.filter(fs => fs.fstype.match(/(ext)|(fat)/))
+      // {"source":"/dev/mmcblk0p2", "fstype":"ext4", "size":"2.8G", "used":"2.2G", "avail":"488.7M", "use%":"77%", "target":"/"},
 
+      TheMatron.emit("df", df)
+    } catch(err) {
+      console.log("Error parsing df output:", err)
+    }
+  })
+}
 
+setTimeout(getDiskUsage, 10000)
+setInterval(getDiskUsage, 10*60*1000)

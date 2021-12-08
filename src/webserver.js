@@ -12,8 +12,8 @@ var Express = require('express'),
     MethodOverride = require('method-override'),
     ErrorHandler = require('errorhandler'),
     Io = require('socket.io'),
-    Http = require('http');
-Morgan = require("morgan")  // request logger middleware
+    Http = require('http'),
+    Morgan = require("morgan")  // request logger middleware
 
 function WebServer(matron) {
     this.matron = matron;
@@ -52,20 +52,6 @@ function WebServer(matron) {
     this.this_softwareUpdateUploadCompleted = this.softwareUpdateUploadCompleted.bind(this);
     this.this_uploadSoftwareUpdate = this.uploadSoftwareUpdate.bind(this);
 
-    // ===== Event listeners for FlexDash
-
-    for (const ev of ['gps', 'chrony']) {
-        this.matron.on(ev, (...args) => {
-            if (args.length <= 1) FlexDash.set(ev, ...args)
-            else FlexDash.set(ev, args)
-        })
-    }
-    // this.matron.on('gotTag', this.this_pushTag);
-    // this.matron.on('setParam', this.this_pushParam);
-    // this.matron.on('setParamError', this.this_setParamError);
-    this.matron.on('devAdded', (info) => { FlexDash.set(`devices/${info.attr.port}`, this.genDevInfo(info)) })
-    this.matron.on('devRemoved', (info) => { FlexDash.unset(`devices/${info.attr.port}`) });
-    // this.matron.on('vahData', this.this_pushData);
 };
 
 // function for ignoring response from e.g. a childprocess
@@ -348,22 +334,6 @@ WebServer.prototype.handleWebConnection = function (socket) {
     this.requestedTagDB();
 };
 
-WebServer.prototype.genDevInfo = function (dev) {
-    var info = {
-        port: dev.attr.port,
-        port_path: dev.attr["port_path"] || "--",
-        type: dev.attr.type,
-    }
-    switch (dev.attr.type) {
-    case "gps": info.attr = dev.attr.kind; break
-    case "CornellTagXCVR": info.attr = "433Mhz"; break
-    case "funcubeProPlus": info.attr = "?Mhz"; break
-    case "funcubePro": info.attr = "?Mhz"; break
-    case "rtlsdr": info.type = dev.attr.prod; info.attr = "?Mhz"; break
-    }
-    return info
-}
-
 WebServer.prototype.start = function (flexdash) {
     this.flexdash = flexdash;
 
@@ -403,4 +373,4 @@ WebServer.prototype.start = function (flexdash) {
 
 };
 
-exports.WebServer = WebServer;
+module.exports = WebServer;

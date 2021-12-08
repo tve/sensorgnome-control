@@ -150,4 +150,4 @@ HubMan = function(matron, root) {
 
 };
 
-exports.HubMan = HubMan;
+module.exports = HubMan;

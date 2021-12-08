@@ -258,4 +258,4 @@ VAH.prototype.getRawStream = function(devLabel, rate, doFM) {
     return rawSock;
 };
 
-exports.VAH = VAH;
+module.exports = VAH;
