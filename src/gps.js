@@ -60,8 +60,9 @@ class GPS {
                         fix.time = (new Date(fix.time)).getTime()/1000;
                         this.lastFix = fix;
                         this.matron.emit("gotGPSFix", fix);
-                    } else {
+                    } else if (this.lastFix) {
                         this.matron.emit("gotGPSFix", { state: "no-sat" });
+                        this.lastFix = null
                     }
                 }
             }

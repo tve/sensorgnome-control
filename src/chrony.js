@@ -141,7 +141,7 @@ class Chrony {
                     this.matron.emit("gpsSetClock", this.clock_sync_digits, 0.0)
                 }
                 // send event if source info has changed
-                let max_error_p2 = max_error > 0 ? max_error.toPrecision(2) : Number.NaN
+                let max_error_p2 = max_error > 0 ? max_error.toPrecision(2) : Number.POSITIVE_INFINITY
                 if (time_source != this.time_source || max_error_p2 != this.max_error) {
                     this.time_source = time_source
                     this.max_error = max_error_p2
