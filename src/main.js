@@ -43,12 +43,13 @@ Matron = require('./matron.js');
 TheMatron = new Matron.Matron();
 
 // Load singleton objects
-GPS           = new (require('./gps.js').GPS)       (TheMatron);
-Chrony        = new (require('./chrony.js').Chrony) (TheMatron);
-HubMan        = new (require('./hubman.js').HubMan) (TheMatron, "/dev/sensorgnome");
-VAH           = new (require('./vah.js').VAH)       (TheMatron, "/usr/bin/vamp-alsa-host", "VAH.sock");
-WebServer     = new (require('./webserver.js')).WebServer(TheMatron);
-FlexDash      = new (require('./flexdash.js')).FlexDash(TheMatron);
+GPS           = new (require('./gps.js'))(TheMatron);
+Chrony        = new (require('./chrony.js'))(TheMatron);
+HubMan        = new (require('./hubman.js'))(TheMatron, "/dev/sensorgnome");
+VAH           = new (require('./vah.js'))(TheMatron, "/usr/bin/vamp-alsa-host", "VAH.sock");
+WebServer     = new (require('./webserver.js'))(TheMatron);
+FlexDash      = new (require('./flexdash.js'))(TheMatron);
+Dashboard     = new (require('./dashboard.js'))(TheMatron);
 
 Schedule      = require('./schedule.js');
 Sensor        = require('./sensor.js');
@@ -97,8 +98,9 @@ function do_nothing(err, stdout, stderr) {
 };
 
 TheMatron.on("gotGPSFix", function(fix) {
-    AllOut.write("G," + fix.time + "," + fix.lat + "," + fix.lon + "," + fix.alt + "\n" );
-    LifetagOut.write("G," + fix.time + "," + fix.lat + "," + fix.lon + "," + fix.alt + "\n" );
+    let line = "G," + fix.time + "," + fix.lat + "," + fix.lon + "," + fix.alt + "\n"
+    AllOut.write(line)
+    LifetagOut.write(line)
     //ugly hack to set date from gps if gps has fix but system clock not set
     if (clockNotSet && (new Date()).getFullYear() < 2013) {
         console.log("Trying to set time to " + fix.time + "\n");
@@ -116,7 +118,9 @@ TheMatron.on("setParam", function(s) {
 });
 
 TheMatron.on("gpsSetClock", function(prec, elapsed) {
-    AllOut.write("C," + (new Date()).getTime() / 1000 + "," + prec + "," + elapsed + "\n");
+    let line = "C," + Date.now() / 1000 + "," + prec + "," + elapsed + "\n"
+    AllOut.write(line);
+    LifetagOut.write(line);
 });
 
 // Start the uploader
@@ -137,6 +141,7 @@ HubMan.start();
 
 WebServer.start(FlexDash);
 FlexDash.start(WebServer);
+Dashboard.start();
 
 // Start the tagFinder
 

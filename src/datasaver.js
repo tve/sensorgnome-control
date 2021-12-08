@@ -82,7 +82,8 @@ DataSaver.prototype.getRelPath = function (source, timestamp) {
       so a subsequent function can fill in time once it is known.
     */
     timestamp = timestamp || (new Date()).getTime() / 1000;
-    tscode = Chrony.timeStampCode();
+    var tscode = Chrony.timeStampCode();
+    if (tscode != "P") tscode = "Z" // don't get into the fine details of clock sync
     var dayPart;
     if (timestamp == "%") {
         date = "%Y-%m-%dT%H-%M-%S%QQQQQQ" + tscode;
@@ -134,6 +135,7 @@ DataSaver.prototype.getStream = function(relpath, ext, pathOnly) {
             }
             this.ensureDirs(dirs, 2);
             var sout = Fs.createWriteStream(path);
+            console.log(`DataSaver: opening ${path}`)
             return {stream:sout, path: path};
         } catch (e) {
             // try next disk

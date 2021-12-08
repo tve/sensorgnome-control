@@ -34,6 +34,7 @@ SafeStream = function (matron, source, ext, chunkbytes, chunksecs) {
 
 SafeStream.prototype.setupStreams = function() {
     var path = DataSaver.getRelPath(this.source);
+    this.tscode = Chrony.timeStampCode(); // time-stamp precision used by DataSaver (yuck)
     this.sout = DataSaver.getStream(path, this.ext);
     this.sout.stream.on("error", this.this_streamError);
     this.soutgz = DataSaver.getStream(path, this.ext + ".gz")
@@ -96,9 +97,15 @@ SafeStream.prototype.streamError = function(e) {
         this.write(this.lastData);
 };
 
+// gpsSetClock events may signal that the clock precision has changed, we start a fresh file
+// if it switches to/from "P", which is "unsynchronized"
 SafeStream.prototype.gpsSetClock = function(d) {
-    this.end();
-    this.setupStreams();
+    let tscode = Chrony.timeStampCode();
+    if ((tscode == "P") != (this.tscode == "P")) {
+        console.log(`SafeStream: tscode changed from ${this.tscode} to ${tscode}`)
+        this.end();
+        this.setupStreams();
+    }
 };
 
 exports.SafeStream = SafeStream;
