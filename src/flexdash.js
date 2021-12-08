@@ -1,6 +1,16 @@
 // Socket.io server for FlexDash
 // Copyright ©2021 Thorsten von Eicken
 
+// The FlexDash class contains the low-level functions to communicate with the FlexDash
+// dashboard over socket.io. It deals with sending the dashboard configuration and saving
+// any changes made to a file. It provides functions to broadcast data to all connected
+// dashboards.
+
+// Notes:
+// File upload/download should probably be handled using
+// https://stackoverflow.com/questions/29066117 for download and
+// https://github.com/sffc/socketio-file-upload for upload.
+
 // Temporary Express instance
 // const express = require('express')
 // const Morgan = require("morgan")  // request logger middleware
@@ -226,4 +236,4 @@ class FlexDash {
 
 }
 
-exports.FlexDash = FlexDash
+module.exports = FlexDash
