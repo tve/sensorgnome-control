@@ -80,12 +80,13 @@ TagFinder = new (require('./tagfinder.js').TagFinder)(
 );
 
 DataSaver     = new (require('./datasaver.js').DataSaver) (TheMatron);
+DataFiles     = new (require('./datafiles.js'))(TheMatron);
 
 SafeStream    = require('./safestream.js').SafeStream;
 
-AllOut = new SafeStream(TheMatron, "all", ".txt", 1000000, 3600);
+AllOut = new SafeStream(TheMatron, "all", ".txt", 1000000, 3600, "parse");
 
-LifetagOut = new SafeStream(TheMatron, "ctt", ".txt", 1000000, 3600);
+LifetagOut = new SafeStream(TheMatron, "ctt", ".txt", 1000000, 3600, "parse");
 
 Uploader = new (require('./uploader.js').Uploader) (TheMatron);
 
@@ -126,6 +127,8 @@ TheMatron.on("gpsSetClock", function(prec, elapsed) {
 // Start the uploader
 
 Uploader.start();
+
+setTimeout(()=>DataFiles.start(), 2000); // wait for stuff to settle a bit before scanning media
 
 // start the GPS reader
 

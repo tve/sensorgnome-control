@@ -7,7 +7,6 @@ class Dashboard {
 
     constructor(matron) {
         this.matron = matron
-        this.flexdash = null
 
         // ===== Event listeners
         for (const ev of [
@@ -23,10 +22,13 @@ class Dashboard {
         // this.matron.on('setParam', this.this_pushParam);
         // this.matron.on('setParamError', this.this_setParamError);
         // this.matron.on('vahData', this.this_pushData);
+
+        // keep track of data file summary stats
+        matron.on("data_file_summary", (stats) => FlexDash.set('data_file_summary', stats))
+        matron.on("detection_stats", (hourly, daily) => this.updateDetectionStats(hourly, daily))
     }
     
     start() {
-        this.watch("/data/SGdata")
     }
 
     genDevInfo(dev) {
@@ -45,7 +47,6 @@ class Dashboard {
         return info
     }
     
-    
     handle_gps(fix) { FlexDash.set('gps', fix) } // {lat, lon, alt, time, state, ...}
     handle_chrony(info) { FlexDash.set('chrony', info) } // {rms_error, time_source}
     handle_df(info) { FlexDash.set('df', info) } // {source, fstype, size, used, use%, target}
@@ -57,57 +58,41 @@ class Dashboard {
 
     // ===== /data file enumeration, download, (and upload?)
 
+    // updateDetectionStats transforms the stats as they come from DataFiles into the format
+    // required by the TimePLot widget of FlexDash, i.e. uPlot.
+    // uPlot wants an array indexed by time, with each element being an array of values, the first
+    // value being the X coordinate, and the rest being the series.
+    updateDetectionStats(daily, hourly) {
+        // get series names
+        let series = Object.values(daily).reduce((series, day) => {
+            Object.keys(day).forEach(d => series.add(d))
+            return series
+        }, new Set())
+        series = Array.from(series.values()).sort()
+        console.log(`updateDetectionStats: series=${series}`)
 
-
-    async updateTree(dir) {
-        console.log("updateTree " + dir)
-        let tree = []
-        try {
-            const files = await FSP.readdir(dir)
-            for (const file of files) {
-                const path = dir + "/" + file
-                const stat = await FSP.stat(path)
-                if (stat.isDirectory()) {
-                    tree = tree.concat(await this.updateTree(path))
-                } else {
-                    tree.push({ path, size: stat.size, mtime: stat.mtimeMs })
-                }
-            }
-        } catch(e) {
-            console.log("Failed to update " + dir + ": " + e);
+        // pivot daily stats
+        const ms_per_day = 24*3600*1000
+        let today = Math.trunc(Date.now()/ms_per_day)*ms_per_day
+        let daily_data = Array(100)
+        for (let i = 0; i < 100; i++) {
+            const day = today - (99-i)*ms_per_day
+            daily_data[i] = [day/1000, ...series.map(s =>
+                day in daily && s in daily[day]? daily[day][s] : null)]
         }
-        return tree
-    }
+        FlexDash.set("detection_series", series.map(s => s=='all' ? 'lotek' : s))
+        FlexDash.set("detections_daily", daily_data)
 
-    updateFile(filename) {
-        console.log("updateFile " + filename)
-    }
-
-    // watch a directory tree and keep a list of info about the files for sending to the dashboard
-    async watch(dir) {
-        let tree = await this.updateTree(dir)
-        console.log("Tree at " + dir + " has " + tree.length + " files")
-        FlexDash.set('data_files', tree)
-
-        // let sleep = require('util').promisify(setTimeout)
-
-        // for (;;) {
-        //     try {
-        //         const watcher = FSP.watch(dir, {recursive:true});
-        //         this.updateTree(dir) // watcher is started, get initial state
-        //         for await (const {filename} of watcher) {
-        //             if (filename) {
-        //                 this.updateFile(dir + "/" + filename)
-        //             } else {
-        //                 this.updateTree(dir + "/" + filename)
-        //             }
-        //         }
-        //     } catch (e) {
-        //         console.log("Failed to watch " + dir + ": " + e);
-        //         throw e
-        //     }
-        //     await sleep(30000) // wait 30 secs to see whether we can then watch
-        // }
+        // pivot hourly stats
+        const ms_per_hour = 3600*1000
+        let curhour = Math.trunc(Date.now()/ms_per_hour)*ms_per_hour
+        let hourly_data = Array(100)
+        for (let i = 0; i < 100; i++) {
+            const hour = curhour - (99-i)*ms_per_hour
+            hourly_data[i] = [hour/1000, ...series.map(s =>
+                hour in hourly && s in hourly[hour]? hourly[hour][s] : null)]
+        }
+        FlexDash.set("detections_hourly", hourly_data)
     }
 
 }
