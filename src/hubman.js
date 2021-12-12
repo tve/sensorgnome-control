@@ -109,7 +109,6 @@ HubMan = function(matron, root) {
             // for every device.
             this.enumeratePreExistingDevices();
         } catch (e) {
-            console.log("Hubman start:", e)
             // presumably we failed because /dev/sensorgnome doesn't
             // exist; wait 10 seconds for user to plug in a hub and
             // try again.
