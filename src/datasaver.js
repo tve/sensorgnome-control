@@ -130,10 +130,10 @@ DataSaver.prototype.getStream = function(relpath, ext, pathOnly) {
             Fs.writeSync(fd, "IGNORE - FOR SPACE VERIFICATION ONLY\n", 0);
             Fs.closeSync(fd)
             Fs.unlinkSync(bogusFile);
+            this.ensureDirs(dirs, 2);
             if (pathOnly) {
                 return path;
             }
-            this.ensureDirs(dirs, 2);
             var sout = Fs.createWriteStream(path);
             console.log(`DataSaver: opening ${path}`)
             return {stream:sout, path: path};
