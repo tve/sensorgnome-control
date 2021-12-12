@@ -200,7 +200,6 @@ Sensor.prototype.startStopRawFiler = function(start) {
     if (! this.rawFiling)
         return;
     if (start) {
-        timestamp = new Date().getTime() / 1000.0
         cmd = "rawFile " + this.dev.attr.port + " " + this.plan.rate + " "
             + this.frames + " 1 " + "\"" + DataSaver.getStream(DataSaver.getRelPath(this.dev.attr.port, "%"), ".wav", true) + "\"";
     } else {
