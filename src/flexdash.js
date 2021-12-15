@@ -39,7 +39,7 @@ class FlexDash {
     }
 
     start(webserver) {
-        let app = webserver.app
+        this.app = webserver.app
 
         // load config from file
         Fs.readFile(this.config_file, (err, data) => {
@@ -68,6 +68,10 @@ class FlexDash {
             setInterval(() => { this.io.send('time', (new Date()).toISOString()) }, 5000)
         })
     }
+    
+    registerGetHandler(path, handler) {
+        this.app.get(path, handler)
+    }
 
     load_static_data() {
         let uptime = parseInt(Fs.readFileSync("/proc/uptime").toString(), 10)
@@ -89,7 +93,7 @@ class FlexDash {
                 // set may be called before start so can't emit, data will be sent on connection
                 this.io.emit('set', path, value)
             }
-            console.log(`SIO set data ${path}`)
+            if (path != 'tag') console.log(`SIO set data ${path}`)
         } catch (err) {
             console.log(`FD: Internal error setting ${path}: ${err}`)
         }
@@ -112,6 +116,15 @@ class FlexDash {
         }
     }
 
+    // Download sends one dashboard a message instructing it to download a file. Typically this
+    // is in response to some "download" button press message.
+    // The dashboard targeted by the socket will request the specified url and propose the
+    // specified filename as target to the user in a standard download dialog or use the filename
+    // as-is within the user's download folder depending on the browser settings.
+    download(socket, url, filename) {
+        socket.emit('download', url, filename)
+    }
+
     // FlexDash connected, hook handlers to save config and send initial config        
     handleConnection(socket) {
         const hs = socket.handshake
@@ -127,7 +140,8 @@ class FlexDash {
             } else if (topic.startsWith("$config")) {
                 this.saveConfig(socket, topic, payload)
             } else {
-                this.handleMessage(socket, topic, payload)
+                console.log(`SIO message ${socket.id} topic=${topic} payload=${payload}`)
+                this.matron.emit("dash-" + topic, payload, socket)
             }
         })
 
@@ -197,11 +211,6 @@ class FlexDash {
             }, 1000)
             this.saving = true
         }
-    }
-
-    // Handle incoming message from FD
-    handleMessage(socket, topic, payload) {
-        console.log(`SIO message ${socket.id} topic=${topic} payload=${payload}`)
     }
 
     // walkTree takes the root of an object hierarchy and a path array, then walks

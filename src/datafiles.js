@@ -32,7 +32,6 @@ const DATAFILE = "/data/config/DataFiles.json"
 
 const Fs = require("fs")
 const FSP = require("fs/promises")
-const Path = require('path')
 
 // find all files in a subtree and yield each file's {path, stat} in turn
 // findFiles is an async generator (yay! ugh#%^), it will yield each {path,stat} value when 
@@ -63,7 +62,7 @@ class DataFiles {
         
         // summary information used by the dashboard
         this.summary = {
-            total_files: 0, total_bytes: 0, pre_2010_files: 0,
+            total_files: 0, total_bytes: 0, pre_2010_files: 0, other_sg_files: 0,
             files_to_upload: 0, files_to_download: 0,
             bytes_to_upload: 0, bytes_to_download: 0,
             last_upload: null, last_download: null,
@@ -99,7 +98,7 @@ class DataFiles {
         await this.updateTree("/data/SGdata")
         if (this.files.length != old) {
             await this.save()
-            this.matron.emit("detection_stats", this.det_by_day, this.det_by_hour)
+            this.pubStats()
         }
     }
 
@@ -218,6 +217,8 @@ class DataFiles {
             this.summary.last_upload = data.uploaded
         if (data.downloaded && (!this.summary.last_download || data.downloaded > this.summary.last_download))
             this.summary.last_download = data.downloaded
+        const sg_id = data.name.split("-")[1]
+        if (sg_id != Machine.machineID) this.summary.other_sg_files++
 
         // update daily stats
         const ms_per_day = 24 * 3600 * 1000
@@ -244,9 +245,41 @@ class DataFiles {
         if (pub) this.pubStats()
     }
 
+    updateStats() {
+        this.summary.files_to_upload = this.files.reduce((sum, f) => f.uploaded ? sum : sum+1, 0)
+        this.summary.files_to_download = this.files.reduce((sum, f) => f.downloaded ? sum : sum+1, 0)
+        // determine last download date
+        let last_download = this.files.reduce(
+            (ld,f) => f.downloaded && f.downloaded > ld ? f.downloaded : ld, "")
+        this.summary.last_download = last_download || null
+    }
+
     pubStats() {
         this.matron.emit("data_file_summary", this.summary)
         this.matron.emit("detection_stats", this.det_by_day, this.det_by_hour)
+    }
+
+    downloadList(what) {
+        switch(what) {
+            case "new":
+                return this.files.filter(f => !f.downloaded).map(f => f.dir + f.name)
+            case "all":
+                return this.files.map(f => f.dir + f.name)
+            case "last":
+                return this.files.filter(f => f.downloaded == this.summary.last_download).map(f => f.dir + f.name)
+            default: return []
+        }
+    }
+    
+    updateDownloadDate(files, date) {
+        files.forEach(f => {
+            const i = this.files.findIndex(x => x.dir + x.name == f)
+            if (i >= 0) this.files[i].downloaded = date
+        })
+        setTimeout(() => { this.save().then(()=>{}) }, 120)
+        this.updateStats()
+        this.matron.emit("data_file_summary", this.summary)
+
     }
 
 }

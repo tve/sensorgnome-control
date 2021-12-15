@@ -1,7 +1,8 @@
 // dashboard - Event listeners and formatters for the web dashboard
 // Copyright ©2021 Thorsten von Eicken, see LICENSE
 
-var FSP = require("fs/promises")
+var AR = require('archiver')
+const Path = require('path')
 
 class Dashboard {
 
@@ -11,7 +12,8 @@ class Dashboard {
         // ===== Event listeners
         for (const ev of [
             'gps', 'chrony', 'gotTag', 'setParam', 'setParamError', 'devAdded', 'devRemoved',
-            'df'
+            'df',
+            'dash-download'
         ]) {
             this.matron.on(ev, (...args) => {
                 if (args.length <= 1) this['handle_'+ev](...args)
@@ -29,6 +31,8 @@ class Dashboard {
     }
     
     start() {
+        // register download handler with FlexDash
+        FlexDash.registerGetHandler("/data-download/:what", (req, res) => this.data_download(req, res))
     }
 
     genDevInfo(dev) {
@@ -93,6 +97,42 @@ class Dashboard {
                 hour in hourly && s in hourly[hour]? hourly[hour][s] : null)]
         }
         FlexDash.set("detections_hourly", hourly_data)
+    }
+
+    // user pressed a download button, we need to turn-around and tell the dashboard to
+    // actually perform the download (yes, it's a bit convoluted)
+    'handle_dash-download'(what, socket) {
+        FlexDash.download(socket, `/data-download/${what}`, 'foo.zip')
+    }
+    // To download through websocket see: https://stackoverflow.com/questions/29066117
+
+    // Handle GET request to download data files
+    // See https://stackoverflow.com/a/61313182/3807231
+    data_download(req, resp) {
+        console.log("data_download:", req.params.what)
+        let files = DataFiles.downloadList(req.params.what)
+        if (!files) {
+            resp.writeHead(200, {'Content-Type': 'text/plain'})
+            resp.send()
+            return
+        }
+        //files = files.slice(0, 100)
+        // download date, will be recorded in "database"
+        let date = (new Date()).toISOString().replace(/[-:]/g, "").replace("T", "-").replace(/\..+/, '')
+        let filename = "SG" + Machine.machineID + "-" + date + ".zip"
+        // tell the browser that we're sending a zip file
+        resp.writeHead(200, {
+            'Content-Type': 'application/zip',
+            'Content-disposition': 'attachment; filename=' + filename
+        })
+        // stream zip archive into response
+        console.log(`Streaming ZIP with ${files.length} files`)
+        let archive = AR('zip', { zlib: { level: 1 } }) // we're putting .gz files in...
+        archive.pipe(resp)
+        files.forEach(f => archive.file(f, { name: Path.basename(f) }))
+        archive.finalize()
+        // update the database with the date of the download
+        DataFiles.updateDownloadDate(files, date)
     }
 
 }
