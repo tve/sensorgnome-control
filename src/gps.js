@@ -12,7 +12,7 @@
 class GPS {
     constructor(matron) {
         this.matron = matron;
-        this.lastFix = null;
+        this.lastFix = true; // cause initial no-sat to be issued
         this.replyBuf = "";
         this.gpsdCon = null;
         this.conTimeOut = null;
@@ -22,8 +22,6 @@ class GPS {
         this.this_conError = this.conError.bind(this);
         this.this_connect = this.connect.bind(this);
         this.this_getFix = this.getFix.bind(this);
-        // connect to gpsd
-        this.connect();
     }
 
     gpsdReply(r) {
@@ -48,7 +46,7 @@ class GPS {
                         mode = fix.mode;
                     }
                     var sky = reply.sky[0]
-                    if (sky && sky["class"]=="SKY") {
+                    if (sky && sky["class"]=="SKY" && "satellites" in sky) {
                         var sats = 0;
                         for (const s of sky["satellites"]) {
                             if (s.used) sats++;
@@ -67,20 +65,21 @@ class GPS {
                 }
             }
         } catch (e) {
-            /**/
+            console.error("GPSD: parse error", e)
         }
     }
 
     connect() {
         this.conTimeOut = null;
         this.sentWatch = false;
-        this.gpsdCon = Net.connect(2947, function() {});
+        this.gpsdCon = Net.connect(2947, () => this.getFix() );
         this.gpsdCon.on("data", this.this_gpsdReply);
         this.gpsdCon.on("error", this.this_conError);
         this.gpsdCon.on("end", this.this_conError);
     }
 
     conError(e) {
+        console.log("GPSD connect error", e)
         this.gpsdCon.destroy();
         this.gpsdCon = null;
         this.conTimeOut = setTimeout(this.this_connect, 5000);
@@ -99,6 +98,8 @@ class GPS {
     }
 
     start(fixInterval) {
+        if (!this.gpsdCon) this.connect();
+
         if (this.interval)
             clearInterval(this.interval);
         this.interval = setInterval(this.this_getFix, fixInterval * 1000, this);
