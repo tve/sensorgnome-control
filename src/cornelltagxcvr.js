@@ -72,9 +72,7 @@ CornellTagXCVR.prototype.gotTag = function(record) {
     var tag = vals.shift(); // Tag ID should be the first record
     // emit all detections at once
     if (tag) {
-        var now = new Date();
-        var now_secs = now.getTime() / 1000;
-
+        var now_secs = Date.now() / 1000;
         var rssi = vals.shift(); // RSSI should be the second record
         var lifetag_record = ['T'+this.dev.attr.port, now_secs, tag, rssi].join(',')  // build the values to generate a CSV row
         this.matron.emit('gotTag', lifetag_record+'\n');
