@@ -200,8 +200,8 @@ Sensor.prototype.startStopRawFiler = function(start) {
     if (! this.rawFiling)
         return;
     if (start) {
-        cmd = "rawFile " + this.dev.attr.port + " " + this.plan.rate + " "
-            + this.frames + " 1 " + "\"" + DataSaver.getStream(DataSaver.getRelPath(this.dev.attr.port, "%"), ".wav", true) + "\"";
+        const strm = DataSaver.getStream(DataSaver.getRelPath(this.dev.attr.port, "%"), ".wav", true)
+        cmd = `rawFile ${this.dev.attr.port} ${this.plan.rate} ${this.frames} 1 "${strm}"`
     } else {
         cmd = "\nrawFileOff " + this.dev.attr.port;
     }

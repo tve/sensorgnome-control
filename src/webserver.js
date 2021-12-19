@@ -173,6 +173,7 @@ WebServer.prototype.requestedLSFiles = function () {
 
 WebServer.prototype.pushPlan = function () {
     if (this.sock) {
+        // FIXME: broken by deployment/acquisition split
         this.sock.emit('plan', { planPath: Deployment.planPath, planText: Deployment.planText });
     }
 };
@@ -235,7 +236,6 @@ WebServer.prototype.pushGPSFix = function (fix) {
     if (this.sock) {
         this.sock.emit('gpsfix', fix);
     };
-    if (this.flexdash) this.flexdash.set('gps', fix);
 };
 
 WebServer.prototype.pushTag = function (x) {
@@ -334,8 +334,7 @@ WebServer.prototype.handleWebConnection = function (socket) {
     this.requestedTagDB();
 };
 
-WebServer.prototype.start = function (flexdash) {
-    this.flexdash = flexdash;
+WebServer.prototype.start = function () {
 
     this.app = Express();
     this.app.use(Morgan('tiny'))

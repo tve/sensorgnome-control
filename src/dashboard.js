@@ -11,13 +11,16 @@ class Dashboard {
 
         // ===== Event listeners
         for (const ev of [
-            'gps', 'chrony', 'gotTag', 'setParam', 'setParamError', 'devAdded', 'devRemoved',
-            'df',
-            'dash-download'
+            'gotGPSFix', 'chrony', 'gotTag', 'setParam', 'setParamError', 'devAdded', 'devRemoved',
+            'df', 'sdcardUse', 'vahData',
+            // events triggered by a message from FlexDash
+            'dash_download', 'dash_upload', 'dash_deployment_update',
         ]) {
             this.matron.on(ev, (...args) => {
-                if (args.length <= 1) this['handle_'+ev](...args)
-                else this['handle_'+ev](...args)
+                let fn = 'handle_'+ev
+                if (!(fn in this)) console.log("Missing Dashboard handler:", ev)
+                else if (args.length <= 1) this[fn](...args)
+                else this[fn](...args)
             })
         }
         // this.matron.on('gotTag', this.this_pushTag);
@@ -28,13 +31,24 @@ class Dashboard {
         // keep track of data file summary stats
         matron.on("data_file_summary", (stats) => FlexDash.set('data_file_summary', stats))
         matron.on("detection_stats", (hourly, daily) => this.updateDetectionStats(hourly, daily))
+
+        // 5 minutes of detections in 10 second bins for sparklines
+        this.detections = {
+            ctt: Array(5*6).fill(null),
+            lotek: Array(5*6).fill(null),
+        }
     }
     
     start() {
         // register download handler with FlexDash
         FlexDash.registerGetHandler("/data-download/:what", (req, res) => this.data_download(req, res))
-    }
+        setInterval(() => this.detectionShifter(), 10000)
 
+        // set (relatively) static data
+        this.setDeployment()
+        FlexDash.set('acquisition', JSON.stringify(Acquisition, null, 2))
+    }
+    
     genDevInfo(dev) {
         var info = {
             port: dev.attr.port,
@@ -51,14 +65,50 @@ class Dashboard {
         return info
     }
     
-    handle_gps(fix) { FlexDash.set('gps', fix) } // {lat, lon, alt, time, state, ...}
+    handle_gotGPSFix(fix) { console.log("Dashboard setting GPS fix"); FlexDash.set('gps', fix) } // {lat, lon, alt, time, state, ...}
     handle_chrony(info) { FlexDash.set('chrony', info) } // {rms_error, time_source}
     handle_df(info) { FlexDash.set('df', info) } // {source, fstype, size, used, use%, target}
-    handle_gotTag(tag) { FlexDash.set('tag', tag) } // text line describing tag
+    handle_sdcardUse(pct) { FlexDash.set('sdcard_use', pct) }
     handle_setParam(info) { } // FlexDash.set('param', info) } // {param, value, error}
     handle_setParamError(info) { } // FlexDash.set('param', info) } // {param, error}
     handle_devAdded(info) { FlexDash.set(`devices/${info.attr.port}`, this.genDevInfo(info)) }
     handle_devRemoved(info){ FlexDash.unset(`devices/${info.attr.port}`) }
+    
+    // ===== Deployment configuration
+    
+    setDeployment() {
+        let dep = { ...Deployment.data }
+        delete dep.module_options
+        FlexDash.set('deployment', dep)
+    }
+
+    handle_dash_deployment_update(update) {
+        console.log("Updating deployment with", JSON.stringify(update))
+        Deployment.update(update)
+        this.setDeployment()
+    }
+
+    // ===== Tag/Pulse detections for the last 5 minutes
+
+    // shift/roll detection arrays by one element every 10 seconds
+    detectionShifter() {
+        this.detections.ctt.shift()
+        this.detections.ctt.push(0)
+        this.detections.lotek.shift()
+        this.detections.lotek.push(0)
+        FlexDash.set('detections_5min', this.detections)
+    }
+
+    handle_gotTag(tag) { 
+        this.detections.ctt[this.detections.ctt.length-1]++
+        FlexDash.set('detections_5min', this.detections)
+    }
+    handle_vahData(data) {
+        for (const line of data.toString().split("\n")) {
+            if (line.startsWith("p")) this.detections.lotek[this.detections.lotek.length-1]++
+        }
+        FlexDash.set('detections_5min', this.detections)
+    }
 
     // ===== /data file enumeration, download, (and upload?)
 
@@ -101,7 +151,7 @@ class Dashboard {
 
     // user pressed a download button, we need to turn-around and tell the dashboard to
     // actually perform the download (yes, it's a bit convoluted)
-    'handle_dash-download'(what, socket) {
+    handle_dash_download(what, socket) {
         FlexDash.download(socket, `/data-download/${what}`, 'foo.zip')
     }
     // To download through websocket see: https://stackoverflow.com/questions/29066117
@@ -118,7 +168,7 @@ class Dashboard {
         }
         //files = files.slice(0, 100)
         // download date, will be recorded in "database"
-        let date = (new Date()).toISOString().replace(/[-:]/g, "").replace("T", "-").replace(/\..+/, '')
+        let date = Math.trunc(Date.now()/1000) * 1000
         let filename = "SG" + Machine.machineID + "-" + date + ".zip"
         // tell the browser that we're sending a zip file
         resp.writeHead(200, {
@@ -132,7 +182,11 @@ class Dashboard {
         files.forEach(f => archive.file(f, { name: Path.basename(f) }))
         archive.finalize()
         // update the database with the date of the download
-        DataFiles.updateDownloadDate(files, date)
+        DataFiles.updateUpDownDate('downloaded', files, date)
+    }
+
+    handle_dash_upload(_, socket) {
+        
     }
 
 }

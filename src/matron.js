@@ -26,7 +26,7 @@ Util.inherits(Matron, Events.EventEmitter);
 Matron.prototype.devAdded = function(dev) {
     console.log("New device found: " + dev.path);
 
-    var devPlan = Deployment.lookup(dev.attr.port, dev.attr.type);
+    var devPlan = Acquisition.lookup(dev.attr.port, dev.attr.type);
     if (devPlan) {
         //console.log("Got plan " + JSON.stringify(devPlan));
         this.devices[dev.attr.port] = Sensor.getSensor(this, dev, devPlan);

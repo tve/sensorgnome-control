@@ -91,9 +91,10 @@ class FlexDash {
             node[p] = value
             if (this.io) {
                 // set may be called before start so can't emit, data will be sent on connection
+                //if (path.startsWith('detections_hou')) console.log("SET", path, value)
                 this.io.emit('set', path, value)
             }
-            if (path != 'tag') console.log(`SIO set data ${path}`)
+            if (path != 'tag' && path != 'detections_5min') console.log(`SIO set data ${path}`)
         } catch (err) {
             console.log(`FD: Internal error setting ${path}: ${err}`)
         }
@@ -141,7 +142,7 @@ class FlexDash {
                 this.saveConfig(socket, topic, payload)
             } else {
                 console.log(`SIO message ${socket.id} topic=${topic} payload=${payload}`)
-                this.matron.emit("dash-" + topic, payload, socket)
+                this.matron.emit("dash_" + topic, payload, socket)
             }
         })
 
