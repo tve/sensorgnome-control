@@ -17,6 +17,8 @@
   In the days of 32GB SDcards for $10 that should be a rare occurrence...
 */
 
+const { FileInfo } = require("./datafiles")
+
 class SafeStream {
     constructor (matron, source, ext, chunkbytes, chunksecs, parse) {
         // source will usually be "all", and extension will usually be ".txt"
@@ -38,7 +40,7 @@ class SafeStream {
         this.sout = DataSaver.getStream(path, this.ext)
         this.sout.stream.on("error", (e) => this.streamError(e))
         this.bytesWritten = 0
-        this.info = this.parse && { data_lines:0, first_data: null, last_data: null, gps: false }
+        this.info = this.parse && new FileInfo(this.sout.path)
         if (this.chunkTimer) clearTimeout(this.chunkTimer)
         this.chunkTimer = setTimeout(() => {
             this.end()
@@ -54,48 +56,44 @@ class SafeStream {
             this.end()
             this.setupStreams()
         }
-        if (this.info) {
-            // keep track of some stats, we assume each write() is for one or multiple complete lines
-            for (const line in data.toString().split("\n")) {
-                if (line.startsWith("G")) {
-                    this.info.gps = true
-                } else if (line.startsWith("T") || line.startsWith("p")) {
-                    data_lines++
-                    const fields = line.split(",")
-                    const ts = parseFloat(fields[1])
-                    if (first_data === null) first_data = ts
-                    last_data = ts
+        if (this.info) this.info.parseChunk(data)
+    }
+
+    gzip(path, bytes_written) {
+        // the gzip process is a bit of a fire-and-forget: if it fails the uncompressed
+        // file will still be there
+        console.log(`SafeStream: gzipping ${path}`)
+        ChildProcess.execFile("/usr/bin/gzip", [path], (err, stdout, stderr) => {
+            if (err) {
+                // emit event that uncompressed file is ready
+                console.log(`SafeStream: ${err}`)
+                if (this.info) {
+                    this.info.setSize(bw)
+                    this.matron.emit("datafile", this.info.toInfo())
+                }
+            } else {
+                // emit event that compressed file is ready, need to get the compressed size first...
+                if (this.info) {
+                    this.info.statFile(path+'.gz')
+                    .then(() => this.matron.emit("datafile", this.info.toInfo()))
+                    .catch(() => console.log(`SafeStream: ${e}`))
                 }
             }
-        }
+            if (stderr) console.log(stderr)
+        })
     }
 
     end () {
         if (this.chunkTimer) clearTimeout(this.chunkTimer)
         if (this.sout.stream) {
+            // set-up on-close listener that gzips the file, this ensures that the underlying
+            // file descriptor is actually closed by the time gzip runs
+            const path = this.sout.path // capture before it gets overwritten
+            const bw = this.bytesWritten
+            this.sout.stream.on('close', () => this.gzip(path, bw))
+            // now end the stream
             this.sout.stream.end()
             this.sout.stream = null
-            // compress the just-written file, but wait a slight amount so the writer can
-            // start a fresh file first
-            const path = this.sout.path // capture before it gets overwritten
-            const ev = this.info && { size: this.bytesWritten, ...this.info}
-            setTimeout(() => {
-                // the gzip process is a bit of a fire-and-forget: if it fails the uncompressed
-                // file will still be there
-                console.log(`SafeStream: gzipping ${path}`)
-                ChildProcess.execFile("/usr/bin/gzip", [path], (err, stdout, stderr) => {
-                    if (err) {
-                        console.log(`SafeStream: ${err}`)
-                        // emit event that uncompressed file is ready
-                        if (ev) this.matron.emit("datafile", path, ev)
-                    } else {
-                        // emit event that compressed file is ready
-                        console.log(`SafeStream: ev ${JSON.stringify(ev)}`)
-                        if (ev) this.matron.emit("datafile", path+".gz", ev)
-                    }
-                    if (stderr) console.log(stderr)
-                })
-            }, 100)
         }
     }
 
