@@ -19,6 +19,8 @@
 
 const { FileInfo } = require("./datafiles")
 
+OpenFiles = [] // file names of currently open files so DataFiles doesn't add them to its list
+
 class SafeStream {
     constructor (matron, source, ext, chunkbytes, chunksecs, parse) {
         // source will usually be "all", and extension will usually be ".txt"
@@ -38,6 +40,7 @@ class SafeStream {
         let path = DataSaver.getRelPath(this.source)
         this.tscode = Chrony.timeStampCode() // time-stamp precision used by DataSaver (yuck)
         this.sout = DataSaver.getStream(path, this.ext)
+        OpenFiles.push(this.sout.path)
         this.sout.stream.on("error", (e) => this.streamError(e))
         this.bytesWritten = 0
         this.info = this.parse && new FileInfo(this.sout.path)
@@ -59,23 +62,26 @@ class SafeStream {
         if (this.info) this.info.parseChunk(data)
     }
 
-    gzip(path, bytes_written) {
+    // by the time gzip gets called the SafeStream object may well already be re-initialized
+    // for the next file, so we shouldn't use this.info
+    gzip(path, info, bw) {
         // the gzip process is a bit of a fire-and-forget: if it fails the uncompressed
         // file will still be there
         console.log(`SafeStream: gzipping ${path}`)
         ChildProcess.execFile("/usr/bin/gzip", [path], (err, stdout, stderr) => {
+            OpenFiles = OpenFiles.filter(f => f != path)
             if (err) {
                 // emit event that uncompressed file is ready
                 console.log(`SafeStream: ${err}`)
-                if (this.info) {
-                    this.info.setSize(bw)
-                    this.matron.emit("datafile", this.info.toInfo())
+                if (info) {
+                    info.setSize(bw)
+                    this.matron.emit("datafile", info.toInfo())
                 }
             } else {
                 // emit event that compressed file is ready, need to get the compressed size first...
-                if (this.info) {
-                    this.info.statFile(path+'.gz')
-                    .then(() => this.matron.emit("datafile", this.info.toInfo()))
+                if (info) {
+                    info.statFile(path+'.gz')
+                    .then(() => this.matron.emit("datafile", info.toInfo()))
                     .catch(() => console.log(`SafeStream: ${e}`))
                 }
             }
@@ -90,7 +96,8 @@ class SafeStream {
             // file descriptor is actually closed by the time gzip runs
             const path = this.sout.path // capture before it gets overwritten
             const bw = this.bytesWritten
-            this.sout.stream.on('close', () => this.gzip(path, bw))
+            const info = this.info
+            this.sout.stream.on('close', () => this.gzip(path, info, bw))
             // now end the stream
             this.sout.stream.end()
             this.sout.stream = null
