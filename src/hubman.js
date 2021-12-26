@@ -66,8 +66,9 @@ HubMan = function(matron, root) {
 
     this.enumeratePreExistingDevices = function() {
         var ls = Fs.readdirSync(root);
-        for (var i in ls)
-            rootChanged("rename", ls[i]);
+        for (var i of ls) {
+            rootChanged("rename", i);
+        }
     };
 
     rootChanged = function(event, filename) {

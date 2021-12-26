@@ -95,7 +95,7 @@ VAH.prototype.spawnChild = function() {
     if (this.quitting)
         return;
     this.cmdSock = null;
-//    console.log("VAH about to spawn child\n");
+    console.log("VAH launching", this.prog, "-q", "-s", this.sockName);
     var child = ChildProcess.spawn(this.prog, ["-q", "-s", this.sockName]);
     child.on("exit", this.this_childDied);
     child.on("error", this.this_childDied);
@@ -104,11 +104,10 @@ VAH.prototype.spawnChild = function() {
     this.child = child;
 };
 
-
 VAH.prototype.cmdSockConnected = function() {
     // process any queued command
     while (this.commandQueue.length) {
-//        console.log("VAH about to submit queued: " + this.commandQueue[0] + "\n");
+        console.log("VAH command (queued): ", JSON.stringify(this.commandQueue[0]));
         this.cmdSock.write(this.commandQueue.shift());
     }
 };
@@ -185,7 +184,7 @@ VAH.prototype.vahSubmit = function (cmd, callback, callbackPars) {
     if (callback)
         this.replyHandlerQueue.push({callback: callback, par: callbackPars});
     if (this.cmdSock) {
-//        console.log("VAH about to submit: " + cmd + "\n");
+        console.log("VAH command: ", JSON.stringify(cmd));
         for (var i in cmd)
             this.cmdSock.write(cmd[i] + '\n');
     } else {

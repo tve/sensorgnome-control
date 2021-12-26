@@ -75,10 +75,11 @@ TagFinder = new (require('./tagfinder.js').TagFinder)(
 DataSaver     = new (require('./datasaver.js').DataSaver) (TheMatron, DATADIR)
 DataFiles     = new (require('./datafiles.js').DataFiles) (TheMatron, DATADIR, DATAFILE)
 SafeStream    = require('./safestream.js').SafeStream
+MotusUp       = new (require('./motus_up.js').MotusUploader) (TheMatron)
 // Create the two datafiles we write to for Lotek and CTT detections
 // Rotate every hour and also if hitting 1MB in size
 AllOut        = new SafeStream(TheMatron, "all", ".txt", 1000000, 300, "parse") // 1MB max filesize
-LifetagOut    = new SafeStream(TheMatron, "ctt", ".txt", 1000000, 3600, "parse")
+LifetagOut    = new SafeStream(TheMatron, "ctt", ".txt", 1000000, 300, "parse") // FIXME: 3600
 
 //Uploader = new (require('./uploader.js').Uploader) (TheMatron);
 //Relay = new (require('./relay.js').Relay) (TheMatron, 59000);
@@ -130,3 +131,5 @@ Dashboard.start()
 
 // Start the tagFinder
 TagFinder.start()
+
+MotusUp.start()

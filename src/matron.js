@@ -7,7 +7,6 @@
 */
 
 Matron = function() {
-    var self = this;
     this.devices = {};
 
     // callback closures
