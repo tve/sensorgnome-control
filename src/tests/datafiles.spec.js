@@ -1,8 +1,8 @@
 const { DataFiles, FileInfo } = require('datafiles.js')
 var fs = require("fs")
+OpenFiles = [] // normally provided by datafiles...
 
 describe('FileInfo', () => {
-    let df
   
     // beforeEach(() => {
     //   df = new FileInfo("/data/sg/2020-01-02/zyx-1234RPI4FEDC-3-2020-01-02T03-04-05.6789Z-all.txt.gz")
@@ -215,7 +215,7 @@ describe('DataFiles', () => {
             // pretend we download 8 files
             let del = dll.splice(3, 8)
             let ts = Date.now()/1000
-            df.updateDownloadDate(dll, ts)
+            df.updateUpDownDate('downloaded', dll, ts)
             expect(df.summary).toMatchObject({
                 total_files: 20, total_bytes: 88522, pre_2010_files: 0, other_sg_files: 0,
                 files_to_upload: 20, files_to_download: 8,
