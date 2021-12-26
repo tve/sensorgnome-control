@@ -3,6 +3,7 @@
 
 var AR = require('archiver')
 const Path = require('path')
+const { MotusUploader } = require('./motus_up')
 
 class Dashboard {
 
@@ -79,6 +80,9 @@ class Dashboard {
     setDeployment() {
         let dep = { ...Deployment.data }
         delete dep.module_options
+        dep.system_password = "********"
+        dep.system_password_confirm = "********"
+        dep.upload_password = "********"
         FlexDash.set('deployment', dep)
     }
 
@@ -186,7 +190,7 @@ class Dashboard {
     }
 
     handle_dash_upload(_, socket) {
-        
+        MotusUp.uploadSoon(true) // force upload asap
     }
 
 }
