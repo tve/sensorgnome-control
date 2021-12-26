@@ -225,6 +225,7 @@ class DataFiles {
     // update information about data files starting at the given dir
     async updateTree(dir) {
         for await (const { path, stat } of findFiles(dir)) {
+            if (OpenFiles.includes(path)) continue // don't add files that are open (in SafeStream)
             let file_info
             try {
                 file_info = new FileInfo(path)
@@ -309,7 +310,7 @@ class DataFiles {
             (ld,f) => f.downloaded && f.downloaded > ld ? f.downloaded : ld, null)
         this.summary.last_download = last_download
         let last_upload = this.files.reduce(
-            (lu,f) => f.uploaded && f.uploaded > lu ? f.uploaded : lu, null)
+            (lu,f) => f.uploaded && f.uploaded.date > lu ? f.uploaded.date : lu, null)
         this.summary.last_upload = last_upload
         // last of either for 1st tab
         this.summary.last_updownload = last_upload > last_download ? last_upload : last_download
@@ -332,16 +333,42 @@ class DataFiles {
         }
     }
 
+    // uploadList returns a set of files that are candidates for uploading
+    // It first groups files by date, then picks a date at random, and then returns all the files
+    // for that date.
+    // This is done for a couple of reasons, but may not be 'optimal': the random selection
+    // avoids always retrying the same upload that may cause some fatal failure, the grouping by
+    // date allows the archive SHA1 deduplication to do something if the data_files database
+    // is lost
     uploadList() {
-        return this.files.filter(f => !f.uploaded).map(f => f.dir + f.name)
+        const uploadable = this.files.filter(f => !f.uploaded)
+        const dates = uploadable.map(f => f.date).filter((v, i, a) => a.indexOf(v) === i)
+        if (dates.length == 0) return []
+        const date = dates[Math.floor(Math.random() * dates.length)]
+        const files = uploadable.filter(f => f.date == date).map(f => [f.dir + '/' + f.name, f.size, f.start])
+        console.log(`UploadList: ${files.length} files for ${date}`)
+        return {date, files}
     }
     
-    // update the upload or download date of all the files listed
-    updateUpDownDate(which, files, date) {
-        if (!(which in ['uploaded', 'downloaded'])) throw new Error("must pass uploaded/downloaded")
+    // update the upload or download info of all the files listed
+    updateUpDownDate(which, files, info) {
+        // sanity check on dates (unix timestamps), too easy to mess up...
+        if (which == "uploaded") {
+            if (!info.date || !(info.date > 1577854800 && info.date < 2145934800)) { //2020..2038
+                throw new Error(`Invalid upload date in info: ${info}`)
+            }
+        } else if (which == "downloaded") {
+            if (!info || !(info > 1577854800 && info < 2145934800)) { //2020..2038
+                throw new Error(`Invalid download date: ${info}`)
+            }
+        } else {
+            throw new Error("must pass uploaded/downloaded")
+        }
+        if (files && typeof files[0] != 'string') throw new Error("file list must be strings")
+
         files.forEach(f => {
-            const i = this.files.findIndex(x => x.dir + x.name == f)
-            if (i >= 0) this.files[i][which] = date
+            const i = this.files.findIndex(x => x.dir + '/' + x.name == f)
+            if (i >= 0) this.files[i][which] = info
         })
         this.saveSoon() // delay and make async
         this.updateStats()
