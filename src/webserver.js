@@ -336,40 +336,40 @@ WebServer.prototype.handleWebConnection = function (socket) {
 
 WebServer.prototype.start = function () {
 
-    this.app = Express();
+    this.app = Express()
     this.app.use(Morgan('tiny'))
-    this.app.use(Multer({ dest: './uploads/' }).any());
-    this.server = Http.createServer(this.app);
-    this.io = new Io.Server(this.server);
+    this.app.use(Multer({ dest: './uploads/' }).any())
+    this.server = Http.createServer(this.app)
+    this.io = new Io.Server(this.server)
 
-    this.io.on('connection', this.this_handleWebConnection);
+    this.io.on('connection', this.this_handleWebConnection)
 
     // Configuration
-    this.app.use(MethodOverride());
-    this.app.use(Express.static(__dirname + '/public', { extensions: ['html'] }));
+    this.app.use(MethodOverride())
+    this.app.use(Express.static(__dirname + '/public', { extensions: ['html'] }))
 
     // note: need to switch to using this.app.get('env')
     // this.app.configure('development', () => {
     //     this.app.use(ErrorHandler({ dumpExceptions: true, showStack: true }));
     // });
     // this.app.configure('production', () => {
-    //     this.app.use(ErrorHandler());
+    //     this.app.use(ErrorHandler())
     // });
 
-    this.app.set('view options', { layout: false });
+    this.app.set('view options', { layout: false })
 
-    //this.io.configure(() => { io.set('log level', 0) });
+    //this.io.configure(() => { io.set('log level', 0) })
 
     // Routes
-    this.app.get('/', (_, res) => res.sendfile("public/index.html"));
-    this.app.post('/upload_software_update', this.this_uploadSoftwareUpdate);
-    this.app.get('/raw_audio', this.this_getRawAudio);
+    this.app.get('/', (_, res) => res.sendFile("public/index.html"))
+    this.app.post('/upload_software_update', this.this_uploadSoftwareUpdate)
+    this.app.get('/raw_audio', this.this_getRawAudio)
 
     this.server.listen(80, () => {
         console.log("SensorGnome server listening on port %d in %s mode",
-            this.server.address().port, this.app.settings.env);
-    });
+            this.server.address().port, this.app.settings.env)
+    })
 
-};
+}
 
-module.exports = WebServer;
+module.exports = WebServer
