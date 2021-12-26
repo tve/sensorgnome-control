@@ -8,6 +8,10 @@ const defaults = {
     contact: "email/phone/address",
     who: "name of responsible party",
     info: "info about SensorGnome deployment",
+    system_password: "",
+    system_password_confirm: "",
+    upload_username: "motus.org user name",
+    upload_password: "",
 }
 
 // SensorGnome deployment info
@@ -28,6 +32,27 @@ class Deployment {
         let changed = false
         for (let k in this.data) {
             if (k in new_values) {
+                if (k.endsWith("_password_confirm")) {
+                    // we ignore the confirmation and handle it specially below
+                    continue
+                } else if (k.includes("password")) {
+                    const kconf = k + "_confirm"
+                    if (kconf in this.data) {
+                        if (new_values[k] == "") {
+                            console.log("Password cannot be empty")
+                            return
+                        }
+                        if (new_values[k].includes("******")) { // probably editing error
+                            console.log("Password cannot contain ******")
+                            return
+                        }
+                        if (new_values[k] != new_values[kconf]) {
+                            console.log("Password mismatch for", k)
+                            return
+                        }
+                        this.data[kconf] = "" // we don't need a value here
+                    }
+                }
                 changed = changed || this.data[k] != new_values[k]
                 this.data[k] = new_values[k]
                 this[k] = this.data[k]
@@ -57,18 +82,19 @@ class Acquisition {
         text = text.replace(/\/\/.*$/mg, "")
         var d = JSON.parse(text)
         for (let j in d) this[j] = d[j]
+        console.log(`Aquisition: found ${this.plans.length} plans`)
     }
     
     // lookup returns the first plan matching the given device type and port
     lookup(port, devType) {
-        const plans = this.acquire.plans
+        const plans = this.plans
         for (let i in plans) {
             if (port.match(new RegExp(plans[i].key.port)) &&
                 devType.match(new RegExp(plans[i].key.devType)))
             {
                 // kludge: if no USB hub, set port label to 'p0' meaning 'plugged directly into beaglebone'
                 return {
-                    devLabel: port > 0 ? this.acquire.USB.portLabel[port-1] : "p0",
+                    devLabel: port > 0 ? this.USB.portLabel[port-1] : "p0",
                     plan: plans[i],
                 }
             }
