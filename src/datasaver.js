@@ -102,7 +102,7 @@ class DataSaver {
     // FIXME: this hsould be async, but then the async function cancer spreads...
     ensureDirs(path) {
         var cumdir = path[0]
-        for (let i=1; i<path.length-2; ++i) {
+        for (let i=1; i<path.length-1; i++) {
             cumdir += "/" + path[i]
             if (! Fs.existsSync(cumdir)) Fs.mkdirSync(cumdir)
         }
