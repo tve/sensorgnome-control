@@ -7,8 +7,10 @@ const https = require('https')
 const qs = require('querystring')
 const zlib = require('zlib')
 const {URL} = require('url')
-
-const CentraResponse = require('./CentraResponse.js')
+const stream = require('stream')
+const {promisify} = require('util')
+const pipeline = promisify(stream.pipeline);
+const crypto = require('crypto')
 
 const supportedCompressions = ['gzip', 'deflate']
 
@@ -36,7 +38,7 @@ class CentraResponse {
 	}
 }
 
-module.exports = class Centra {
+class CentraRequest {
 	constructor (url, method = 'GET') {
 		this.url = typeof url === 'string' ? new URL(url) : url
 		this.method = method
@@ -73,8 +75,12 @@ module.exports = class Centra {
 	}
 
 	body (data, sendAs) {
-		this.sendDataAs = typeof data === 'object' && !sendAs && !Buffer.isBuffer(data) ? 'json' : (sendAs ? sendAs.toLowerCase() : 'buffer')
-		this.data = this.sendDataAs === 'form' ? qs.stringify(data) : (this.sendDataAs === 'json' ? JSON.stringify(data) : data)
+		this.sendDataAs = typeof data === 'object' && !sendAs && !Buffer.isBuffer(data) ? 'json' :
+			sendAs ? sendAs.toLowerCase() :
+			'buffer'
+		this.data = this.sendDataAs === 'form' ? qs.stringify(data) :
+			this.sendDataAs === 'json' ? JSON.stringify(data) :
+			data
 
 		return this
 	}
@@ -92,6 +98,7 @@ module.exports = class Centra {
 
 	timeout (timeout) {
 		this.timeoutTime = timeout
+		this.coreOptions['timeout'] = timeout
 
 		return this
 	}
@@ -119,17 +126,21 @@ module.exports = class Centra {
 	send () {
 		return new Promise((resolve, reject) => {
 			if (this.data) {
-				if (!this.reqHeaders.hasOwnProperty('content-type')) {
-					if (this.sendDataAs === 'json') {
-						this.reqHeaders['content-type'] = 'application/json'
+				if (this.sendDataAs === 'stream') {
+					// this.data.on('error', err => {
+				} else {
+					if (!this.reqHeaders.hasOwnProperty('content-type')) {
+						if (this.sendDataAs === 'json') {
+							this.reqHeaders['content-type'] = 'application/json'
+						}
+						else if (this.sendDataAs === 'form') {
+							this.reqHeaders['content-type'] = 'application/x-www-form-urlencoded'
+						}
 					}
-					else if (this.sendDataAs === 'form') {
-						this.reqHeaders['content-type'] = 'application/x-www-form-urlencoded'
-					}
-				}
 
-				if (!this.reqHeaders.hasOwnProperty('content-length')) {
-					this.reqHeaders['content-length'] = Buffer.byteLength(this.data)
+					if (!this.reqHeaders.hasOwnProperty('content-length')) {
+						this.reqHeaders['content-length'] = Buffer.byteLength(this.data)
+					}
 				}
 			}
 
@@ -141,6 +152,7 @@ module.exports = class Centra {
 				'method': this.method,
 				'headers': this.reqHeaders
 			}, this.coreOptions)
+			//console.log("HTTP options:", JSON.stringify(options))
 
 			let req
 
@@ -210,12 +222,36 @@ module.exports = class Centra {
 				reject(err)
 			})
 
-			if (this.data) req.write(this.data)
-
+			if (this.data) {
+				if (this.sendDataAs === 'stream') {
+					//console.log("HTTP body stream pipeline")
+					pipeline(this.data,
+						async function* (source) {
+							let sz = 0
+							let sha1 = crypto.createHash('sha1')
+							for await (const chunk of source) {
+								sz += chunk.length
+								sha1.update(chunk)
+							    yield chunk
+							}
+							console.log(`HTTP stream body: ${sz} bytes, sha1: ${sha1.digest('hex')}`)
+						},
+						req)
+						.then(() => { req.end(); console.log("request ended") })
+						.catch((e) => {throw new Error("Error sending request body: " + e)})
+					return
+				} else {
+					//console.log("HTTP body is", Buffer.isBuffer(this.data) ? "buffer" : typeof this.data)
+					req.write(this.data)
+				}
+			}
+				
 			req.end()
 		})
 	}
 }
+
+module.exports = (url, method) => { return new CentraRequest(url, method) }
 
 // MIT License
 //
