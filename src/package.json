@@ -2,6 +2,7 @@
   "dependencies": {
     "archiver": "^5.3.0",
     "body-parser": "^1.19.0",
+    "centra": "^2.5.0",
     "connect": "^3.7.0",
     "errorhandler": "^1.5.1",
     "express": "^4.17.1",
@@ -19,8 +20,15 @@
     "test": "npx jest"
   },
   "jest": {
-    "modulePaths": [ "<rootDir>" ],
-    "watchPathIgnorePatterns": [ "<rootDir>/node_modules/", "<rootDir>/public/" ],
-    "globals": { "__TEST__": true }
+    "modulePaths": [
+      "<rootDir>"
+    ],
+    "watchPathIgnorePatterns": [
+      "<rootDir>/node_modules/",
+      "<rootDir>/public/"
+    ],
+    "globals": {
+      "__TEST__": true
+    }
   }
 }
