@@ -6,3 +6,4 @@ prep.sh
 src/fftw_wisdom.dat
 src/safestream-old.js
 src/testreadstream.js
+src/public/flexdash/

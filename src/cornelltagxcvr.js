@@ -82,4 +82,4 @@ CornellTagXCVR.prototype.gotTag = function(record) {
     }
 };
 
-exports.CornellTagXCVR = CornellTagXCVR;
+module.exports = CornellTagXCVR;

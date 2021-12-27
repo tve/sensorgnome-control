@@ -23,7 +23,7 @@ Matron = function() {
 Util.inherits(Matron, Events.EventEmitter);
 
 Matron.prototype.devAdded = function(dev) {
-    console.log("New device found: " + dev.path);
+    console.log(`New device found: ${dev.path} --> ${JSON.stringify(dev.attr)}`);
 
     var devPlan = Acquisition.lookup(dev.attr.port, dev.attr.type);
     if (devPlan) {
@@ -31,9 +31,9 @@ Matron.prototype.devAdded = function(dev) {
         this.devices[dev.attr.port] = Sensor.getSensor(this, dev, devPlan);
     }
 
-    // for CornellTagXCVR, we don't require or use a plan
-    if (dev.attr.type == "CornellTagXCVR") {
-        this.devices[dev.attr.port] = new CornellTagXCVR.CornellTagXCVR(this, dev, null);
+    // for CTT/CornellRcvr, we don't require or use a plan
+    if (dev.attr.type == "CTT/CornellRcvr") {
+        this.devices[dev.attr.port] = new CornellTagXCVR(this, dev, null);
     }
 };
 

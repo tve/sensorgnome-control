@@ -3,7 +3,6 @@
 
 var AR = require('archiver')
 const Path = require('path')
-const { MotusUploader } = require('./motus_up')
 
 class Dashboard {
 
@@ -50,6 +49,7 @@ class Dashboard {
         FlexDash.set('acquisition', JSON.stringify(Acquisition, null, 2))
     }
     
+    // generate info about a device, called on devAdded
     genDevInfo(dev) {
         var info = {
             port: dev.attr.port,
@@ -58,12 +58,23 @@ class Dashboard {
         }
         switch (dev.attr.type) {
         case "gps": info.attr = dev.attr.kind; break
-        case "CornellTagXCVR": info.attr = "433Mhz"; break
+        case "CTT/CornellRcvr": info.attr = "433Mhz"; break
         case "funcubeProPlus": info.attr = "?Mhz"; break
         case "funcubePro": info.attr = "?Mhz"; break
         case "rtlsdr": info.type = dev.attr.prod; info.attr = "?Mhz"; break
         }
         return info
+    }
+
+    // update the number of radios connected on devAdded/Removed
+    updateNumRadios() {
+        return {
+            ctt: Object.values(HubMan.devs).filter(d => d.attr?.radio == "CTT/Cornell").length,
+            vah: Object.values(HubMan.devs).filter(d => d.attr?.radio == "VAH").length,
+            all: Object.values(HubMan.devs).filter(d => d.attr?.radio).length,
+            // bad: radios with invalid port
+            bad: Object.keys(HubMan.devs).filter(p => (p < 1 || p > 10) && HubMan.devs[p].attr?.radio).length,
+        }
     }
     
     handle_gotGPSFix(fix) { console.log("Dashboard setting GPS fix"); FlexDash.set('gps', fix) } // {lat, lon, alt, time, state, ...}
@@ -72,8 +83,14 @@ class Dashboard {
     handle_sdcardUse(pct) { FlexDash.set('sdcard_use', pct) }
     handle_setParam(info) { } // FlexDash.set('param', info) } // {param, value, error}
     handle_setParamError(info) { } // FlexDash.set('param', info) } // {param, error}
-    handle_devAdded(info) { FlexDash.set(`devices/${info.attr.port}`, this.genDevInfo(info)) }
-    handle_devRemoved(info){ FlexDash.unset(`devices/${info.attr.port}`) }
+    handle_devAdded(info) {
+        FlexDash.set(`devices/${info.attr.port}`, this.genDevInfo(info))
+        FlexDash.set(`radios`, this.updateNumRadios())
+    }
+    handle_devRemoved(info){
+        FlexDash.unset(`devices/${info.attr.port}`)
+        FlexDash.set(`radios`, this.updateNumRadios())
+    }
     
     // ===== Deployment configuration
     

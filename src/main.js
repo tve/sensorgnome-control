@@ -4,7 +4,9 @@ const DATADIR     = "/data/SGdata"                 // where data files are locat
 const CONFDIR     = "/data/config"                 // where config files are located
 const DATAFILE    = CONFDIR+"/datafiles.json"      // where database about data files is located
 const DEPLOYMENT  = CONFDIR+"/deployment.txt"      // SensorGnome deployment info
-const ACQUISITION = CONFDIR+"/acquisition.txt"    // Receiver/sensor configuration
+const ACQUISITION = CONFDIR+"/acquisition.txt"     // Receiver/sensor configuration
+const PORTMAP     = CONFDIR+"/usb-port-map.txt"    // Default device port mappings
+const DEVROOT     = "/dev/sensorgnome"             // Dir where uDev rules add device files
 
 // process.on("uncaughtException", function(err) {
 //      console.log('Caught exception: ' + err);
@@ -48,7 +50,7 @@ TheMatron     = new Matron.Matron();
 // Load singleton objects
 GPS           = new (require('./gps.js'))(TheMatron);
 Chrony        = new (require('./chrony.js'))(TheMatron);
-HubMan        = new (require('./hubman.js'))(TheMatron, "/dev/sensorgnome");
+HubMan        = new (require('./hubman.js'))(TheMatron, DEVROOT, PORTMAP);
 VAH           = new (require('./vah.js'))(TheMatron, "/usr/bin/vamp-alsa-host", "VAH.sock");
 WebServer     = new (require('./webserver.js'))(TheMatron);
 FlexDash      = new (require('./flexdash.js'))(TheMatron);
@@ -78,8 +80,8 @@ SafeStream    = require('./safestream.js').SafeStream
 MotusUp       = new (require('./motus_up.js').MotusUploader) (TheMatron)
 // Create the two datafiles we write to for Lotek and CTT detections
 // Rotate every hour and also if hitting 1MB in size
-AllOut        = new SafeStream(TheMatron, "all", ".txt", 1000000, 300, "parse") // 1MB max filesize
-LifetagOut    = new SafeStream(TheMatron, "ctt", ".txt", 1000000, 300, "parse") // FIXME: 3600
+AllOut        = new SafeStream(TheMatron, "all", ".txt", 1000000, 3600, "parse") // 1MB max filesize
+LifetagOut    = new SafeStream(TheMatron, "ctt", ".txt", 1000000, 3600, "parse")
 
 //Uploader = new (require('./uploader.js').Uploader) (TheMatron);
 //Relay = new (require('./relay.js').Relay) (TheMatron, 59000);

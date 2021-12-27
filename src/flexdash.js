@@ -178,7 +178,7 @@ class FlexDash {
 
     // Save dashboard configuration as received from FD
     saveConfig(socket, topic, payload) {
-        console.log(`SIO save config ${socket.id} topic=${topic} payload=${payload}`)
+        console.log(`SIO save config ${socket.id} topic=${topic}`) //  payload=${payload}`)
         
         // insert the payload into the saved config, the topic must be either something
         // like $config/widgets or like $config/widgets/w00002
