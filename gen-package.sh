@@ -10,6 +10,9 @@ mkdir $DESTDIR
 SG=$DESTDIR/opt/sensorgnome
 install -d $SG/control
 cp -r src/* $SG/control
+# install FlexDash in there
+curl -L https://github.com/tve/flexdash/archive/refs/heads/v0.3.tar.gz | tar xzf -
+mv flexdash-* src/public/flexdash
 sudo chown -R 1000:1000 $SG/control
 
 # install default deployment file and tag database into templates dir

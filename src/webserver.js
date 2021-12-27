@@ -361,7 +361,7 @@ WebServer.prototype.start = function () {
     //this.io.configure(() => { io.set('log level', 0) })
 
     // Routes
-    this.app.get('/', (_, res) => res.sendFile("public/index.html"))
+    this.app.get('/', (_, res) => res.sendFile("flexdash.html", {root: process.cwd()+"/public"}))
     this.app.post('/upload_software_update', this.this_uploadSoftwareUpdate)
     this.app.get('/raw_audio', this.this_getRawAudio)
 
