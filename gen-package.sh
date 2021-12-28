@@ -11,8 +11,10 @@ SG=$DESTDIR/opt/sensorgnome
 install -d $SG/control
 cp -r src/* $SG/control
 # install FlexDash in there
-curl -L https://github.com/tve/flexdash/archive/refs/heads/v0.3.tar.gz | tar xzf -
-mv flexdash-* src/public/flexdash
+mkdir src/public/flexdash
+curl -L https://s3.amazonaws.com/s3.voneicken.com/flexdash/flexdash-0.3.0.tar.gz | \
+    tar xzf - -C src/public/flexdash
+ls src/public/flex*
 sudo chown -R 1000:1000 $SG/control
 
 # install default acquisition file and tag database into templates dir
