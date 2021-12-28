@@ -24,7 +24,7 @@ class Deployment {
         try {
             this.data = { ...defaults, ...JSON.parse(Fs.readFileSync(path).toString()) }
         } catch (e) {
-            console.log("Error loading deployment info:", e)
+            console.log("Error loading deployment info:", e.message)
             this.data = { ...defaults }
         }
         for (let j in this.data) this[j] = this.data[j] // a bit yucky...
