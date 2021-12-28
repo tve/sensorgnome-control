@@ -66,7 +66,11 @@ class Deployment {
             (async () => {
                 try {
                     await Fsp.writeFile(this.path + "~", JSON.stringify(this.data, null, 2))
-                    await Fsp.rename(this.path, this.path + ".bak")
+                    try {
+                        await Fsp.rename(this.path, this.path + ".bak")
+                    } catch (e) {
+                        if (e.code != "ENOENT") throw e
+                    }
                     await Fsp.rename(this.path + "~", this.path)
                 } catch (e) {
                     console.log("ERROR: failed to save deployment config: ", e)
