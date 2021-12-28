@@ -6,15 +6,15 @@ mkdir $DESTDIR
 # npm update to pull in the latest versions of all dependencies
 (cd src; npm --no-fund update)
 
-# install the control application files as user pi=1000
-SG=$DESTDIR/opt/sensorgnome
-install -d $SG/control
-cp -r src/* $SG/control
 # install FlexDash in there
 mkdir src/public/flexdash
 curl -L https://s3.amazonaws.com/s3.voneicken.com/flexdash/flexdash-0.3.0.tar.gz | \
     tar xzf - -C src/public/flexdash
-ls src/public/flex*
+
+# install the control application files as user pi=1000
+SG=$DESTDIR/opt/sensorgnome
+install -d $SG/control
+cp -r src/* $SG/control
 sudo chown -R 1000:1000 $SG/control
 
 # install default acquisition file and tag database into templates dir
