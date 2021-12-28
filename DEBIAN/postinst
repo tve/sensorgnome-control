@@ -2,9 +2,9 @@
 echo "Running sg-control postinst in $(pwd)"
 SG=/opt/sensorgnome # would be nice to derive that from some env var...
 
-# install deployment.txt and tag database if not there
+# install acquisition.txt and tag database if not there
 SRC=$SG/templates
-for f in deployment.txt SG_tag_database.sqlite; do
+for f in acquisition.txt SG_tag_database.sqlite; do
     if [[ -d /data/config ]]; then
         # $SRC/$f exists, so this must be an update, put it there unless it exists
         [[ -f /data/config/$f ]] || cp $SRC/$f /data/config

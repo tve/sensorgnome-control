@@ -1,9 +1,4 @@
 {
-    "info": "default deployment",
-    "who": "who is responsible for this deployment",
-    "contact": "contact information for responsible party",
-    "shortLabel": "changeMe",
-    "acquire": {
         "gps": {
             "secondsBetweenFixes": 300
         },
@@ -357,14 +352,4 @@
                 }
             }
         ]
-    },
-    "module_options": {
-        "find_tags": {
-            "params": [
-                "--default-freq", 166.380,
-                "--pulse-slop", 1.5
-            ],
-            "enabled": true
-        }
-    }
 }
