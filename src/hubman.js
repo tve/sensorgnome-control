@@ -77,6 +77,10 @@ class HubMan {
 
     // a device changed, either added or removed, figure it out and emit event
     devChanged(event, filename) {
+        if (typeof filename !== "string") {
+            console.log("Error: HubMan devChanged with no filename?", event, filename)
+            return
+        }
         let attr = this.attrOf(filename)
         //if (! attr.port_path) return  // not a USB-port device - we don't care
 
