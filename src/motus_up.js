@@ -173,7 +173,7 @@ class MotusUploader {
             }
             throw new Error(`I-Net conn check got unexpected response code: ${resp.statusCode}`)
         } catch (e) {
-            throw new Error(`I-Net conn check cannot reach ${URL_CONN}: ${e}`)
+            throw new Error(`I-Net conn check cannot reach ${URL_CONN}: ${e.message}`)
         }
     }
 
@@ -188,7 +188,7 @@ class MotusUploader {
             }
             throw new Error(`Motus conn check got unexpected response code: ${resp.statusCode}`)
         } catch (e) {
-            throw new Error(`Motus conn check cannot reach ${SERVER}: ${e}`)
+            throw new Error(`Motus conn check cannot reach ${SERVER}: ${e.message}`)
         }
     }
 
@@ -289,6 +289,9 @@ class MotusUploader {
                 return [ false, { jobid: mm[3], date } ]
             }
             throw new Error(`Upload verify result unparseable: ${j.msg}`)
+        }
+        if (resp.statusCode == 302) {
+            throw new Error("Upload verify got redirect, bad password? " + resp.headers.location)
         }
         throw new Error(`Upload verify error: status ${resp.statusCode}`)
     }
