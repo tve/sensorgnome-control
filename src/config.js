@@ -12,6 +12,9 @@ const defaults = {
     system_password_confirm: "",
     upload_username: "motus.org user name",
     upload_password: "",
+    module_options: {
+        find_tags: { params: [ "--default-freq", 166.38, "--pulse-slop", 1.5 ], enabled: true },
+    },
 }
 
 // SensorGnome deployment info
