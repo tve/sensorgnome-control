@@ -119,7 +119,7 @@ class HubMan {
     // detected by the OS afterwards will have events emitted for them
     start() {
         try {
-            Fs.watch(this.root, (args) => this.devChanged(args))
+            Fs.watch(this.root, (...args) => this.devChanged(...args))
             // we assume the watch is active once Fs.watch returns, so the following should
             // guarantee an event has been emitted for every device.
             this.enumeratePreExistingDevices()
