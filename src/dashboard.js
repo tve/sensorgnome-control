@@ -12,7 +12,7 @@ class Dashboard {
         // ===== Event listeners
         for (const ev of [
             'gotGPSFix', 'chrony', 'gotTag', 'setParam', 'setParamError', 'devAdded', 'devRemoved',
-            'df', 'sdcardUse', 'vahData',
+            'df', 'sdcardUse', 'vahData', 'netDefaultRoute', 'netInet', 'netMotus',
             // events triggered by a message from FlexDash
             'dash_download', 'dash_upload', 'dash_deployment_update',
         ]) {
@@ -91,7 +91,9 @@ class Dashboard {
         FlexDash.unset(`devices/${info.attr.port}`)
         FlexDash.set(`radios`, this.updateNumRadios())
     }
-    
+    handle_netInet(status) { FlexDash.set('net_inet_status', status) }
+    handle_netMotus(status) { FlexDash.set('net_motus_status', status) }
+
     // ===== Deployment configuration
     
     setDeployment() {

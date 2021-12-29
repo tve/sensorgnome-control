@@ -183,7 +183,7 @@ class DataFiles {
                 console.log(`DataFiles: read ${this.files.length} records written ${iso}`)
             }
         } catch(e) {
-            console.log(`DataFiles: cannot read ${this.datafile_path}: ${e}`)
+            console.log(`DataFiles: cannot read ${this.datafile_path}: ${e}\n...starting afresh`)
         }
         // update for every media device we have
         const old = this.files.length

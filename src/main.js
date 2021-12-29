@@ -55,6 +55,7 @@ VAH           = new (require('./vah.js'))(TheMatron, "/usr/bin/vamp-alsa-host", 
 WebServer     = new (require('./webserver.js'))(TheMatron);
 FlexDash      = new (require('./flexdash.js'))(TheMatron);
 Dashboard     = new (require('./dashboard.js'))(TheMatron);
+WifiMan       = new (require('./wifiman.js').WifiMan)(TheMatron);
 
 Schedule      = require('./schedule.js');
 Sensor        = require('./sensor.js');
@@ -135,3 +136,4 @@ Dashboard.start()
 TagFinder.start()
 
 MotusUp.start()
+WifiMan.start()
