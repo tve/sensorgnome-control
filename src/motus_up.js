@@ -83,7 +83,9 @@ class MotusUploader {
         this.matron.on("datafile", () => this.uploadSoon())
     }
 
+    // schedule an upload to happen "soon"
     uploadSoon(force=false) {
+        // define function to perform upload
         const sched = (delay) => setTimeout(() => {
             this.active = true
             this.timer = null
@@ -96,18 +98,22 @@ class MotusUploader {
                     this.timer = sched(10*1000) // set timer for retry FIXME: make 3700 secs
                 }) // try again in a little over an hour
             }, delay)
+        // if not forced (via UI) and upload isn't already scheduled or active then schedule it
         if (!force) {
             if (!this.timer && !this.active) this.timer = sched(20*1000)
+        // if forced and not already running then schedule it (almost) immediately
         } else if (!this.active) {
             if (this.timer) clearTimeout(this.timer)
             this.timer = sched(200)
         }
     }
 
+    // helper function to perform uploads until there's nothing left (or an error occurs)
     async doUploadAll() {
         while (await this.doUpload()) {}
     }
 
+    // perform an upload to motus.org
     async doUpload() {
         let {date, files} = DataFiles.uploadList()
         // files is [path, size, unix_timestamp]
