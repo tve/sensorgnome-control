@@ -126,7 +126,12 @@ class WifiMan {
         })
         .catch(err => console.log("getInterfaceStates ip link:", err))
 
-        if (!this.wifiStatusTimer) this.wifiStatusTimer = setTimeout(() => this.getWifiStatus(), 100)
+        this.getWifiStatusSoon(100)
+    }
+    
+    getWifiStatusSoon(ms) {
+        if (!this.wifiStatusTimer)
+            this.wifiStatusTimer = setTimeout(() => this.getWifiStatus(), ms)
     }
 
     getWifiStatus() {
@@ -139,7 +144,7 @@ class WifiMan {
             if (this.wifi_state == "COMPLETED") this.wifi_state = "CONNECTED"
             this.matron.emit("netWifiState", this.wifi_state)
             if (! ["CONNECTED","INACTIVE"].includes(this.wifi_state)) {
-                if (!this.wifiStatusTimer) this.wifiStatusTimer = setTimeout(() => this.getWifiStatus(), 2000)
+                this.getWifiStatusSoon(2000)
             }
         })
         .catch(err => console.log("getWiFiStatus wpa_cli:", err))
@@ -190,22 +195,25 @@ class WifiMan {
     }
 
     async setWifiConfig(config) {
-        console.log("setWifiConfig:", config)
         // set country code if it has changed
         if (config.country) {
+            console.log("Set WiFi country code:", config.country)
             try { await this.execWpaCli(["set", "country", config.country]) }
             catch(e) { console.log("setWifiConfig country:", e) }
         }
         // set ssid
         if (config.ssid) {
+            console.log("Set WiFi ssid:", config.ssid)
             try { await this.execWpaCli(["set_network", "wlan0", "ssid", `"${config.ssid}"`]) }
             catch(e) { console.log("setWifiConfig ssid:", e) }
         }
         // set passphrase
         if (config.passphrase) {
+            console.log("Set WiFi passphrase:", config.passphrase.length)
             try { await this.execWpaCli(["set_network", "wlan0", "psk", `"${config.passphrase}"`]) }
             catch(e) { console.log("setWifiConfig passphrase:", e) }
         } else if (config.passphrase !== undefined) {
+            console.log("Set WiFi no-passphrase")
             try { await this.execWpaCli(["set_network", "wlan0", "key_mgmt", "NONE"]) }
             catch(e) { console.log("setWifiConfig passphrase:", e) }
         }
@@ -218,6 +226,8 @@ class WifiMan {
         } catch(e) {
             console.log("setWifiConfig:", e)
         }
+        this.getWifiConfig()
+        this.getWifiStatusSoon(200)
         setTimeout(() => this.getInterfaceStates(), 10000)
     }
     
@@ -226,7 +236,7 @@ class WifiMan {
             await this.execWpaCli([enable ? "enable" : "disable", "wlan0"])
             await this.execWpaCli(["save_config"])
             await this.execWpaCli(["reconfigure"])
-            if (!this.wifiStatusTimer) this.wifiStatusTimer = setTimeout(() => this.getWifiStatus(), 1000)
+            this.getWifiStatusSoon(1000)
         } catch(e) {
             console.log("enableWifi:", e)
         }
