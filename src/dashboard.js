@@ -18,7 +18,7 @@ class Dashboard {
         for (const ev of [
             'gotGPSFix', 'chrony', 'gotTag', 'setParam', 'setParamError', 'devAdded', 'devRemoved',
             'df', 'sdcardUse', 'vahData', 'netDefaultRoute', 'netInet', 'netMotus', 'netWifiState',
-            'netHotspotState', 'netWifiConfig',
+            'netHotspotState', 'netWifiConfig', 'portmapFile',
             // events triggered by a message from FlexDash
             'dash_download', 'dash_upload', 'dash_deployment_update', 'dash_enable_wifi',
             'dash_enable_hotspot', 'dash_config_wifi',
@@ -44,6 +44,8 @@ class Dashboard {
             ctt: Array(5*6).fill(null),
             lotek: Array(5*6).fill(null),
         }
+
+        console.log("Dashboard handlers registered")
     }
     
     start() {
@@ -98,6 +100,7 @@ class Dashboard {
         FlexDash.unset(`devices/${info.attr.port}`)
         FlexDash.set(`radios`, this.updateNumRadios())
     }
+    handle_portmapFile(txt) { FlexDash.set('portmap_file', txt) }
 
     // ===== Network / Internet
 
