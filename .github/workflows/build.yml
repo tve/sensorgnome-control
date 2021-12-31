@@ -51,8 +51,8 @@ jobs:
       - name: Create annotation with link to packages on S3
         run: |
           S3=${S3_PATH/\//.s3.amazonaws.com\/}
-          echo "https://${{S3}}/$GIT_REF/"
-          echo "::notice title=Packages::https://${{S3}}/$GIT_REF/"
+          echo "https://${S3}/$GIT_REF/"
+          echo "::notice title=Packages::https://${S3}/$GIT_REF/"
           for p in $(cd packages; echo *.deb); do
-            echo "::notice title=Package::https://${{S3}}/$GIT_REF/$p"
+            echo "::notice title=Package::https://${S3}/$GIT_REF/$p"
           done

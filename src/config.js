@@ -8,8 +8,8 @@ const defaults = {
     contact: "email/phone/address",
     who: "name of responsible party",
     info: "info about SensorGnome deployment",
-    system_password: "",
-    system_password_confirm: "",
+    // system_password: "",
+    // system_password_confirm: "",
     upload_username: "motus.org user name",
     upload_password: "",
     module_options: {
