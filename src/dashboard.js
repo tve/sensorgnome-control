@@ -4,6 +4,11 @@
 var AR = require('archiver')
 const Path = require('path')
 
+// The Dashboard class communicates between the web UI (FlexDash) and the "core" processing,
+// mainly using the "Matron" event system. It consists of a number of handlers divided into two
+// groups: the "handleSomeEvent" handlers that react to Matron events and propagate the data to
+// the dashboard, and the "handle_dash_somet_event" handlers that react to user input events
+// from the dashboard and cause some changes to occur.
 class Dashboard {
 
     constructor(matron) {
@@ -12,9 +17,11 @@ class Dashboard {
         // ===== Event listeners
         for (const ev of [
             'gotGPSFix', 'chrony', 'gotTag', 'setParam', 'setParamError', 'devAdded', 'devRemoved',
-            'df', 'sdcardUse', 'vahData', 'netDefaultRoute', 'netInet', 'netMotus',
+            'df', 'sdcardUse', 'vahData', 'netDefaultRoute', 'netInet', 'netMotus', 'netWifiState',
+            'netHotspotState', 'netWifiConfig',
             // events triggered by a message from FlexDash
-            'dash_download', 'dash_upload', 'dash_deployment_update',
+            'dash_download', 'dash_upload', 'dash_deployment_update', 'dash_enable_wifi',
+            'dash_enable_hotspot', 'dash_config_wifi',
         ]) {
             this.matron.on(ev, (...args) => {
                 let fn = 'handle_'+ev
@@ -91,8 +98,28 @@ class Dashboard {
         FlexDash.unset(`devices/${info.attr.port}`)
         FlexDash.set(`radios`, this.updateNumRadios())
     }
+
+    // ===== Network / Internet
+
+    // events from WifiMan, propagate to the UI
     handle_netInet(status) { FlexDash.set('net_inet_status', status) }
     handle_netMotus(status) { FlexDash.set('net_motus_status', status) }
+    handle_netDefaultRoute(state) { FlexDash.set('net_default_route', state || "none") }
+    handle_netHotspotState(state) { FlexDash.set('net_hotspot_state', state || "??") }
+    handle_netWifiState(state) {
+        FlexDash.set('net_wifi_state', state || "??")
+        FlexDash.set('net_wifi_enabled', this.wifi_state != "INACTIVE" ? "ON" : "OFF")
+    }
+    handle_netWifiConfig(config) {
+        config = Object.fromEntries(['country','ssid','passphrase'].map(k=>[k,config[k]]))
+        config.passphrase = "********"
+        FlexDash.set('net_wifi_config', config)
+    }
+    
+    // events from the dashboard, change wifi/hotspot state or settings
+    handle_dash_enable_wifi(state) { WifiMan.enableWifi(state == "ON").then(() => {}) }
+    handle_dash_enable_hotspot(state) { WifiMan.enableHotspot(state == "ON") }
+    handle_dash_config_wifi(config) { WifiMan.setWifiConfig(config).then(() => {}) }
 
     // ===== Deployment configuration
     
