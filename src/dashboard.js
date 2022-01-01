@@ -128,17 +128,19 @@ class Dashboard {
     // ===== Deployment configuration
     
     setDeployment() {
-        let dep = { ...Deployment.data }
-        delete dep.module_options
-        dep.system_password = "********"
-        dep.system_password_confirm = "********"
-        dep.upload_password = "********"
-        FlexDash.set('deployment', dep)
+        let data = Object.fromEntries(
+            Object.entries(Deployment.data).map(e => 
+                [ e[0].replace(/_/g,' '),
+                  e[0].includes('password') ? "********" : e[1]]
+        ))
+        delete data['module options']
+        let fields = ['short label', 'memo', 'upload username', 'upload password']
+        FlexDash.set('deployment', { fields, data })
     }
 
     handle_dash_deployment_update(update) {
-        console.log("Updating deployment with", JSON.stringify(update))
-        Deployment.update(update)
+        Deployment.update(Object.fromEntries(
+            Object.entries(update).map(e => [e[0].replace(/ /g,'_'), e[1]])))
         this.setDeployment()
     }
 

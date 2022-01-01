@@ -4,13 +4,11 @@ var Fs = require("fs")
 var Fsp = require("fs").promises
 
 const defaults = {
-    shortLabel: "changeMe",
-    contact: "email/phone/address",
-    who: "name of responsible party",
-    info: "info about SensorGnome deployment",
+    short_label: "changeMe",
+    memo: "memo for you about this SensorGnome",
     // system_password: "",
     // system_password_confirm: "",
-    upload_username: "motus.org user name",
+    upload_username: "motus.org login name",
     upload_password: "",
     module_options: {
         find_tags: { params: [ "--default-freq", 166.38, "--pulse-slop", 1.5 ], enabled: true },
