@@ -75,6 +75,12 @@ class HubMan {
         }
     }
 
+    resetDevices() {
+        for (let i in this.devs) this.matron.emit("devRemoved", this.devs[i])
+        this.devs = {}
+        this.enumeratePreExistingDevices()
+    }
+
     // a device changed, either added or removed, figure it out and emit event
     devChanged(event, filename) {
         if (typeof filename !== "string") {
@@ -118,7 +124,7 @@ class HubMan {
     // I think this guarantees all devices already present and any
     // detected by the OS afterwards will have events emitted for them
     start() {
-        this.parsePortMap(this.portmapfile)
+        this.parsePortMap()
         try {
             Fs.watch(this.root, (...args) => this.devChanged(...args))
             // we assume the watch is active once Fs.watch returns, so the following should
@@ -139,9 +145,9 @@ class HubMan {
 
     // parse the default port assignments file
     // its syntax is: 1.2.3 -> 4 assigns port 4 to path 1.2.3
-    parsePortMap(filename) {
+    parsePortMap() {
         this.portMap = []
-        const file_txt = Fs.readFileSync(filename, "utf8")
+        const file_txt = Fs.readFileSync(this.portmapfile, "utf8")
         this.matron.emit("portmapFile", file_txt)
         for (let line of file_txt.split('\n')) {
             line = line.replace(/#.*/, '').trimEnd() // remove comments
@@ -151,6 +157,12 @@ class HubMan {
             }
         }
         console.log("Default port map: " + this.portMap.map(v=>v.path+"->"+v.port).join(", "))
+    }
+
+    setPortmap(text) {
+        Fs.writeFileSync(this.portmapfile, text)
+        this.parsePortMap()
+        this.resetDevices()
     }
 
     // return the port for a device path using the portMap, if not found assign some

@@ -21,7 +21,7 @@ class Dashboard {
             'netHotspotState', 'netWifiConfig', 'portmapFile',
             // events triggered by a message from FlexDash
             'dash_download', 'dash_upload', 'dash_deployment_update', 'dash_enable_wifi',
-            'dash_enable_hotspot', 'dash_config_wifi',
+            'dash_enable_hotspot', 'dash_config_wifi', 'dash_update_portmap',
         ]) {
             this.matron.on(ev, (...args) => {
                 let fn = 'handle_'+ev
@@ -62,16 +62,16 @@ class Dashboard {
     genDevInfo(dev) {
         var info = {
             port: dev.attr.port,
-            port_path: dev.attr["port_path"] || "--",
+            port_path: (dev.attr["port_path"] || "--").replace(/\_/g, '.'),
             type: dev.attr.type,
         }
-        switch (dev.attr.type) {
-        case "gps": info.attr = dev.attr.kind; break
-        case "CTT/CornellRcvr": info.attr = "433Mhz"; break
-        case "funcubeProPlus": info.attr = "?Mhz"; break
-        case "funcubePro": info.attr = "?Mhz"; break
-        case "rtlsdr": info.type = dev.attr.prod; info.attr = "?Mhz"; break
-        }
+        // switch (dev.attr.type) {
+        // case "gps": info.attr = dev.attr.kind; break
+        // case "CTT/CornellRcvr": info.attr = "433Mhz"; break
+        // case "funcubeProPlus": info.attr = "?Mhz"; break
+        // case "funcubePro": info.attr = "?Mhz"; break
+        // case "rtlsdr": info.type = dev.attr.prod; info.attr = "?Mhz"; break
+        // }
         return info
     }
 
@@ -101,6 +101,7 @@ class Dashboard {
         FlexDash.set(`radios`, this.updateNumRadios())
     }
     handle_portmapFile(txt) { FlexDash.set('portmap_file', txt) }
+    handle_dash_update_portmap(portmap) { HubMan.setPortmap(portmap) }
 
     // ===== Network / Internet
 
