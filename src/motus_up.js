@@ -21,6 +21,7 @@ const SERVER = 'https://motus.org'
 const URL_TEST = '/data'
 const URL_VERIFY = '/data/project/sgJobs'
 const URL_UPLOAD = '/data/project/sgJobs'
+const URL_LOGIN = '/data/login'
 const URL_CONN = 'http://connectivitycheck.gstatic.com/generate_204' // Android connectivity check
 const MAX_SIZE = 10*1024*1024 // 10MB max archive size (well, actually a little more)
 
@@ -70,12 +71,13 @@ function buffer2sha1(buffer) {
 class MotusUploader {
     constructor(matron) {
         this.matron = matron
-        this.active = false // whether the uploader is active
+        //this.active = false // whether the uploader is active
         this.session = null // session cookie
 
         // start when the initial reading of the datafiles state is completed
         matron.on('datafile_summary', ()=> this.start())
         matron.on('dash-upload', () => this.uploadSoon())
+        matron.on('motus', status => { if (status == "OK") this.uploadSoon(true) })
     }
 
     start() {
@@ -84,7 +86,17 @@ class MotusUploader {
     }
 
     // schedule an upload to happen "soon"
+    // An underlying assumption is that that uploadSoon gets triggered about every hour by
+    // the cutting of a datafile and also when connectivity to Motus is detected, thus there's no
+    // explicit retry timer. (Perhaps we should have one in case of a temporary 500 error?)
     uploadSoon(force=false) {
+        if (this.timer) return // already scheduled/running (ignore race condition)
+        this.timer = setTimeout(() => {
+            this.doUploadAll()
+            .then(() => { this.timer = null }) // next upload will be triggered by a datafile event
+            .catch(() => { this.timer = null }) // next upload will be triggered by a datafile event
+        }, force ? 200 : 5000)
+        return
         // define function to perform upload
         const sched = (delay) => setTimeout(() => {
             this.active = true
@@ -113,7 +125,7 @@ class MotusUploader {
         while (await this.doUpload()) {}
     }
 
-    // perform an upload to motus.org
+    // perform an upload to motus.org, returns true if there's more to do, false if done.
     async doUpload() {
         let {date, files} = DataFiles.uploadList()
         // files is [path, size, unix_timestamp]
@@ -121,16 +133,20 @@ class MotusUploader {
             console.log("Motus upload: no files to upload")
             return false
         }
+        if (!WifiMan.motus_status == "OK") {
+            console.log("Motus upload: not connected to motus.org")
+            throw new Error("not connected to motus.org")
+        }
         console.log(`Checking Motus upload of ${files.length} files`)
         try {
-            await this.test_inet_connectivity()
-            const login_url = await this.test_motus_connectivity()
+            //await this.test_inet_connectivity()
+            const login_url = SERVER+URL_LOGIN // await this.test_motus_connectivity()
             this.session = await this.login(login_url, Deployment.upload_username, Deployment.upload_password)
             const upload_info = await this.performFilesUpload(files)
             DataFiles.updateUpDownDate('uploaded', files.map(f=>f[0]), upload_info)
             return true
         } catch(e) {
-            console.log(e.stack)
+            console.log(e.message)
             throw e
         }
     }
@@ -168,35 +184,20 @@ class MotusUploader {
         }
     }
 
-    // test connectivity to "the internet" and return true if reachable. Throws otherwise.
-    async test_inet_connectivity() {
-        try {
-            const resp = await centra(URL_CONN, 'GET')
-                .timeout(20*1000)
-                .send()
-            if (resp.statusCode == 204) { // redirect to login
-                return true
-            }
-            throw new Error(`I-Net conn check got unexpected response code: ${resp.statusCode}`)
-        } catch (e) {
-            throw new Error(`I-Net conn check cannot reach ${URL_CONN}: ${e.message}`)
-        }
-    }
-
-    // test connectivity to motus and return the login URL if reachable. Throws otherwise.
-    async test_motus_connectivity() {
-        try {
-            const resp = await centra(SERVER+URL_TEST, 'GET')
-                .timeout(20*1000)
-                .send()
-            if (resp.statusCode == 302) { // redirect to login
-                return resp.headers.location
-            }
-            throw new Error(`Motus conn check got unexpected response code: ${resp.statusCode}`)
-        } catch (e) {
-            throw new Error(`Motus conn check cannot reach ${SERVER}: ${e.message}`)
-        }
-    }
+    // // test connectivity to motus and return the login URL if reachable. Throws otherwise.
+    // async test_motus_connectivity() {
+    //     try {
+    //         const resp = await centra(SERVER+URL_TEST, 'GET')
+    //             .timeout(20*1000)
+    //             .send()
+    //         if (resp.statusCode == 302) { // redirect to login
+    //             return resp.headers.location
+    //         }
+    //         throw new Error(`Motus conn check got unexpected response code: ${resp.statusCode}`)
+    //     } catch (e) {
+    //         throw new Error(`Motus conn check cannot reach ${SERVER}: ${e.message}`)
+    //     }
+    // }
 
     // login to Motus. On success returns session cookie, on bad user/pass returns null,
     // on error throws an exception
@@ -205,10 +206,10 @@ class MotusUploader {
             .body({ login_name: user, login_password: pass }, 'form')
             .timeout(20*1000)
             .send()
-        if (resp.statusCode == 302) {
-            return resp.headers.location ? null : resp.headers['set-cookie']
-        }
-        throw new Error(`Motus login error: status ${resp.statusCode}`)
+        //console.log(`Motus login response: ${resp.statusCode} ${JSON.stringify(resp.headers)}`)
+        if (resp.statusCode != 302) throw new Error(`Motus login error: status ${resp.statusCode}`)
+        if (resp.headers.location) throw new Error("Motus login: bad user/pass")
+        return resp.headers['set-cookie']
     }
 
     // consume the provided file iterator until the archive max size is exceeded and return
