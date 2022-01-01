@@ -32,6 +32,7 @@ const INET_RECHECK_MAX = 3600 * 1000
 
 const HOTSPOT_SCRIPT = "/opt/sensorgnome/wifi-button/scripts/wifi-hotspot.sh"
 const WPA_CLI = "/usr/sbin/wpa_cli"
+const RFKILL = "/usr/sbin/rfkill"
 
 // wpa_cli status: INACTIVE, ..., COMPLETED
 
@@ -77,7 +78,7 @@ class WifiMan {
         if (this.relaunching) return
         this.relaucnhing = true
         this.child = null
-        setTimeout(() => this.launch(), 1000)
+        setTimeout(() => this.launchRouteMonitor(), 1000)
     }
 
     // fetch the current default route using ip route command, using 1.1.1.1 as target for 'route get'
@@ -86,7 +87,7 @@ class WifiMan {
     getDefaultRoute() {
         ChildProcess.execFile(IP_CMD, ["route", "get", "1.1.1.1"], (code, stdout, stderr) => {
             this.default_route = null
-            if (stdout) this.readRoute(stdout)
+            this.readRoute(stdout||"")
             this.getInterfaceStates()
             setTimeout(() => this.testConnectivity(), 1000)
         })
@@ -176,56 +177,85 @@ class WifiMan {
         })
     }
     
-    execWpaCli(args) { return this.execFile(WPA_CLI, ["-i", "wlan0", ...args]) }
+    async execWpaCli(args) {
+        const res = await this.execFile(WPA_CLI, ["-i", "wlan0", ...args])
+        if (res === "FAIL") throw new Error(`wpa_cli [${args.join(' ')}] failed`)
+        console.log(`wpa_cli [${args.join(' ')}]: ${res}`)
+        return res
+    }
     
     getWifiCountry() { return this.execWpaCli(["get", "country"]) }
 
     getWifiSSID() { return this.execWpaCli(["get_network", "wlan0", "ssid"]) }
     
     getWifiConfig() {
-        Promise.all([this.getWifiCountry(), this.getWifiSSID()])
-        .then(([country, ssid]) => {
-            if (ssid.length > 1) ssid = ssid.substr(1, ssid.length-2)
+        (async () => {
+            let country = "00" // global
+            let ssid = ""
+            try { country = await this.getWifiCountry() }
+            catch(err) { console.log("getWifiConfig:", err) }
+            try { ssid = await this.getWifiSSID() }
+            catch(err) { console.log("getWifiConfig:", err) }
+            if (ssid.match(/^".*"$/)) ssid = ssid.substring(1, ssid.length-1)
             this.matron.emit("netWifiConfig", {country, ssid})
-        })
-        .catch(err => {
-            console.log("getWifiConfig:", err)
-            this.matron.emit("netWifiConfig", {country: "US", ssid: ""})
-        })
+        })().then(() => {})
     }
 
     async setWifiConfig(config) {
         // set country code if it has changed
+        if (!config.country) {
+            try { await this.getWifiCountry() }
+            catch(err) { config.country = "00" }
+        }
         if (config.country) {
             console.log("Set WiFi country code:", config.country)
             try { await this.execWpaCli(["set", "country", config.country]) }
             catch(e) { console.log("setWifiConfig country:", e) }
         }
+        // before setting ssid/passphrase need to take care of some preliminaries...
+        if (config.ssid || config.passphrase !== undefined) {
+            console.log("Init WiFi")
+            try {
+                await this.execFile(RFKILL, ["unblock", "wifi"])
+                const nets = await this.execWpaCli(["list_networks"])
+                if (!nets.match(/^[0-9]/m)) {
+                    console.log("WiFi add network:", await this.execWpaCli(["add_network", "wlan0"]))
+                }
+            } catch(e) { console.log("setWifiConfig init:", e) }
+        }
         // set ssid
         if (config.ssid) {
-            console.log("Set WiFi ssid:", config.ssid)
-            try { await this.execWpaCli(["set_network", "wlan0", "ssid", `"${config.ssid}"`]) }
-            catch(e) { console.log("setWifiConfig ssid:", e) }
+            try {
+                const res = await this.execWpaCli(["set_network", "wlan0", "ssid", `"${config.ssid}"`])
+                console.log(`Set WiFi ssid ${config.ssid}: ${res}`)
+            } catch(e) { console.log("setWifiConfig ssid:", e) }
         }
+        try{console.log("SSID:", await this.getWifiSSID())}catch(e){console.log("SSID:",e)}
         // set passphrase
         if (config.passphrase) {
-            console.log("Set WiFi passphrase:", config.passphrase.length)
-            try { await this.execWpaCli(["set_network", "wlan0", "psk", `"${config.passphrase}"`]) }
-            catch(e) { console.log("setWifiConfig passphrase:", e) }
+            console.log("Set WiFi passphrase: len ", config.passphrase.length)
+            try {
+                await this.execWpaCli(["set_network", "wlan0", "key_mgmt", 'WPA-PSK'])
+                await this.execWpaCli(["set_network", "wlan0", "psk", `"${config.passphrase}"`])
+            } catch(e) { console.log("setWifiConfig passphrase:", e) }
         } else if (config.passphrase !== undefined) {
             console.log("Set WiFi no-passphrase")
-            try { await this.execWpaCli(["set_network", "wlan0", "key_mgmt", "NONE"]) }
-            catch(e) { console.log("setWifiConfig passphrase:", e) }
+            try { await this.execWpaCli(["set_network", "wlan0", "key_mgmt", 'NONE']) }
+            catch(e) { console.log("setWifiConfig no pass:", e) }
         }
         // save and reconfigure
         try {
             await this.execWpaCli(["enable", "wlan0"])
+            try{console.log("SSID:", await this.getWifiSSID())}catch(e){console.log("SSID:",e)}
             await this.execWpaCli(["save_config"])
-            await this.execFile("/usr/bin/cat", ["/etc/wpa_supplicant/wpa_supplicant.conf"])
+            console.log(await this.execFile("/usr/bin/cat", ["/etc/wpa_supplicant/wpa_supplicant.conf"]))
+            try{console.log("SSID:", await this.getWifiSSID())}catch(e){console.log("SSID:",e)}
             await this.execWpaCli(["reconfigure"])
+            console.log("WiFi reconfigured")
         } catch(e) {
-            console.log("setWifiConfig:", e)
+            console.log("setWifiConfig final:", e)
         }
+        try{console.log("SSID:", await this.getWifiSSID())}catch(e){console.log("SSID:",e)}
         this.getWifiConfig()
         this.getWifiStatusSoon(200)
         setTimeout(() => this.getInterfaceStates(), 10000)
@@ -258,8 +288,11 @@ class WifiMan {
         this.matron.emit("netInet", status)
     }
     setMotusStatus(status) {
-        this.motus_status = status
-        this.matron.emit("netMotus", status)
+        if (status !== this.motus_status) {
+            // only send update if status changes 'cause it triggers upload in MotusUp
+            this.motus_status = status
+            this.matron.emit("netMotus", status)
+        }
     }
     
     testConnectivity() {
