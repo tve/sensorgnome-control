@@ -202,7 +202,9 @@ describe('DataFiles', () => {
             expect(dll).toHaveLength(20)
         })
 
-        test('updateDownloadDate', () => {
+        test('updateDownloadDate with download', () => {
+            const total_size = 88522
+
             // get the initial download list where all are candidates
             let dll = df.downloadList('new')
             expect(dll).toHaveLength(20)
@@ -212,25 +214,58 @@ describe('DataFiles', () => {
                 bytes_to_upload: 88522, bytes_to_download: 88522,
             })
 
+            // check that filenames returned actually point to files
+            // also tally total size
+            for (let f of dll) expect(fs.existsSync(f)).toBe(true)
+            
             // pretend we download 8 files
-            let del = dll.splice(3, 8)
-            let ts = Date.now()/1000
-            df.updateUpDownDate('downloaded', dll, ts)
+            const del = dll.splice(3, 8)
+            const size = del.reduce((acc, f) => acc + fs.statSync(f).size, 0)
+            const ts = Date.now()/1000
+            df.updateUpDownDate('downloaded', del, ts)
             expect(df.summary).toMatchObject({
-                total_files: 20, total_bytes: 88522, pre_2010_files: 0, other_sg_files: 0,
-                files_to_upload: 20, files_to_download: 8,
-                bytes_to_upload: 88522, bytes_to_download: 40505,
+                total_files: 20, total_bytes: total_size, pre_2010_files: 0, other_sg_files: 0,
+                files_to_upload: 20, files_to_download: 20-del.length,
+                bytes_to_upload: total_size, bytes_to_download: total_size-size,
             })
-
-            let dll2 = df.downloadList('new')
-            expect(dll2).toHaveLength(8)
-            expect(dll2).toEqual(del)
             expect(df.summary.last_download).toBe(ts)
             expect(df.saveSoon.mock.calls.length).toBe(1)
 
-            let dll3 = df.downloadList('last')
-            expect(dll3).toHaveLength(12)
-            expect(dll3).toEqual(dll)
+            const dll2 = df.downloadList('new')
+            expect(dll2).toHaveLength(20-del.length)
+            expect(dll2).toEqual(dll)
+
+            const dll3 = df.downloadList('last')
+            expect(dll3).toHaveLength(del.length)
+            expect(dll3).toEqual(del)
+        })
+
+        test('updateDownloadDate with upload', () => {
+            const total_size = 88522
+
+            // get the initial upload list where all are candidates
+            let {date, files} = df.uploadList()
+            expect(files).toHaveLength(20)
+            expect(df.summary).toMatchObject({
+                total_files: 20, total_bytes: 88522, pre_2010_files: 0, other_sg_files: 0,
+                files_to_upload: 20, files_to_download: 20,
+                bytes_to_upload: total_size, bytes_to_download: total_size,
+            })
+            for (let f of files) expect(fs.existsSync(f[0])).toBe(true)
+
+            // pretend we upload 10 files
+            const del = files.splice(3, 10)
+            const size = del.reduce((acc, f) => acc + f[1], 0)
+            const info = { date: Date.now()/1000, foo: 'bar' }
+            const del_files = del.map(f => f[0])
+            df.updateUpDownDate('uploaded', del_files, info)
+            expect(df.summary).toMatchObject({
+                total_files: 20, total_bytes: total_size, pre_2010_files: 0, other_sg_files: 0,
+                files_to_upload: 10, files_to_download: 10,
+                bytes_to_upload: total_size-size, bytes_to_download: total_size-size,
+            })
+            expect(df.summary.last_upload).toBe(info.date)
+            expect(df.saveSoon.mock.calls.length).toBe(1)
         })
 
     })

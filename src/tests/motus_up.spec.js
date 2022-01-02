@@ -5,18 +5,18 @@ const { promisify } = require('util')
 const pipeline = promisify(stream.pipeline)
 const cp = require('child_process')
 
-describe('StreamingSHA1', () => {
-  
-    it('produces the right sha for a sample file', async () => {
-      const rs = fs.createReadStream("../test_assets/2021-12-16/changeMe-7F5ERPI46977-3-2021-12-16T00-25-01.6590Z-all.txt.gz")
-      const sha1sum = "d24e654492b5a67ba643d4ed94ea7ad7ee782a00" // linux sha1sum command
-      const sha1 = new StreamingSHA1()
-      await pipeline(rs, sha1)
-      const digest = await sha1.digest()
-      expect(digest).toBe(sha1sum)
-    })
-
-})
+// describe('StreamingSHA1', () => {
+//
+//     it('produces the right sha for a sample file', async () => {
+//       const rs = fs.createReadStream("../test_assets/2021-12-16/changeMe-7F5ERPI46977-3-2021-12-16T00-25-01.6590Z-all.txt.gz")
+//       const sha1sum = "d24e654492b5a67ba643d4ed94ea7ad7ee782a00" // linux sha1sum command
+//       const sha1 = new StreamingSHA1()
+//       await pipeline(rs, sha1)
+//       const digest = await sha1.digest()
+//       expect(digest).toBe(sha1sum)
+//     })
+//
+// })
 
 describe('MotusUploader', () => {
     let mup
@@ -42,7 +42,7 @@ describe('MotusUploader', () => {
             // run sha1sum to get the sha1
             const sha1sum = cp.execSync("sha1sum /tmp/test_zip.zip").toString().split(" ")[0]
             // run archive_sha1
-            const sha1 = await mup.archive_sha1(files)
+            const {archive, sha1} = await mup.archive_sha1(files)
             expect(sha1).toBe(sha1sum)
         })
 

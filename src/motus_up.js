@@ -235,7 +235,7 @@ class MotusUploader {
         return archive
     }
     
-    // compute the SHA1 of an archive containing the provided files
+    // produce an archive from the files and compute its SHA1, return archive and sha1
     async archive_sha1(files) {
         // start archive streaming
         const arstream = this.startArchiveStream(files)

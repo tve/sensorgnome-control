@@ -56,6 +56,7 @@ class Dashboard {
         // set (relatively) static data
         this.setDeployment()
         FlexDash.set('acquisition', JSON.stringify(Acquisition, null, 2))
+        FlexDash.set('net_hotspot_ssid', "SG-"+Machine.machineID)
     }
     
     // generate info about a device, called on devAdded
@@ -182,24 +183,24 @@ class Dashboard {
         console.log(`updateDetectionStats: series=${series}`)
 
         // pivot daily stats
-        const ms_per_day = 24*3600*1000
-        let today = Math.trunc(Date.now()/ms_per_day)*ms_per_day
+        const secs_per_day = 24*3600
+        let today = Math.trunc(Date.now()/1000/secs_per_day)*secs_per_day
         let daily_data = Array(100)
         for (let i = 0; i < 100; i++) {
-            const day = today - (99-i)*ms_per_day
-            daily_data[i] = [day/1000, ...series.map(s =>
+            const day = today - (99-i)*secs_per_day
+            daily_data[i] = [day, ...series.map(s =>
                 day in daily && s in daily[day]? daily[day][s] : null)]
         }
         FlexDash.set("detection_series", series.map(s => s=='all' ? 'lotek' : s))
         FlexDash.set("detections_daily", daily_data)
 
         // pivot hourly stats
-        const ms_per_hour = 3600*1000
-        let curhour = Math.trunc(Date.now()/ms_per_hour)*ms_per_hour
+        const secs_per_hour = 3600
+        let curhour = Math.trunc(Date.now()/1000/secs_per_hour)*secs_per_hour
         let hourly_data = Array(100)
         for (let i = 0; i < 100; i++) {
-            const hour = curhour - (99-i)*ms_per_hour
-            hourly_data[i] = [hour/1000, ...series.map(s =>
+            const hour = curhour - (99-i)*secs_per_hour
+            hourly_data[i] = [hour, ...series.map(s =>
                 hour in hourly && s in hourly[hour]? hourly[hour][s] : null)]
         }
         FlexDash.set("detections_hourly", hourly_data)
@@ -207,6 +208,7 @@ class Dashboard {
 
     // user pressed a download button, we need to turn-around and tell the dashboard to
     // actually perform the download (yes, it's a bit convoluted)
+    // what: new/all/last
     handle_dash_download(what, socket) {
         FlexDash.download(socket, `/data-download/${what}`, 'foo.zip')
     }
@@ -222,9 +224,8 @@ class Dashboard {
             resp.send()
             return
         }
-        //files = files.slice(0, 100)
         // download date, will be recorded in "database"
-        let date = Math.trunc(Date.now()/1000) * 1000
+        let date = Math.trunc(Date.now()/1000)
         let filename = "SG" + Machine.machineID + "-" + date + ".zip"
         // tell the browser that we're sending a zip file
         resp.writeHead(200, {

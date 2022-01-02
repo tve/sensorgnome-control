@@ -82,7 +82,7 @@ class SafeStream {
                 if (info) {
                     info.statFile(path+'.gz')
                     .then(() => this.matron.emit("datafile", info.toInfo()))
-                    .catch(() => console.log(`SafeStream: ${e}`))
+                    .catch((e) => console.log(`SafeStream: ${e} for ${path}.gz`))
                 }
             }
             if (stderr) console.log(stderr)

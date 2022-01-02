@@ -267,15 +267,15 @@ class DataFiles {
         if (sg_id != Machine.machineID) this.summary.other_sg_files++
 
         // update daily stats
-        const ms_per_day = 24 * 3600
+        const secs_per_day = 24 * 3600
         let start = info.first_data || info.start
-        //if (start < (new Date('1999-12-12T00:00:00Z')).valueOf()) console.log("OOPS", start, data.first_data, data.start)
-        const day = Math.trunc(start / ms_per_day) * ms_per_day
+        if (start < (new Date('1999-12-12T00:00:00Z')).valueOf()/1000) console.log("OOPS", start, info.first_data, info.start)
+        const day = Math.trunc(start / secs_per_day) * secs_per_day
         if (!this.det_by_day[day]) this.det_by_day[day] = { }
         this.det_by_day[day][info.type] = (this.det_by_day[day][info.type] || 0) + info.data_lines
         // prune daily to 100 days
         //console.log("det_by_day", day, this.det_by_day)
-        let cutoff = Date.now()/1000 - 100*ms_per_day
+        let cutoff = Date.now()/1000 - 100*secs_per_day
         Object.keys(this.det_by_day).filter(k => !(k >= cutoff)).forEach(k => delete this.det_by_day[k])
 
         // same for hourly
@@ -284,7 +284,7 @@ class DataFiles {
         this.det_by_hour[hour][info.type] = (this.det_by_hour[hour][info.type] || 0) + info.data_lines
         //console.log("Hour: ", hour, this.det_by_hour[hour], "added", start, JSON.stringify(info))
         // prune hourly to 5 days
-        cutoff = Date.now()/1000 - 5*ms_per_day
+        cutoff = Date.now()/1000 - 5*secs_per_day
         Object.keys(this.det_by_hour).filter(k => !(k >= cutoff)).forEach(k => delete this.det_by_hour[k])
         
         if (pub) this.pubStats()
@@ -293,8 +293,10 @@ class DataFiles {
     // update stats that can change due to an upload or download
     updateStats() {
         // tally files to upload/download
-        this.summary = { ...this.summary,
-            files_to_upload:0, files_to_download:0, bytes_to_upload:0, bytes_to_download:0 }
+        this.summary = {
+            ...this.summary,
+            files_to_upload: 0, files_to_download: 0, bytes_to_upload: 0, bytes_to_download: 0
+        }
         this.files.forEach(f => {
             if (!f.uploaded) {
                 this.summary.files_to_upload++
@@ -307,10 +309,10 @@ class DataFiles {
         })
         // determine last upload/download dates
         let last_download = this.files.reduce(
-            (ld,f) => f.downloaded && f.downloaded > ld ? f.downloaded : ld, null)
+            (ld, f) => f.downloaded && f.downloaded > ld ? f.downloaded : ld, null)
         this.summary.last_download = last_download
         let last_upload = this.files.reduce(
-            (lu,f) => f.uploaded && f.uploaded.date > lu ? f.uploaded.date : lu, null)
+            (lu, f) => f.uploaded && f.uploaded.date > lu ? f.uploaded.date : lu, null)
         this.summary.last_upload = last_upload
         // last of either for 1st tab
         this.summary.last_updownload = last_upload > last_download ? last_upload : last_download
@@ -319,21 +321,25 @@ class DataFiles {
     pubStats() {
         this.matron.emit("data_file_summary", this.summary)
         this.matron.emit("detection_stats", this.det_by_day, this.det_by_hour)
+        //console.log(`DataFiles: det_by_hour ${JSON.stringify(this.det_by_hour)}`)
     }
 
     downloadList(what) {
         switch(what) {
             case "new":
-                return this.files.filter(f => !f.downloaded && !f.uploaded).map(f => f.dir + f.name)
+                return this.files.filter(f => !f.downloaded && !f.uploaded)
+                                 .map(f => f.dir + '/' + f.name)
             case "all":
-                return this.files.map(f => f.dir + f.name)
+                return this.files.map(f => f.dir + '/' + f.name)
             case "last":
-                return this.files.filter(f => f.downloaded == this.summary.last_download).map(f => f.dir + f.name)
+                return this.files.filter(f => f.downloaded == this.summary.last_download)
+                                 .map(f => f.dir + '/' + f.name)
             default: return []
         }
     }
 
     // uploadList returns a set of files that are candidates for uploading
+    // It returns an array of files, each one being [fname, size, file_start_timestamp]
     // It first groups files by date, then picks a date at random, and then returns all the files
     // for that date.
     // This is done for a couple of reasons, but may not be 'optimal': the random selection
@@ -369,6 +375,7 @@ class DataFiles {
         files.forEach(f => {
             const i = this.files.findIndex(x => x.dir + '/' + x.name == f)
             if (i >= 0) this.files[i][which] = info
+            else console.log("updateUpDownDate: cannot mark file, not found", f)
         })
         this.saveSoon() // delay and make async
         this.updateStats()
