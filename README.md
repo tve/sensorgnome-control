@@ -14,3 +14,10 @@ History: this repo used to hold both control and
 [support](https://github.com/sensorgnome-org/sensorgnome-support)
 software, but was split into two repos.
 Also the term "master" has been replaced by "main".
+
+## Known issues
+
+- rtlsdr radios do not work, do not plug any in
+- after a file download the dashboard is unresponsive for 10-20 seconds because the websocket disconnects, has to time-out and reconnect
+- ability to upload tag database is missing
+- logging is too verbose, need to distinguish info/warn/err
