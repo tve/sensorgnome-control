@@ -152,6 +152,7 @@ class WifiMan {
     }
     
     // set this.wifi_state and this.hotspot_state to null|"on"|"off"
+    // Note: disabled changing wifi state 'cause we read it using wpa_cli now..
     readIfaces(lines) {
         //this.wifi_state = null
         this.hotspot_state = null
@@ -181,7 +182,7 @@ class WifiMan {
     async execWpaCli(args) {
         const res = await this.execFile(WPA_CLI, ["-i", "wlan0", ...args])
         if (res === "FAIL") throw new Error(`wpa_cli [${args.join(' ')}] failed`)
-        console.log(`wpa_cli [${args.join(' ')}]: ${res}`)
+        console.log(`wpa_cli [${args.join(' ')}]: ${res.replace(/\n/g, '\\n')}`)
         return res
     }
     
