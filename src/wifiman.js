@@ -202,60 +202,58 @@ class WifiMan {
     }
 
     async setWifiConfig(config) {
+        console.log("*** setWifiConfig", JSON.stringify(config))
+        if (!config.country) config.country = "00" // global settings
+        if (!config.passphrase) config.passphrase = ""
+        if (config.passphrase.match(/^\*+$/)) config.passphrase = null
+        if (!config.ssid) {
+            console.log("setWifiConfig: no ssid")
+            return
+        }
         // set country code if it has changed
-        if (!config.country) {
-            try { await this.getWifiCountry() }
-            catch(err) { config.country = "00" }
-        }
-        if (config.country) {
-            console.log("Set WiFi country code:", config.country)
-            try { await this.execWpaCli(["set", "country", config.country]) }
-            catch(e) { console.log("setWifiConfig country:", e) }
-        }
+        try {
+            const country = await this.getWifiCountry()
+            if (country != config.country) {
+                console.log("Setting WiFi country code:", config.country)
+                await this.execWpaCli(["set", "country", config.country])
+            }
+        } catch(e) { console.log("setWifiConfig country:", e) }
+
         // before setting ssid/passphrase need to take care of some preliminaries...
-        if (config.ssid || config.passphrase !== undefined) {
-            console.log("Init WiFi")
-            try {
-                await this.execFile(RFKILL, ["unblock", "wifi"])
-                const nets = await this.execWpaCli(["list_networks"])
-                if (!nets.match(/^[0-9]/m)) {
-                    console.log("WiFi add network:", await this.execWpaCli(["add_network", "wlan0"]))
-                }
-            } catch(e) { console.log("setWifiConfig init:", e) }
-        }
-        // set ssid
-        if (config.ssid) {
-            try {
-                const res = await this.execWpaCli(["set_network", "wlan0", "ssid", `"${config.ssid}"`])
-                console.log(`Set WiFi ssid ${config.ssid}: ${res}`)
-            } catch(e) { console.log("setWifiConfig ssid:", e) }
-        }
-        try{console.log("SSID:", await this.getWifiSSID())}catch(e){console.log("SSID:",e)}
-        // set passphrase
-        if (config.passphrase) {
-            console.log("Set WiFi passphrase: len ", config.passphrase.length)
-            try {
+        try {
+            await this.execFile(RFKILL, ["unblock", "wifi"])
+            const nets = await this.execWpaCli(["list_networks"])
+            if (!nets.match(/^[0-9]/m)) {
+                console.log("WiFi add network:", await this.execWpaCli(["add_network", "wlan0"]))
+            }
+        } catch(e) { console.log("setWifiConfig init:", e) }
+        
+        // set ssid and passphrase
+        try {
+            const res = await this.execWpaCli(["set_network", "wlan0", "ssid", `"${config.ssid}"`])
+            console.log(`Set WiFi ssid ${config.ssid}: ${res}`)
+            if (config.passphrase === null) {
+                console.log("Skiping WiFi passphrase")
+            } else if (config.passphrase) {
+                console.log("Set WiFi passphrase: len ", config.passphrase.length)
                 await this.execWpaCli(["set_network", "wlan0", "key_mgmt", 'WPA-PSK'])
                 await this.execWpaCli(["set_network", "wlan0", "psk", `"${config.passphrase}"`])
-            } catch(e) { console.log("setWifiConfig passphrase:", e) }
-        } else if (config.passphrase !== undefined) {
-            console.log("Set WiFi no-passphrase")
-            try { await this.execWpaCli(["set_network", "wlan0", "key_mgmt", 'NONE']) }
-            catch(e) { console.log("setWifiConfig no pass:", e) }
-        }
+            } else if (config.passphrase !== undefined) {
+                console.log("Set WiFi no-passphrase")
+                await this.execWpaCli(["set_network", "wlan0", "key_mgmt", 'NONE'])
+            }
+        } catch(e) { console.log("setWifiConfig ssid/pass:", e) }
+
         // save and reconfigure
         try {
             await this.execWpaCli(["enable", "wlan0"])
-            try{console.log("SSID:", await this.getWifiSSID())}catch(e){console.log("SSID:",e)}
             await this.execWpaCli(["save_config"])
             console.log(await this.execFile("/usr/bin/cat", ["/etc/wpa_supplicant/wpa_supplicant.conf"]))
-            try{console.log("SSID:", await this.getWifiSSID())}catch(e){console.log("SSID:",e)}
             await this.execWpaCli(["reconfigure"])
             console.log("WiFi reconfigured")
         } catch(e) {
-            console.log("setWifiConfig final:", e)
+            console.log("setWifiConfig reconfigure:", e)
         }
-        try{console.log("SSID:", await this.getWifiSSID())}catch(e){console.log("SSID:",e)}
         this.getWifiConfig()
         this.getWifiStatusSoon(200)
         setTimeout(() => this.getInterfaceStates(), 10000)
