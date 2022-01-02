@@ -160,6 +160,7 @@ class WifiMan {
         //if (mm && mm.length == 2) this.wifi_state = mm[1] == "UP" ? "ON" : "OFF"
         mm = lines.match(/ap0:.*\sstate\s+(\S+)/)
         if (mm && mm.length == 2) this.hotspot_state = mm[1] == "UP" ? "ON" : "OFF"
+        else this.hotspot_state = "OFF"
         console.log(`Interface states: wifi:${this.wifi_state} hotspot:${this.hotspot_state}`)
         //this.matron.emit("netWifiState", this.wifi_state)
         this.matron.emit("netHotspotState", this.hotspot_state)
@@ -212,7 +213,8 @@ class WifiMan {
         }
         // set country code if it has changed
         try {
-            const country = await this.getWifiCountry()
+            let country = ""
+            try { country = await this.getWifiCountry() } catch(err) {}
             if (country != config.country) {
                 console.log("Setting WiFi country code:", config.country)
                 await this.execWpaCli(["set", "country", config.country])
