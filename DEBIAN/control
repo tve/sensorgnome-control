@@ -2,7 +2,7 @@ Package: sg-control
 Version: 0
 Architecture: armhf
 Essential: no
-Depends: nodejs, sqlite3
+Depends: nodejs, sqlite3, libpam0g-dev
 Homepage: https://github.com/sensorgnome/sensorgnome-control
 Maintainer: TvE (tvoneicken@gmail.com)
 Description: Sensorgnome main control process

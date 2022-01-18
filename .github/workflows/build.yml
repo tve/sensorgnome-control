@@ -25,6 +25,9 @@ jobs:
       # use branch or tag name in S3 upload path
       - run: echo GIT_REF=${{github.ref}} | sed -e 's;refs/[^/]*/;;' >>$GITHUB_ENV
 
+      - name: Install PAM auth dependency
+        run: sudo apt install -y libpam0g-dev
+
       - name: Generate .deb packages
         run: ./gen-package.sh
         shell: bash
