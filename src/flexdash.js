@@ -21,10 +21,15 @@
 // const webserver = http.createServer(app)
 
 const Fs = require('fs')
+const Express = require('express')
+const Http = require('http')
+const Morgan = require("morgan")  // request logger middleware
+const Cors = require('cors')  // Cross-origin resource sharing middleware for Expressjs
+const Session = require('express-session')
+const MemoryStore = require('memorystore')(Session)
 const { Server } = require("socket.io")
-const Proxy = require('express-http-proxy') // proxy middleware
-
-const FD_VERSION = '0.2.4'
+const { machineID } = require('./machine.js')
+const Pam = require('authenticate-pam')
 
 class FlexDash {
 
@@ -34,12 +39,30 @@ class FlexDash {
         this.fd_config = {} // FlexDash config
         this.fd_data = {} // data tree
         this.io = null
-        this.saving = false; // a config save is queued
+        this.saving = false // a config save is queued
+        this.app = null // Express app
+        this.webserver = null // HTTP server
         console.log("FlexDash constructed")
     }
 
-    start(webserver) {
-        this.app = webserver.app
+    start() {
+        this.app = Express()
+        this.app.use(Morgan('tiny'))
+        this.app.use(Cors({credentials: true, origin: true}))
+        this.session = Session({ // used for Express and Socket.io
+            store: new MemoryStore({
+                checkPeriod: 86400000, // prune expired entries every 24h
+            }),
+            name: 'sensorgnome',
+            secret: 'flexdash@' + machineID,
+            resave: false,
+            saveUninitialized: true,
+            cookie: {
+                maxAge: 3600000, // 1 hour
+            },
+        })
+        this.app.use(this.session)
+        this.webserver = Http.createServer(this.app)
 
         // load config from file
         Fs.readFile(this.config_file, (err, data) => {
@@ -55,25 +78,68 @@ class FlexDash {
             }
 
             // Init Socket.io
-            this.io = new Server(webserver.server, {
+            this.io = new Server(this.webserver, {
                 path: '/fd',
-                cors: { origin: "*", methods: ["GET", "POST"], credentials: true },
+                cors: { origin: true, methods: ["GET", "POST"], credentials: true },
             })
             console.log("Socketio mounted on /fd")
 
-            this.load_static_data()
-
+            // Add session support
+            this.io.use((socket, next) => this.session(socket.request, {}, next))
+            this.io.use((socket, next) => {
+                let session = socket.request.session
+                console.log("SIO auth, session ID: ", session?.id)
+                if (session?.rooms) {
+                    next() // FIXME: join appropriate rooms
+                } else {
+                    // client is not authorized, send a message back with info on how to login
+                    let err = Error('unauthorized')
+                    err.data = {
+                        message: 'unauthorized', realm: 'SensorGnome ' + machineID,
+                        url: '/login', strategy: 'user-password',
+                        user: 'pi', fixed_user: true,
+                    }
+                    next(err)
+                }
+            })
             this.io.on('connection', this.handleConnection.bind(this))
 
+            this.load_static_data()
+
             setInterval(() => { this.io.send('time', (new Date()).toISOString()) }, 5000)
+        })
+
+        // mount static content, publicly accessible
+        this.app.get('/', (_, res) => res.sendFile("flexdash.html", {root: process.cwd()+"/public"}))
+        this.app.post('/login', Express.json(), (req, res) => this.login(req, res))
+        this.app.use(Express.static(__dirname + '/public', { extensions: ['html'] }))
+        
+        // add auth middleware, this means everything added later requires auth
+        this.app.use((req, res, next) => {
+            let session = req.session
+            console.log("HTTP auth, session ID: ", session?.id)
+            if (session?.rooms) {
+                next()
+            } else {
+                // client is not authorized, return 401 (ain't got no login page...)
+                res.status(401).end()
+            }
+        })
+
+        // start web server
+        this.webserver.requestTimeout = 60 * 1000 // for the initial request
+        this.webserver.timeout = 300 * 1000 // inactivity timeout
+        this.webserver.listen(80, () => {
+            console.log("SensorGnome FlexDash listening on port %d in %s mode",
+                this.webserver.address().port, this.app.settings.env)
         })
     }
     
     registerGetHandler(path, handler) {
-        this.app.get(path, handler)
+        this.app.get(path, handler) // FIXME: need authentication
     }
 
-    load_static_data() {
+    load_static_data() { // FIXME: this belongs in dashboard.js
         let uptime = parseInt(Fs.readFileSync("/proc/uptime").toString(), 10)
         if (uptime < 120) uptime = `${uptime} seconds`
         else if (uptime < 2 * 60) uptime = `${Math.round(uptime / 60)} minutes`
@@ -129,7 +195,8 @@ class FlexDash {
     // FlexDash connected, hook handlers to save config and send initial config        
     handleConnection(socket) {
         const hs = socket.handshake
-        console.log(`SIO connection ${socket.id} url=${hs.url} x-domain:${hs.xdomain}`)
+        const ss = socket.request.session
+        console.log(`SIO connection ${socket.id} session=${ss.id} url=${hs.url} x-domain:${hs.xdomain}`)
         this.sendData(socket)
 
         // handle incoming messages
@@ -242,6 +309,24 @@ class FlexDash {
             }
         }
         return node
+    }
+
+    login(req, res) {
+        console.log(`SIO login, user=${req.body?.user} pass-len=${req.body?.password?.length}`)
+        if (req.body) {
+            Pam.authenticate(req.body?.user, req.body?.password, (err) => {
+                if (err) {
+                    delete req.session.rooms
+                    res.status(401).end()
+                } else {
+                    req.session.rooms = "*"
+                    res.status(200).end()
+                }
+            }, {serviceName: 'login', remoteHost: 'localhost'})
+        } else {
+            delete req.session.rooms
+            res.status(401).end()
+        }
     }
 
 }

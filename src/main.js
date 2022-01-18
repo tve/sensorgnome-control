@@ -52,7 +52,7 @@ GPS           = new (require('./gps.js'))(TheMatron);
 Chrony        = new (require('./chrony.js'))(TheMatron);
 HubMan        = new (require('./hubman.js'))(TheMatron, DEVROOT, PORTMAP);
 VAH           = new (require('./vah.js'))(TheMatron, "/usr/bin/vamp-alsa-host", "VAH.sock");
-WebServer     = new (require('./webserver.js'))(TheMatron);
+//WebServer     = new (require('./webserver.js'))(TheMatron);
 FlexDash      = new (require('./flexdash.js'))(TheMatron);
 Dashboard     = new (require('./dashboard.js'))(TheMatron);
 WifiMan       = new (require('./wifiman.js').WifiMan)(TheMatron);
@@ -127,9 +127,9 @@ Chrony.start()
 // Now that all listeners for devAdded events have been registered, we can start HubMan.
 HubMan.start()
 
-// Start the webserver
-WebServer.start(FlexDash)
-FlexDash.start(WebServer)
+// Start the web dashboard
+//WebServer.start(FlexDash)
+FlexDash.start()
 Dashboard.start()
 
 // Start the tagFinder
