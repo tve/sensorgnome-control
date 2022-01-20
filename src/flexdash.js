@@ -31,6 +31,14 @@ const { Server } = require("socket.io")
 const { machineID } = require('./machine.js')
 const Pam = require('authenticate-pam')
 
+// list of paths that are used by connectivity checks of mobile devices that we want to redirect
+// to the dashboard so when the device connects to our hotspot the dashboard pops up
+// From https://github.com/tretos53/Captive-Portal/blob/master/default_nginx
+// Should move this to nginx once we support https and ened it anyway...
+const captive = [ "/generate_204", "/gen_204", "/blank.html", "mobile/status.php", "hotspot-detect.html" ]
+//const captive_ua = [ "CaptiveNetworkSupport" ] // needed for some iOS devices?
+//const captive_dest = [ "connectivitycheck.gstatic.com" ] // I believe the generate_204 captures this
+
 class FlexDash {
 
     constructor(theMatron) {
@@ -113,6 +121,11 @@ class FlexDash {
         this.app.get('/', (_, res) => res.sendFile("flexdash.html", {root: process.cwd()+"/public"}))
         this.app.post('/login', Express.json(), (req, res) => this.login(req, res))
         this.app.use(Express.static(__dirname + '/public', { extensions: ['html'] }))
+
+        // mount redirects for captive portal
+        for (const c of captive) {
+            this.app.get(c, (_, res) => res.redirect('http://192.168.7.2/')) // FIXME: https
+        }
         
         // add auth middleware, this means everything added later requires auth
         this.app.use((req, res, next) => {
