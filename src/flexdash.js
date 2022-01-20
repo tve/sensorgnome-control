@@ -142,7 +142,7 @@ class FlexDash {
         // start web server
         this.webserver.requestTimeout = 60 * 1000 // for the initial request
         this.webserver.timeout = 300 * 1000 // inactivity timeout
-        this.webserver.listen(80, () => {
+        this.webserver.listen(8080, () => {
             console.log("SensorGnome FlexDash listening on port %d in %s mode",
                 this.webserver.address().port, this.app.settings.env)
         })
