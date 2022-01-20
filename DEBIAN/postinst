@@ -15,6 +15,9 @@ for f in acquisition.txt SG_tag_database.sqlite; do
     fi
 done
 
+# need to rebuild binary for authenticate-pam module for current architecture
+(cd $SG/control; npm install authenticate-pam)
+
 # enable and start/restart units
 for U in sg-control; do
     # code from debhelper's postinst-systemd-enable template

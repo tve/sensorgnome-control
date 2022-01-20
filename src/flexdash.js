@@ -57,6 +57,7 @@ class FlexDash {
         this.app = Express()
         this.app.use(Morgan('tiny'))
         this.app.use(Cors({credentials: true, origin: true}))
+        this.app.set('trust proxy', true)
         this.session = Session({ // used for Express and Socket.io
             store: new MemoryStore({
                 checkPeriod: 86400000, // prune expired entries every 24h
@@ -67,6 +68,9 @@ class FlexDash {
             saveUninitialized: true,
             cookie: {
                 maxAge: 3600000, // 1 hour
+                secure: 'auto',
+                // need sameSite=none to develop using https
+                sameSite: 'none', // may be a problem with 3-rd part cookie blocking
             },
         })
         this.app.use(this.session)
@@ -142,7 +146,7 @@ class FlexDash {
         // start web server
         this.webserver.requestTimeout = 60 * 1000 // for the initial request
         this.webserver.timeout = 300 * 1000 // inactivity timeout
-        this.webserver.listen(8080, () => {
+        this.webserver.listen(8080, 'localhost', () => {
             console.log("SensorGnome FlexDash listening on port %d in %s mode",
                 this.webserver.address().port, this.app.settings.env)
         })
