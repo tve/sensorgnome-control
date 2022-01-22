@@ -8,7 +8,7 @@ mkdir $DESTDIR
 
 # install FlexDash in there
 mkdir src/public/flexdash
-curl -L https://s3.amazonaws.com/s3.voneicken.com/flexdash/flexdash-0.3.4.tar.gz | \
+curl -L https://s3.amazonaws.com/s3.voneicken.com/flexdash/flexdash-0.3.6.tar.gz | \
     tar xzf - -C src/public/flexdash
 
 # install the control application files as user pi=1000
