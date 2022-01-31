@@ -6,6 +6,6 @@ Priority: standard
 Essential: no
 Depends: nodejs, sqlite3, libpam0g-dev
 Homepage: https://github.com/sensorgnome/sensorgnome-control
-Maintainer: TvE (tvoneicken@gmail.com)
+Maintainer: TvE (tve-sensorgnome@voneicken.com)
 Description: Sensorgnome main control process
   Orchestrates all tag detection, processing, transmission and web activities.

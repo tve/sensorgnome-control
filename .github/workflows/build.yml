@@ -8,6 +8,7 @@ env:
   S3_PATH: motus-builds/${{github.repository}}
   S3_REGION: us-east-2
   AWS_ROLE: arn:aws:iam::635201719205:role/Github-actions-motus
+  S3_BUCKET: sensorgnome
 
 permissions:
   id-token: write
@@ -16,6 +17,7 @@ permissions:
 jobs:
   build-all:
     runs-on: ubuntu-latest
+    environment: sensorgnome
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -27,10 +29,24 @@ jobs:
 
       - name: Install PAM auth dependency
         run: sudo apt install -y libpam0g-dev
+      
+      # To export key: gpg --list-secret-keys --keyid-format LONG; gpg --export-secret-keys --armor {your_keyId}
+
+      - name: Install GPG key to sign package
+        uses: crazy-max/ghaction-import-gpg@v1
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+      
+      - name: Install deb-s3
+        run: |
+          curl -sLO https://github.com/deb-s3/deb-s3/releases/download/0.11.3/deb-s3-0.11.3.gem
+          sudo gem install deb-s3-0.11.3.gem
 
       - name: Generate .deb packages
         run: ./gen-package.sh
         shell: bash
+      
       - run: ls -ls packages
 
       # Upload github artifacts for debugging purposes
@@ -38,6 +54,18 @@ jobs:
         with:
           name: deb-packages
           path: packages
+
+      # - name: Configure AWS Credentials
+      #   # See https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
+      #   uses: aws-actions/configure-aws-credentials@master
+      #   with:
+      #     role-to-assume: ${{env.AWS_ROLE}}
+      #     role-session-name: GithubActionsMotus
+      #     aws-region: ${{ env.S3_REGION }}
+
+      # - name: Upload .debs to AWS S3 flat bucket
+      #   run: |
+      #     aws s3 sync --acl public-read packages s3://${{env.S3_PATH}}/$GIT_REF/
 
       - name: Configure AWS Credentials
         # See https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
@@ -47,15 +75,16 @@ jobs:
           role-session-name: GithubActionsMotus
           aws-region: ${{ env.S3_REGION }}
 
-      - name: Upload .debs to AWS S3 repo
+      - name: Insert .debs into sensorgnome repository
         run: |
-          aws s3 sync --acl public-read packages s3://${{env.S3_PATH}}/$GIT_REF/
+          deb-s3 upload --bucket=${{env.S3_BUCKET}} --s3-region=${{env.S3_REGION}} --preserve-versions \
+          --sign=${{env.GPG_PRIVATE_KEY}} --visibility=public packages/*.deb
 
-      - name: Create annotation with link to packages on S3
-        run: |
-          S3=${S3_PATH/\//.s3.amazonaws.com\/}
-          echo "https://${S3}/$GIT_REF/"
-          echo "::notice title=Packages::https://${S3}/$GIT_REF/"
-          for p in $(cd packages; echo *.deb); do
-            echo "::notice title=Package::https://${S3}/$GIT_REF/$p"
-          done
+      # - name: Create annotation with link to packages on S3
+      #   run: |
+      #     S3=${S3_PATH/\//.s3.amazonaws.com\/}
+      #     echo "https://${S3}/$GIT_REF/"
+      #     echo "::notice title=Packages::https://${S3}/$GIT_REF/"
+      #     for p in $(cd packages; echo *.deb); do
+      #       echo "::notice title=Package::https://${S3}/$GIT_REF/$p"
+      #     done
