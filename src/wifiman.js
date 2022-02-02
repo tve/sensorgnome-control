@@ -236,7 +236,7 @@ class WifiMan {
             const res = await this.execWpaCli(["set_network", "wlan0", "ssid", `"${config.ssid}"`])
             console.log(`Set WiFi ssid ${config.ssid}: ${res}`)
             if (config.passphrase === null) {
-                console.log("Skiping WiFi passphrase")
+                console.log("Skipping WiFi passphrase")
             } else if (config.passphrase) {
                 console.log("Set WiFi passphrase: len ", config.passphrase.length)
                 await this.execWpaCli(["set_network", "wlan0", "key_mgmt", 'WPA-PSK'])

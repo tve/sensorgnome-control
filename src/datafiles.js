@@ -14,7 +14,7 @@
 // be there twice. To be re-evaluated...
 
 // Data:
-// The data is saved in a file (typ. /data/config/datafiles.json) and has the following structure:
+// The data is saved in a file (typ. /etc/sensorgnome/datafiles.json) and has the following structure:
 // { ts: Date.now() when written
 //   files: [
 //     { dir: "/media/SD_card/SGdata/2021-12-01", // dir holding the file

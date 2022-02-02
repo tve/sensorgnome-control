@@ -9,13 +9,13 @@
 //
 // - also gets general information about filesystem usage (df)
 
-exports.machineID = Fs.readFileSync("/etc/sensorgnome_id").toString().substring(0, 12)
+exports.machineID = Fs.readFileSync("/etc/sensorgnome/id").toString().substring(0, 12)
 
 var bootCountFile = "/etc/bootcount"
 exports.bootCount = Fs.existsSync(bootCountFile) ?
     Number(Fs.readFileSync(bootCountFile).toString()) % 1000000 : 0
 
-var versionFile = "/etc/sensorgnome_version";
+var versionFile = "/etc/sensorgnome/version";
 
 exports.version = Fs.existsSync(versionFile) ? Fs.readFileSync(versionFile).toString() : "UNKNOWN"
 

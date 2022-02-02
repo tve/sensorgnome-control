@@ -5,14 +5,7 @@ SG=/opt/sensorgnome # would be nice to derive that from some env var...
 # install acquisition.txt and tag database if not there
 SRC=$SG/templates
 for f in acquisition.txt SG_tag_database.sqlite; do
-    if [[ -d /data/config ]]; then
-        # $SRC/$f exists, so this must be an update, put it there unless it exists
-        [[ -f /data/config/$f ]] || cp $SRC/$f /data/config
-    else
-        # $SRC/$f does not exist, so this must be a fresh install, put it into /boot
-        # it will be copied to $SRC on first boot
-        [[ -f /boot/$f ]] || cp $SRC/$f /boot
-    fi
+    [[ -f /etc/sensorgnome/$f ]] || cp $SRC/$f /etc/sensorgnome
 done
 
 # need to rebuild binary for authenticate-pam module for current architecture

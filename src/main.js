@@ -1,7 +1,7 @@
 // main.js - the main sensorgnome service which runs data acquisition
 
 const DATADIR     = "/data/SGdata"                 // where data files are located
-const CONFDIR     = "/data/config"                 // where config files are located
+const CONFDIR     = "/etc/sensorgnome"             // where config files are located
 const DATAFILE    = CONFDIR+"/datafiles.json"      // where database about data files is located
 const DEPLOYMENT  = CONFDIR+"/deployment.txt"      // SensorGnome deployment info
 const ACQUISITION = CONFDIR+"/acquisition.txt"     // Receiver/sensor configuration
@@ -68,9 +68,7 @@ CornellTagXCVR= require("./cornelltagxcvr.js");
 TagFinder = new (require('./tagfinder.js').TagFinder)(
     TheMatron,
     "/usr/bin/find_tags_unifile",
-    [
-        "/data/config/SG_tag_database.sqlite",  // new preferred location
-        "/data/config/SG_tag_database.csv"],
+    [ CONFDIR+"/SG_tag_database.sqlite", CONFDIR+"/SG_tag_database.csv"],
     Deployment.module_options.find_tags.params
 )
 

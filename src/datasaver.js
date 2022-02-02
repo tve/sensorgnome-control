@@ -18,7 +18,7 @@ to the end of one disk and continuing on another.
 
    - DEPLOYMENT_CODE is short user string containing no "-" (any "-" are replaced by "_")
 
-   - MACHINE_ID is the 12 unique beaglebone/rpi id (/etc/sensorgnome_id)
+   - MACHINE_ID is the 12 unique beaglebone/rpi id (/etc/sensorgnome/id)
 
    - BOOT_COUNT is zero-padded 6-digit boot count
 
