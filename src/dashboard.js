@@ -1,8 +1,12 @@
 // dashboard - Event listeners and formatters for the web dashboard
 // Copyright ©2021 Thorsten von Eicken, see LICENSE
 
-var AR = require('archiver')
+const AR = require('archiver')
 const Path = require('path')
+const CP = require('child_process')
+const Pam = require('authenticate-pam')
+
+const top100k = Fs.readFileSync("/opt/sensorgnome/web-portal/top-100k-passwords.txt").toString().split('\n')
 
 // The Dashboard class communicates between the web UI (FlexDash) and the "core" processing,
 // mainly using the "Matron" event system. It consists of a number of handlers divided into two
@@ -21,13 +25,17 @@ class Dashboard {
             'netHotspotState', 'netWifiConfig', 'portmapFile',
             // events triggered by a message from FlexDash
             'dash_download', 'dash_upload', 'dash_deployment_update', 'dash_enable_wifi',
-            'dash_enable_hotspot', 'dash_config_wifi', 'dash_update_portmap',
+            'dash_enable_hotspot', 'dash_config_wifi', 'dash_update_portmap', 'dash_creds_update',
         ]) {
             this.matron.on(ev, (...args) => {
                 let fn = 'handle_'+ev
-                if (!(fn in this)) console.log("Missing Dashboard handler:", ev)
-                else if (args.length <= 1) this[fn](...args)
-                else this[fn](...args)
+                try {
+                    if (!(fn in this)) console.log("Missing Dashboard handler:", ev)
+                    else if (args.length <= 1) this[fn](...args)
+                    else this[fn](...args)
+                } catch(e) {
+                    console.log(`Handler ${fn} failed: ${e}`)
+                }
             })
         }
         // this.matron.on('gotTag', this.this_pushTag);
@@ -57,6 +65,13 @@ class Dashboard {
         this.setDeployment()
         FlexDash.set('acquisition', JSON.stringify(Acquisition, null, 2))
         FlexDash.set('net_hotspot_ssid', "SG-"+Machine.machineID)
+        this.setDashCreds({ current_password: "?????????", new_password: "", confirm_new_password: ""})
+
+        // some static machine info
+        FlexDash.set('machineinfo', Machine)
+        let uptime = parseInt(Fs.readFileSync("/proc/uptime").toString(), 10)
+        if (!(uptime > 0)) uptime = 0
+        FlexDash.set('boot_time', Date.now() / 1000 - uptime)
     }
     
     // generate info about a device, called on devAdded
@@ -143,6 +158,51 @@ class Dashboard {
         Deployment.update(Object.fromEntries(
             Object.entries(update).map(e => [e[0].replace(/ /g,'_'), e[1]])))
         this.setDeployment()
+    }
+
+    setDashCreds(creds, message) {
+        let data = Object.fromEntries(
+            Object.entries(creds).map(e => [ e[0].replace(/_/g,' '), e[1]])
+        )
+        let fields = ['current password', 'new password', 'confirm new password']
+        if (message) {
+            console.log(`setDashCreds: ${message}`)
+            data['message'] = message
+            fields.unshift('message')
+        }
+        FlexDash.set('system_creds', { fields, data })
+    }
+
+    handle_dash_creds_update(update) {
+        if (!(update['current password'] && update['new password'] && update['confirm new password'])) return
+        let cp = update['current password'], np = update['new password']
+        if (np != update['confirm new password']) {
+            update['confirm new password'] = ""
+            this.setDashCreds(update, "new passwords don't match")
+            return
+        }
+        if (np.length < 8 || np.length > 32) {
+            this.setDashCreds(update, "password must be 8 to 32 characters long")
+            return
+        }
+        if (top100k.includes(np)) {
+            this.setDashCreds(update, "please choose a less common password :-)")
+            return
+        }
+        Pam.authenticate('pi', cp, (err) => {
+            if (err) {
+                update['current password'] = ""
+                this.setDashCreds(update, "incorrect current password")
+            } else {
+                try {
+                    CP.execFileSync("/usr/sbin/chpasswd", { input: `pi:${np}\n` })
+                } catch(e) {
+                    return
+                }
+                this.setDashCreds({ current_password: "", new_password: "", confirm_new_password: ""},
+                    "password updated")
+            }
+        }, {serviceName: 'login', remoteHost: 'localhost'})
     }
 
     // ===== Tag/Pulse detections for the last 5 minutes

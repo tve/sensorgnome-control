@@ -6,8 +6,6 @@ var Fsp = require("fs").promises
 const defaults = {
     short_label: "changeMe",
     memo: "memo for you about this SensorGnome",
-    // system_password: "",
-    // system_password_confirm: "",
     upload_username: "motus.org login name",
     upload_password: "",
     module_options: {
