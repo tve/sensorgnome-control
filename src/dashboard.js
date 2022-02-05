@@ -20,9 +20,10 @@ class Dashboard {
 
         // ===== Event listeners
         for (const ev of [
+            // events funneled through matron (i.e. from app)
             'gotGPSFix', 'chrony', 'gotTag', 'setParam', 'setParamError', 'devAdded', 'devRemoved',
             'df', 'sdcardUse', 'vahData', 'netDefaultRoute', 'netInet', 'netMotus', 'netWifiState',
-            'netHotspotState', 'netWifiConfig', 'portmapFile',
+            'netHotspotState', 'netWifiConfig', 'portmapFile', 'tagDBInfo',
             // events triggered by a message from FlexDash
             'dash_download', 'dash_upload', 'dash_deployment_update', 'dash_enable_wifi',
             'dash_enable_hotspot', 'dash_config_wifi', 'dash_update_portmap', 'dash_creds_update',
@@ -38,10 +39,6 @@ class Dashboard {
                 }
             })
         }
-        // this.matron.on('gotTag', this.this_pushTag);
-        // this.matron.on('setParam', this.this_pushParam);
-        // this.matron.on('setParamError', this.this_setParamError);
-        // this.matron.on('vahData', this.this_pushData);
 
         // keep track of data file summary stats
         matron.on("data_file_summary", (stats) => FlexDash.set('data_file_summary', stats))
@@ -52,6 +49,7 @@ class Dashboard {
             ctt: Array(5*6).fill(null),
             lotek: Array(5*6).fill(null),
         }
+        this.detection_log = []
 
         console.log("Dashboard handlers registered")
     }
@@ -118,6 +116,7 @@ class Dashboard {
     }
     handle_portmapFile(txt) { FlexDash.set('portmap_file', txt) }
     handle_dash_update_portmap(portmap) { HubMan.setPortmap(portmap) }
+    handle_tagDBInfo(data) { FlexDash.set('tagdb', data) }
 
     // ===== Network / Internet
 
@@ -216,13 +215,27 @@ class Dashboard {
         FlexDash.set('detections_5min', this.detections)
     }
 
-    handle_gotTag(tag) { 
+    detectionLogPush(data) {
+        this.detection_log.push(data)
+        let dll = this.detection_log.length
+        if (dll > 50) this.detection_log.splice(0, dll-50)
+        FlexDash.set("detection_log", this.detection_log.join("\n"))
+    }
+
+    handle_gotTag(tag) {
+        if (!tag.match(/^[A-Za-z]?[0-9]/)) return
+        if (!tag.match(/^[A-Za-z]/)) tag = "L" + tag // "Lotek" prefix, ugh
         this.detections.ctt[this.detections.ctt.length-1]++
         FlexDash.set('detections_5min', this.detections)
+        this.detectionLogPush(tag.trim().replace(/^/gm,"TAG: "))
     }
+
     handle_vahData(data) {
         for (const line of data.toString().split("\n")) {
-            if (line.startsWith("p")) this.detections.lotek[this.detections.lotek.length-1]++
+            if (line.startsWith("p")) {
+                this.detections.lotek[this.detections.lotek.length-1]++
+                this.detectionLogPush("PLS: " + line.trim())
+            }
         }
         FlexDash.set('detections_5min', this.detections)
     }
