@@ -52,7 +52,7 @@ class WifiMan {
 
     start() {
         this.launchRouteMonitor()
-        setTimeout(() => this.getDefaultRoute(), 3000)
+        //setTimeout(() => this.getDefaultRoute(), 3000) // for debugging
         this.getWifiConfig()
     }
 
