@@ -116,8 +116,6 @@ class FlexDash {
             })
             this.io.on('connection', this.handleConnection.bind(this))
 
-            this.load_static_data()
-
             setInterval(() => { this.io.send('time', (new Date()).toISOString()) }, 5000)
         })
 
@@ -154,16 +152,6 @@ class FlexDash {
     
     registerGetHandler(path, handler) {
         this.app.get(path, handler) // FIXME: need authentication
-    }
-
-    load_static_data() { // FIXME: this belongs in dashboard.js
-        let uptime = parseInt(Fs.readFileSync("/proc/uptime").toString(), 10)
-        if (uptime < 120) uptime = `${uptime} seconds`
-        else if (uptime < 2 * 60) uptime = `${Math.round(uptime / 60)} minutes`
-        else if (uptime < 2 * 60 * 60) uptime = `${Math.round(uptime / 3600)} hours`
-        else uptime = `${Math.round(uptime / 3600 / 24)} days`
-
-        this.set('machineinfo', { ...Machine, uptime })
     }
 
     set(path, value) {
