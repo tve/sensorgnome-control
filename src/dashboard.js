@@ -8,6 +8,8 @@ const Pam = require('authenticate-pam')
 
 const top100k = Fs.readFileSync("/opt/sensorgnome/web-portal/top-100k-passwords.txt").toString().split('\n')
 
+const TAGDBFILE   = "/etc/sensorgnome/SG_tag_database.sqlite" // FIXME: needs to come from main.js...
+
 // The Dashboard class communicates between the web UI (FlexDash) and the "core" processing,
 // mainly using the "Matron" event system. It consists of a number of handlers divided into two
 // groups: the "handleSomeEvent" handlers that react to Matron events and propagate the data to
@@ -27,6 +29,7 @@ class Dashboard {
             // events triggered by a message from FlexDash
             'dash_download', 'dash_upload', 'dash_deployment_update', 'dash_enable_wifi',
             'dash_enable_hotspot', 'dash_config_wifi', 'dash_update_portmap', 'dash_creds_update',
+            'dash_upload_tagdb', 'dash_df_enable', 'dash_df_tags',
         ]) {
             this.matron.on(ev, (...args) => {
                 let fn = 'handle_'+ev
@@ -51,6 +54,11 @@ class Dashboard {
         }
         this.detection_log = []
 
+        // direction finding log
+        this.df_enable = false
+        this.df_tags = {tag1: "1.1", tag2: '78664c3304'}
+        this.df_log = []
+
         console.log("Dashboard handlers registered")
     }
     
@@ -70,6 +78,11 @@ class Dashboard {
         let uptime = parseInt(Fs.readFileSync("/proc/uptime").toString(), 10)
         if (!(uptime > 0)) uptime = 0
         FlexDash.set('boot_time', Date.now() / 1000 - uptime)
+
+        // direction finding info is not saved between restarts...
+        FlexDash.set('df_enable', 'OFF')
+        FlexDash.set('df_tags', this.df_tags)
+        FlexDash.set('df_log', "")
     }
     
     // generate info about a device, called on devAdded
@@ -228,6 +241,16 @@ class Dashboard {
         this.detections.ctt[this.detections.ctt.length-1]++
         FlexDash.set('detections_5min', this.detections)
         this.detectionLogPush(tag.trim().replace(/^/gm,"TAG: "))
+        // direction finding
+        if (this.df_enable && this.df_tags) {
+            let tt = tag.trim().split(",")
+            if (tt.length < 4) return
+            let name = tt[2].replace(/.*#([^@]+)@.*/,'$1') // lotek mess
+            let signal = tt.length > 5 ? tt[5] : tt[3]
+            if (name == this.df_tags.tag1 || name == this.df_tags.tag2) {
+                this.dfLogPush(name, signal)
+            }
+        }
     }
 
     handle_vahData(data) {
@@ -238,6 +261,41 @@ class Dashboard {
             }
         }
         FlexDash.set('detections_5min', this.detections)
+    }
+
+    // handle tag database upload
+    handle_dash_upload_tagdb(phase, info, resp) {
+        if (phase === 'begin' && resp) {
+            resp(info.size > 0 && info.size < 10*1024*1024 && TAGDBFILE)
+        } else if (phase === 'done') {
+            console.log("Tag DB upload done:", info)
+            this.matron.emit("tagDBChg")
+        }
+    }
+
+    // ===== Direction finding
+
+    handle_dash_df_tags(tags) {
+        if (typeof tags === 'object' && 'tag1' in tags && 'tag2' in tags) {
+            this.df_tags = tags
+            FlexDash.set("df_tags", tags)
+            console.log("DF tags: " + JSON.stringify(tags))
+        }
+    }
+
+    handle_dash_df_enable(en) {
+        this.df_enable = en == true || en == "ON"
+        FlexDash.set('df_enable', this.df_enable ? "ON" : "OFF")
+        console.log("DF " + (this.df_enable ? "enabled" : "disabled"))
+    }
+
+    dfLogPush(name, signal) {
+        this.df_log.push(name + " " + signal + "dBm")
+        let dfl = this.df_log.length
+        // keep a fixed number of lines
+        if (dfl > 10) this.df_log.splice(0, dfl-10)
+        console.log("df log: " + this.df_log.join(" | "))
+        FlexDash.set("df_log", this.df_log.join("\n"))
     }
 
     // ===== /data file enumeration, download, (and upload?)

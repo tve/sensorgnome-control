@@ -6,6 +6,7 @@ const DATAFILE    = CONFDIR+"/datafiles.json"      // where database about data 
 const DEPLOYMENT  = CONFDIR+"/deployment.json"     // SensorGnome deployment info
 const ACQUISITION = CONFDIR+"/acquisition.txt"     // Receiver/sensor configuration
 const PORTMAP     = CONFDIR+"/usb-port-map.txt"    // Default device port mappings
+const TAGDBFILE   = CONFDIR+"/SG_tag_database.sqlite"
 const DEVROOT     = "/dev/sensorgnome"             // Dir where uDev rules add device files
 
 // process.on("uncaughtException", function(err) {
@@ -66,9 +67,7 @@ CornellTagXCVR= require("./cornelltagxcvr.js");
 //WavMaker      = require('./wavmaker.js');
 
 TagFinder = new (require('./tagfinder.js').TagFinder)(
-    TheMatron,
-    "/usr/bin/find_tags_unifile",
-    [ CONFDIR+"/SG_tag_database.sqlite", CONFDIR+"/SG_tag_database.csv"],
+    TheMatron, "/usr/bin/find_tags_unifile", [ TAGDBFILE, CONFDIR+"/SG_tag_database.csv"],
     Deployment.module_options.find_tags.params
 )
 

@@ -21,6 +21,7 @@
 // const webserver = http.createServer(app)
 
 const Fs = require('fs')
+const OS = require('os')
 const Express = require('express')
 const Http = require('http')
 const Morgan = require("morgan")  // request logger middleware
@@ -50,6 +51,7 @@ class FlexDash {
         this.saving = false // a config save is queued
         this.app = null // Express app
         this.webserver = null // HTTP server
+        this.uploads = {} // uploads in progress indexed by upload id
         console.log("FlexDash constructed")
     }
 
@@ -165,7 +167,7 @@ class FlexDash {
                 //if (path.startsWith('detections_hou')) console.log("SET", path, value)
                 this.io.emit('set', path, value)
             }
-            if (path != 'tag' && path != 'detections_5min') console.log(`SIO set data ${path}`)
+            if (path != 'tag' && !path.startsWith('detection')) console.log(`SIO set data ${path}`)
         } catch (err) {
             console.log(`FD: Internal error setting ${path}: ${err}`)
         }
@@ -206,15 +208,62 @@ class FlexDash {
 
         // handle incoming messages
         socket.on("msg", (topic, payload) => {
-            if (typeof topic !== 'string') {
-                console.warn(`SIO message doesn't have string topic: ${JSON.stringify(topic)}`)
-            } else if (topic === "$ctrl" && payload === "start") {
-                this.sendConfig(socket)
-            } else if (topic.startsWith("$config")) {
-                this.saveConfig(socket, topic, payload)
-            } else {
-                console.log(`SIO message ${socket.id} topic=${topic} payload=${payload}`)
-                this.matron.emit("dash_" + topic, payload, socket)
+            try {
+                if (typeof topic !== 'string') {
+                    console.warn(`SIO message doesn't have string topic: ${JSON.stringify(topic)}`)
+                } else if (topic === "$ctrl" && payload === "start") {
+                    this.sendConfig(socket)
+                } else if (topic.startsWith("$config")) {
+                    this.saveConfig(socket, topic, payload)
+                } else {
+                    console.log(`SIO message ${socket.id} topic=${topic} payload=${payload}`)
+                    this.matron.emit("dash_" + topic, payload, socket)
+                }
+            } catch(err) {
+                console.log("Exception handing sio message:", err)
+            }
+        })
+
+        socket.on("req", (id, topic, payload) => {
+            try {
+                if (typeof topic !== 'string') {
+                    console.warn(`SIO request doesn't have string topic: ${JSON.stringify(topic)}`)
+                } else {
+                    console.log(`SIO request ${socket.id} id=${id} topic=${topic} payload=${payload}`)
+                    this.matron.emit("dash_" + topic, payload, (resp) => {
+                        socket.emit("resp", id, resp)
+                    })
+                }
+            } catch(err) {
+                console.log("Exception handing sio message:", err)
+            }
+        })
+
+        // upload start request
+        socket.on("upstart", (id, topic, payload) => {
+            try {
+                if (typeof topic !== 'string') {
+                    console.warn(`SIO upstart doesn't have string topic: ${JSON.stringify(topic)}`)
+                } else {
+                    console.log(`SIO upstart ${socket.id} id=${id} topic=${topic} payload=${payload}`)
+                    this.doUpload(socket, id, topic, payload)
+                }
+            } catch(err) {
+                console.log("Exception handing sio message:", err)
+            }
+        })
+
+        // upload continue message
+        socket.on("upcont", (topic, payload) => {
+            try {
+                if (typeof topic !== 'string') {
+                    console.warn(`SIO upcont doesn't have string topic: ${JSON.stringify(topic)}`)
+                } else {
+                    console.log(`SIO upcont ${socket.id} id=${id} topic=${topic} payload=${payload}`)
+                    this.doUpload(null, topic, payload)
+                }
+            } catch(err) {
+                console.log("Exception handing sio message:", err)
             }
         })
 
@@ -331,6 +380,65 @@ class FlexDash {
         } else {
             delete req.session.rooms
             res.status(401).end()
+        }
+    }
+
+    // doUpload moves a file upload along (i.e. upload from FlexDash to us).
+    // There are three phases to an upload:
+    // - The first message contains the info (name, size, etc.) and a first chunk of data.
+    //   Before processing the data an application handler is called to validate the info and
+    //   return a filename or rejection. If the response is to proceed then the data is saved to
+    //   a temp file.
+    // - Subsequent messages have data that is appended to the temp file.
+    // - The last message has data that is also appended, the temp file is renamed to its final
+    //   destination, and the application handler is notified that the upload is complete.
+    // - Note that in the case of a small upload all this happens for one message and the
+    //   handler is called twice.
+    doUpload(socket, req_id, topic, payload) {
+        if (!(typeof payload == 'object' && payload.name && typeof payload.size === 'number' &&
+              typeof payload.id === 'number' && 'offset' in payload)) {
+            console.log("dashboard: malformatted upload payload")
+            if (req_id !== null) socket.emit("resp", req_id, false)
+            return
+        }
+
+        let self = this
+
+        function do_last(info) {
+            // end of file, close and rename
+            Fs.closeSync(info.fd)
+            Fs.renameSync(info.tmp_name, info.tgt_name)
+            // notify app
+            delete payload.data
+            self.matron.emit("dash_" + topic, "done", payload)
+            console.log("flexdash: upload complete: " + info.tgt_name)
+            delete self.uploads[payload.id]
+        }
+
+        // dispatch first request to application to get filename/reject
+        if (req_id !== null) {
+            let data = payload.data
+            delete payload.data // don't pass payload to handler to avoid mistakes there
+            this.matron.emit("dash_" + topic, "begin", payload, (resp) => {
+                if (resp && typeof resp === 'string') {
+                    // start writing to file, this stuff should be async...
+                    payload.tmp_name = OS.tmpdir() + "/fd-upload-" + Math.trunc(Math.random()*1E9)
+                    payload.tgt_name = resp
+                    payload.fd = Fs.openSync(payload.tmp_name, 'wx', 0o600)
+                    Fs.writeSync(payload.fd, data)
+                    if (payload.last) do_last(payload)
+                    else this.uploads[payload.id] = payload
+                }
+                // send response back
+                socket.emit("resp", req_id, resp)
+            })
+        // append subsequent messages to file and handle last message
+        } else if (this.uploads[payload.id]) {
+            let info = this.uploads[payload.id]
+            Fs.writeSync(info.fd, payload.data) // FIXME: make async
+            if (payload.last) do_last(info)
+        } else {
+            console.log("flexdash: got data for unknown upload")
         }
     }
 

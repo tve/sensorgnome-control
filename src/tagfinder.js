@@ -17,6 +17,7 @@ class TagFinder {
         matron.on("quit", () => this.quit())
         matron.on("vahData", x => this.gotInput(x))
         matron.on("setParam", x => this.gotParamInput(x))
+        matron.on("tagDBChg", x => this.restart())
     }
 
     pubTagInfo(file, info) {
@@ -73,10 +74,19 @@ class TagFinder {
         })
     }
 
+    restart() {
+        console.log("Restarting tag finder")
+        if (this.child) {
+            this.child.kill("SIGKILL") // childDied() will restart it...
+        } else {
+            this.start()
+        }
+    }
+
     childDied(code, signal) {
         this.child = null
-        if (this.child && !this.quitting) setTimeout(() => this.start(), 5000)
-        console.log("Tag finder died")
+        if (!this.quitting) setTimeout(() => this.start(), 5000)
+        console.log("Tag finder died, restarting in 5 secs")
     }
 
     quit() {
