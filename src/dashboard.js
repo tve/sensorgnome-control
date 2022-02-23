@@ -5,6 +5,7 @@ const AR = require('archiver')
 const Path = require('path')
 const CP = require('child_process')
 const Pam = require('authenticate-pam')
+const { Upgrader } = require('./machine.js')
 
 const top100k = Fs.readFileSync("/opt/sensorgnome/web-portal/top-100k-passwords.txt").toString().split('\n')
 
@@ -29,7 +30,8 @@ class Dashboard {
             // events triggered by a message from FlexDash
             'dash_download', 'dash_upload', 'dash_deployment_update', 'dash_enable_wifi',
             'dash_enable_hotspot', 'dash_config_wifi', 'dash_update_portmap', 'dash_creds_update',
-            'dash_upload_tagdb', 'dash_df_enable', 'dash_df_tags',
+            'dash_upload_tagdb', 'dash_df_enable', 'dash_df_tags', 'dash_software_reboot',
+            'dash_software_enable', 'dash_software_check', 'dash_software_upgrade',
         ]) {
             this.matron.on(ev, (...args) => {
                 let fn = 'handle_'+ev
@@ -78,6 +80,7 @@ class Dashboard {
         let uptime = parseInt(Fs.readFileSync("/proc/uptime").toString(), 10)
         if (!(uptime > 0)) uptime = 0
         FlexDash.set('boot_time', Date.now() / 1000 - uptime)
+        FlexDash.set('software/enable', false)
 
         // direction finding info is not saved between restarts...
         FlexDash.set('df_enable', 'OFF')
@@ -376,6 +379,17 @@ class Dashboard {
     handle_dash_upload(_, socket) {
         MotusUp.uploadSoon(true) // force upload asap
     }
+
+    // ===== Software updates
+
+    // toggle to enable/disable all the software update functionality
+    handle_dash_software_enable(value) {
+        FlexDash.set('software/enable', value)
+    }
+
+    handle_dash_software_reboot() { Upgrader.reboot() }
+    handle_dash_software_check() { Upgrader.check() }
+    handle_dash_software_upgrade() { Upgrader.upgrade() }
 
 }
 
