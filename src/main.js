@@ -81,6 +81,8 @@ MotusUp       = new (require('./motus_up.js').MotusUploader) (TheMatron)
 AllOut        = new SafeStream(TheMatron, "all", ".txt", 1000000, 3600, "parse") // 1MB max filesize
 LifetagOut    = new SafeStream(TheMatron, "ctt", ".txt", 1000000, 3600, "parse")
 
+Upgrader      = new Machine.Upgrader()
+
 //Uploader = new (require('./uploader.js').Uploader) (TheMatron);
 //Relay = new (require('./relay.js').Relay) (TheMatron, 59000);
 

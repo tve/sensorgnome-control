@@ -5,7 +5,6 @@ const AR = require('archiver')
 const Path = require('path')
 const CP = require('child_process')
 const Pam = require('authenticate-pam')
-const { Upgrader } = require('./machine.js')
 
 const top100k = Fs.readFileSync("/opt/sensorgnome/web-portal/top-100k-passwords.txt").toString().split('\n')
 

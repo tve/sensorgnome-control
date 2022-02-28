@@ -10,8 +10,13 @@
 // - also gets general information about filesystem usage (df)
 
 const Fs = require('fs')
+const Fsp = require('fs/promises')
 const CP = require('child_process')
+
 const log_key = 'software/log'  // flexdash key for text log of actions
+const upgrade_log = '/data/upgrade.log'
+const upgrader_dir = '/opt/sensorgnome/upgrader'
+const check_re = RegExp('^([-a-zA-Z0-9_]+)/\\S+\\s+(\\S+)\\s+armhf\\s+.upgradable from: ([-a-z0-9_.]+)', 'gm')
 
 exports.machineID = Fs.readFileSync("/etc/sensorgnome/id").toString().substring(0, 12)
 
@@ -50,6 +55,8 @@ setInterval(getDiskUsage, 600*1000)  // every now and then get disk usage info
 class Upgrader {
   constructor() {
     this.lock = null
+    this.watchLog()
+    this.out = "" // output of current/last command
   }
 
   reboot() {
@@ -58,33 +65,23 @@ class Upgrader {
     )
   }
 
-  // exec the command and send the output to the dashboard log text widget
-  // returns a promise that gets resolved with std if exit code is 0
-  execAndLog(cmd, args, opts) {
-    this.lock = Date.now()
-
+  // exec returns a promise!
+  exec(cmd, args, opts) {
+    const uplog = Fs.openSync(upgrade_log, 'a')
+    const o = {
+      stdio: ['ignore', uplog, uplog],
+      timeout: 60*1000,
+      ...opts,
+    }
+    this.out = ""
     return new Promise((resolve, reject) => {
-      const o = {
-        stdio: ['ignore', 'pipe', 'pipe'],
-        timeout: 60*1000,
-        env: { ...process.env, DEBIAN_FRONTEND: 'noninteractive' },
-        ...opts,
-      }
       let proc = CP.spawn(cmd, args, o)
-      let out="", err=""
-
-      function updateLog() {
-        if (err) FlexDash.set(log_key, "STDERR:\n" + err + "STDOUT:\n" + out)
-        else FlexDash.set(log_key, out)
-      }
-
-      proc.stdout.on('data', (data) => { out += data; updateLog() })
-      proc.stderr.on('data', (data) => { err += data; updateLog() })
+      // signal when process completes
       proc.on('close', code => {
         console.log("CMD: " + cmd + " --> " + code)
         this.lock = null
-        if (code == 0) resolve(out)
-        else reject(err)
+        if (code == 0) resolve(this.out)
+        else reject(code)
       })
       proc.on('error', err => {
         console.log("CMD: " + cmd + " --> " + err)
@@ -94,25 +91,64 @@ class Upgrader {
     })
   }
 
+  // watchLog watches the upgrade log file and pushes updates to FlexDash.
+  // it only pushes the last 100 lines so scrolling doesn't become too crazy
+  async watchLog() {
+    const fd = await Fsp.open(upgrade_log, 'a+')
+    let pos = 0
+    let txt = []
+    let self = this
+
+    async function read() {
+      try {
+        while (true) {
+          let { bytesRead, buffer } = await fd.read({ position: pos, length: 24 })
+          console.log("watchLog @"+pos+" -> "+bytesRead)
+          if (bytesRead == 0) break
+          buffer = buffer.toString('utf8', 0, bytesRead)
+          pos += bytesRead
+          self.out += buffer
+          buffer = txt.pop() + buffer
+          let n = buffer.split('\n')
+          txt = txt.concat(n)
+          if (txt.length > 100) txt = txt.slice(txt.length-100)
+          FlexDash.set(log_key, txt.join('\n'))
+        }
+      } catch(err) {
+        console.log("Error reading upgrade log: " + err)
+        FlexDash.set(log_key, "Error reading upgrade log: " + err)
+      }
+    }
+
+    setTimeout(()=>{fd.write("\n")}, 100) // trigger watcher
+    try {
+      const watcher = Fsp.watch(upgrade_log, { persistent: false })
+      for await (const ev of watcher) {
+        read()
+      }
+    } catch(err) {
+      if (err.name === 'AbortError') return
+    }
+  }
+
   check() {
-      this.execAndLog(
-        "/bin/bash",
-        ["-c", "/usr/bin/apt-get update; /usr/bin/apt list --upgradeable 2>/dev/null"],
-      ).then(out => {
+      this.exec(upgrader_dir + "/check.sh")
+      .then(out => {
         let pkgs = []
+        console.log("Looking at:\n" + out)
         let m
-        let re = RegExp('^([-a-zA-Z0-9_]+)/\\S+\\s+(\\S+)\\s+armhf', 'gm')
-        while((m=re.exec(out)) !== null) {
-          pkgs.push([ m[1], m[2] ])
+        while((m=check_re.exec(out)) !== null) {
+          pkgs.push([ m[1], m[3], m[2] ])
         }
         console.log("Upgradable packages: " + pkgs.map(v=>v.join('/')).join(' '))
-        const avail = pkgs.length > 0 ? pkgs.map(v=>v.join(' -- ')).join('\n') : "all up-to-date"
+        const avail = pkgs.length > 0 ? pkgs.map(v => v[0]+": "+v[1]+" ("+v[2]+")").join('\n')
+                                      : "all up-to-date"
         FlexDash.set('software/available', avail)
       }).catch(err => console.log(err))
   }
 
   upgrade() {
-    this.execAndLog("/usr/bin/apt-get", ["-y", "upgrade"])
+    this.exec(upgrader_dir + "/upgrade.sh", ["-s"], { detached: true, timeout: 180*1000})
     .then(out => {
       // let pkgs = []
       // let m
@@ -127,4 +163,4 @@ class Upgrader {
 
 }
 
-exports.Upgrader = new Upgrader()
+exports.Upgrader = Upgrader

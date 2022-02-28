@@ -126,7 +126,7 @@ class HubMan {
     start() {
         this.parsePortMap()
         try {
-            Fs.watch(this.root, (...args) => this.devChanged(...args))
+            Fs.watch(this.root, { persistent: false }, (...args) => this.devChanged(...args))
             // we assume the watch is active once Fs.watch returns, so the following should
             // guarantee an event has been emitted for every device.
             this.enumeratePreExistingDevices()
