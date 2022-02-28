@@ -358,8 +358,8 @@ class Dashboard {
             return
         }
         // download date, will be recorded in "database"
-        let date = Math.trunc(Date.now()/1000)
-        let filename = "SG" + Machine.machineID + "-" + date + ".zip"
+        let now = new Date()
+        let filename = "SG" + Machine.machineID + "-" + now.toISOString() + ".zip"
         // tell the browser that we're sending a zip file
         resp.writeHead(200, {
             'Content-Type': 'application/zip',
@@ -372,6 +372,7 @@ class Dashboard {
         files.forEach(f => archive.file(f, { name: Path.basename(f) }))
         archive.finalize()
         // update the database with the date of the download
+        let date = Math.trunc(now.getTime()/1000)
         DataFiles.updateUpDownDate('downloaded', files, date)
     }
 
