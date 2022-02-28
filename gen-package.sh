@@ -26,6 +26,7 @@ sudo install -d $DESTDIR/etc/systemd/system -o 0 -g 0
 sudo install -m 644 -o 0 -g 0 *.service $DESTDIR/etc/systemd/system
 
 # logrotate control file
+sudo install -d $DESTDIR/etc/logrotate.d
 sudo install -m 644 sg-control.rotate $DESTDIR/etc/logrotate.d/sg-control
 
 cp -r DEBIAN $DESTDIR
