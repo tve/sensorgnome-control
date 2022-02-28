@@ -1,0 +1,7 @@
+/var/log/sg-control.log {
+    daily
+    rotate 7
+    copytruncate
+    dateext
+    dateyesterday
+}
