@@ -145,7 +145,9 @@ class WifiMan {
             if (mm) this.wifi_state = mm[1]
             if (this.wifi_state == "COMPLETED") this.wifi_state = "CONNECTED"
             this.matron.emit("netWifiState", this.wifi_state)
-            if (old_state != this.wifi_state) console.log("Wifi state: %s", stdout)
+            if (old_state != this.wifi_state) {
+                console.log("Wifi state: %s", stdout.replace(/\n/g, " "))
+            }
             if (! ["CONNECTED","INACTIVE"].includes(this.wifi_state)) {
                 this.getWifiStatusSoon(2000)
             }
@@ -253,7 +255,7 @@ class WifiMan {
         try {
             await this.execWpaCli(["enable", "wlan0"])
             await this.execWpaCli(["save_config"])
-            console.log(await this.execFile("/usr/bin/cat", ["/etc/wpa_supplicant/wpa_supplicant.conf"]))
+            //console.log(await this.execFile("/usr/bin/cat", ["/etc/wpa_supplicant/wpa_supplicant.conf"]))
             await this.execWpaCli(["reconfigure"])
             console.log("WiFi reconfigured")
         } catch(e) {
