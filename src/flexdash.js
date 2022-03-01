@@ -167,7 +167,7 @@ class FlexDash {
                 //if (path.startsWith('detections_hou')) console.log("SET", path, value)
                 this.io.emit('set', path, value)
             }
-            if (path != 'tag' && !path.startsWith('detection')) console.log(`SIO set data ${path}`)
+            //if (path != 'tag' && !path.startsWith('detection')) console.log(`SIO set data ${path}`)
         } catch (err) {
             console.log(`FD: Internal error setting ${path}: ${err}`)
         }
