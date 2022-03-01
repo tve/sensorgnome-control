@@ -142,12 +142,14 @@ class Chrony {
                 }
                 // send event if source info has changed
                 let max_error_p2 = max_error > 0 ? max_error.toPrecision(2) : Number.POSITIVE_INFINITY
-                if (time_source != this.time_source || max_error_p2 != this.max_error) {
+                const time_source_chg = time_source != this.time_source
+                if (time_source_chg || max_error_p2 != this.max_error) {
                     this.time_source = time_source
                     this.max_error = max_error_p2
-                    console.log(`chrony: time source is ${time_source}, error < ${max_error}`)
                     this.matron.emit("chrony", { time_source, max_error })
                 }
+                if (time_source_chg)
+                    console.log(`chrony: time source is ${time_source}, error < ${max_error}`)
             }
         )
     }
