@@ -22,15 +22,16 @@ class Dashboard {
 
         // ===== Event listeners
         for (const ev of [
-            // events funneled through matron (i.e. from app)
+            // normal events funneled through matron (i.e. from app)
             'gotGPSFix', 'chrony', 'gotTag', 'setParam', 'setParamError', 'devAdded', 'devRemoved',
             'df', 'sdcardUse', 'vahData', 'netDefaultRoute', 'netInet', 'netMotus', 'netWifiState',
             'netHotspotState', 'netWifiConfig', 'portmapFile', 'tagDBInfo',
-            // events triggered by a message from FlexDash
+            // dashboard events triggered by a message from FlexDash
             'dash_download', 'dash_upload', 'dash_deployment_update', 'dash_enable_wifi',
             'dash_enable_hotspot', 'dash_config_wifi', 'dash_update_portmap', 'dash_creds_update',
             'dash_upload_tagdb', 'dash_df_enable', 'dash_df_tags', 'dash_software_reboot',
             'dash_software_enable', 'dash_software_check', 'dash_software_upgrade',
+            'dash_download_logs'
         ]) {
             this.matron.on(ev, (...args) => {
                 let fn = 'handle_'+ev
@@ -66,6 +67,8 @@ class Dashboard {
     start() {
         // register download handler with FlexDash
         FlexDash.registerGetHandler("/data-download/:what", (req, res) => this.data_download(req, res))
+        FlexDash.registerGetHandler("/logs-download/:what", (req, res) => this.logs_download(req, res))
+
         setInterval(() => this.detectionShifter(), 10000)
 
         // set (relatively) static data
@@ -390,6 +393,34 @@ class Dashboard {
     handle_dash_software_reboot() { Upgrader.reboot() }
     handle_dash_software_check() { Upgrader.check() }
     handle_dash_software_upgrade() { Upgrader.upgrade() }
+
+    // download logs button (what must be "all" for now)
+    handle_dash_download_logs(what, socket) {
+        FlexDash.download(socket, `/logs-download/${what}`, 'logs.zip')
+    }
+
+    // Handle GET request to download log files
+    // See https://stackoverflow.com/a/61313182/3807231
+    logs_download(req, resp) {
+        console.log("log_download:", req.params.what)
+        let files = [
+            "/var/log/sg-control.log",
+            "/var/log/syslog",
+        ]
+        let now = new Date()
+        let filename = "SG" + Machine.machineID + "-" + now.toISOString() + "-logs.zip"
+        // tell the browser that we're sending a zip file
+        resp.writeHead(200, {
+            'Content-Type': 'application/zip',
+            'Content-disposition': 'attachment; filename=' + filename
+        })
+        // stream zip archive into response
+        console.log(`Streaming ZIP with ${files.length} log files`)
+        let archive = AR('zip', { zlib: { level: 1 } }) // we're putting .gz files in...
+        archive.pipe(resp)
+        files.forEach(f => archive.file(f, { name: Path.basename(f) }))
+        archive.finalize()
+    }
 
 }
 
