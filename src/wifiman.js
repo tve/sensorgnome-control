@@ -76,7 +76,7 @@ class WifiMan {
     // ip monitor process died, relaunch in a bit
     childDied(err) {
         if (this.relaunching) return
-        this.relaucnhing = true
+        this.relaunching = true
         this.child = null
         setTimeout(() => this.launchRouteMonitor(), 1000)
     }
@@ -137,13 +137,15 @@ class WifiMan {
 
     getWifiStatus() {
         this.wifiStatusTimer = null
-        this.execWpaCli(["status"])
+        this.execWpaCli(["status"], true)
         .then(stdout => {
+            const old_state = this.wifi_state
             this.wifi_state = null
-            let mm = stdout.match(/^wpa_state=(\S+)$/m)
+            const mm = stdout.match(/^wpa_state=(\S+)$/m)
             if (mm) this.wifi_state = mm[1]
             if (this.wifi_state == "COMPLETED") this.wifi_state = "CONNECTED"
             this.matron.emit("netWifiState", this.wifi_state)
+            if (old_state != this.wifi_state) console.log("Wifi state: %s", stdout)
             if (! ["CONNECTED","INACTIVE"].includes(this.wifi_state)) {
                 this.getWifiStatusSoon(2000)
             }
@@ -179,10 +181,10 @@ class WifiMan {
         })
     }
     
-    async execWpaCli(args) {
+    async execWpaCli(args, nolog=false) {
         const res = await this.execFile(WPA_CLI, ["-i", "wlan0", ...args])
         if (res === "FAIL") throw new Error(`wpa_cli [${args.join(' ')}] failed`)
-        console.log(`wpa_cli [${args.join(' ')}]: ${res.replace(/\n/g, '\\n')}`)
+        if (! nolog) console.log(`wpa_cli [${args.join(' ')}]: ${res.replace(/\n/g, '\\n')}`)
         return res
     }
     
