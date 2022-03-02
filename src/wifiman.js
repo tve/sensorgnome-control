@@ -96,6 +96,7 @@ class WifiMan {
     // set this.default_route to null|"wifi"|"ethernet"|"cell"|"other"
     readRoute(lines) {
         let route = null
+        let no_dhcp = false
         for (let line of lines.split("\n")) {
             // match: default via 192.168.0.1 dev wlan0 proto dhcp src 192.168.0.93 metric 303
             let mm = line.match(/^1.1.1.1\s+via\s+(\S+)(\s+dev\s+(\S+))?/)
@@ -103,13 +104,19 @@ class WifiMan {
                 route = mm[3] || "other"
                 console.log(`Default route: ${route} (${line})`)
             }
+            // match: 1.1.1.1 dev eth0 src 169.254.39.54 uid 1000 (link-local address/route)
+            mm = line.match(/^1.1.1.1\s.*\ssrc\s+169\.254\./)
+            if (mm && route === null) {
+                no_dhcp = true
+                console.log(`Found link-local default route (no DHCP!?): ${line}`)
+            }
         }
         // map device names to "english"
         if (route && route_map[route]) route = route_map[route]
         // publish
         //console.log("Default route:", route)
         this.default_route = route
-        this.matron.emit("netDefaultRoute", route || "none")
+        this.matron.emit("netDefaultRoute", route || (no_dhcp ? "no-DHCP" : "none"))
     }
 
     // ===== wifi and hotspot monitoring
