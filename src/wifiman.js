@@ -258,15 +258,15 @@ class WifiMan {
             }
         } catch(e) { console.log("setWifiConfig ssid/pass:", e) }
 
-        // save and reconfigure
+        // enable and save
         try {
             await this.execWpaCli(["enable", "wlan0"])
             await this.execWpaCli(["save_config"])
             //console.log(await this.execFile("/usr/bin/cat", ["/etc/wpa_supplicant/wpa_supplicant.conf"]))
-            await this.execWpaCli(["reconfigure"])
+            //await this.execWpaCli(["reconfigure"]) // would re-read config file: pointless!
             console.log("WiFi reconfigured")
         } catch(e) {
-            console.log("setWifiConfig reconfigure:", e)
+            console.log("setWifiConfig save_config:", e)
         }
         this.getWifiConfig()
         this.getWifiStatusSoon(200)
@@ -277,7 +277,7 @@ class WifiMan {
         try {
             await this.execWpaCli([enable ? "enable" : "disable", "wlan0"])
             await this.execWpaCli(["save_config"])
-            await this.execWpaCli(["reconfigure"])
+            //await this.execWpaCli(["reconfigure"])
             this.getWifiStatusSoon(1000)
         } catch(e) {
             console.log("enableWifi:", e)
