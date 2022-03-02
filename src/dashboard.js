@@ -145,7 +145,7 @@ class Dashboard {
     handle_netHotspotState(state) { FlexDash.set('net_hotspot_state', state || "??") }
     handle_netWifiState(state) {
         FlexDash.set('net_wifi_state', state || "??")
-        FlexDash.set('net_wifi_enabled', this.wifi_state != "INACTIVE" ? "ON" : "OFF")
+        FlexDash.set('net_wifi_enabled', state != "INACTIVE" ? "ON" : "OFF")
     }
     handle_netWifiConfig(config) {
         config = Object.fromEntries(['country','ssid','passphrase'].map(k=>[k,config[k]]))
