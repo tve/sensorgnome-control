@@ -29,8 +29,8 @@ const Cors = require('cors')  // Cross-origin resource sharing middleware for Ex
 const Session = require('express-session')
 const MemoryStore = require('memorystore')(Session)
 const { Server } = require("socket.io")
-const { machineID } = require('./machine.js')
 const Pam = require('authenticate-pam')
+const { machineID } = require('./machine.js')
 
 // list of paths that are used by connectivity checks of mobile devices that we want to redirect
 // to the dashboard so when the device connects to our hotspot the dashboard pops up
@@ -122,7 +122,7 @@ class FlexDash {
         })
 
         // mount static content, publicly accessible
-        this.app.get('/', (_, res) => res.sendFile("flexdash.html", {root: process.cwd()+"/public"}))
+        this.app.get('/', (...args) => this.sendIndexHtml(...args))
         this.app.post('/login', Express.json(), (req, res) => this.login(req, res))
         this.app.use(Express.static(__dirname + '/public', { extensions: ['html'] }))
 
@@ -149,6 +149,22 @@ class FlexDash {
         this.webserver.listen(8080, 'localhost', () => {
             console.log("SensorGnome FlexDash listening on port %d in %s mode",
                 this.webserver.address().port, this.app.settings.env)
+        })
+    }
+
+    // send top-level '/' in the form of a patched public/flexdash.html with title/name patched
+    sendIndexHtml(req, res) {
+        Fs.readFile(__dirname+'/public/flexdash.html', (err, data) => {
+            if (err) {
+                console.log("Error loading flexdash.html: ", err)
+                res.status(500).end()
+                return
+            }
+
+            data = data.toString()
+                .replace(/title:.*/, `title: '${Deployment.short_label}',`)
+                .replace(/<title>[^<]+/, `<title>${Deployment.short_label}`)
+            res.end(data)
         })
     }
     
