@@ -176,6 +176,8 @@ class Dashboard {
         Deployment.update(Object.fromEntries(
             Object.entries(update).map(e => [e[0].replace(/ /g,'_'), e[1]])))
         this.setDeployment()
+        FlexDash.set('motus_login', `checking...`)
+        this.matron.emit("motus-creds")
     }
 
     setDashCreds(creds, message) {

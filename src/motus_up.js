@@ -6,7 +6,7 @@
 
 
 const AR = require('archiver')
-const { createWriteStream, createReadStream } = require('fs')
+const { createWriteStream } = require('fs')
 const stream = require('stream')
 const centra = require("./centra.js")
 const Path = require('path')
@@ -24,33 +24,6 @@ const URL_UPLOAD = '/data/project/sgJobs'
 const URL_LOGIN = '/data/login'
 const URL_CONN = 'http://connectivitycheck.gstatic.com/generate_204' // Android connectivity check
 const MAX_SIZE = 10*1024*1024 // 10MB max archive size (well, actually a little more)
-
-// simple class that acts like a stream writer and produces the SHA1 of the stream
-// class StreamingSHA1 extends stream.Writable {
-//     constructor() {
-//         super()
-//         this.sha1 = crypto.createHash('sha1')
-//         this.digest_ = null
-//         this.resolver = null
-//         this.sz = 0
-//     }
-//     _write(data, enc, next) {
-//         this.sha1.update(data)
-//         this.sz += data.length
-//         next()
-//     }
-//     _final(next) {
-//         this.digest_ = this.sha1.digest('hex')
-//         if(this.resolver) this.resolver(this.digest_)
-//         next()
-//     }
-//     digest() {
-//         return new Promise((resolve, reject) => {
-//             if (this.digest_) resolve(this.digest_)
-//             else this.resolver = resolve
-//         })
-//     }
-// }
 
 // https://stackoverflow.com/a/67729663/3807231
 function stream2buffer(stream) {
@@ -75,14 +48,20 @@ class MotusUploader {
         this.session = null // session cookie
 
         // start when the initial reading of the datafiles state is completed
-        matron.on('datafile_summary', ()=> this.start())  // FIXME: start should only be called once !?
-        matron.on('dash-upload', () => this.uploadSoon())
-        matron.on('motus', status => { if (status == "OK") this.uploadSoon(true) })
+        matron.once('datafile_summary', ()=> this.start()) 
     }
-
+    
     start() {
         this.uploadSoon()
         this.matron.on("datafile", () => this.uploadSoon())
+        this.matron.on('dash-upload', () => this.uploadSoon())
+        this.matron.on('motus', status => { if (status == "OK") this.uploadSoon(true) })
+        this.matron.on('motus-creds', () => {
+            // user updated creds, let's check'em
+            const login_url = SERVER+URL_LOGIN
+            this.login(login_url, Deployment.upload_username, Deployment.upload_password)
+                .then(()=>{}).catch(e=>{})
+        })
     }
 
     // schedule an upload to happen "soon"
@@ -204,13 +183,26 @@ class MotusUploader {
     // login to Motus. On success returns session cookie, on bad user/pass returns null,
     // on error throws an exception
     async login(login_url, user, pass) {
-        const resp = await centra(login_url, 'POST')
-            .body({ login_name: user, login_password: pass }, 'form')
-            .timeout(20*1000)
-            .send()
+        let resp
+        try {
+            resp = await centra(login_url, 'POST')
+                .body({ login_name: user, login_password: pass }, 'form')
+                .timeout(20*1000)
+                .send()
+        } catch (err) {
+            FlexDash.set('motus_login', err.message || "error")
+            throw err
+        }
         //console.log(`Motus login response: ${resp.statusCode} ${JSON.stringify(resp.headers)}`)
-        if (resp.statusCode != 302) throw new Error(`Motus login error: status ${resp.statusCode}`)
-        if (resp.headers.location) throw new Error("Motus login: bad user/pass")
+        if (resp.statusCode != 302) {
+            FlexDash.set('motus_login', `HTTP ${resp.statusCode}`)
+            throw new Error(`Motus login error: status ${resp.statusCode}`)
+        }
+        if (resp.headers.location) {
+            FlexDash.set('motus_login', `bad user/pass`)
+            throw new Error("Motus login: bad user/pass")
+        }
+        FlexDash.set('motus_login', `OK`)
         return resp.headers['set-cookie']
     }
 
