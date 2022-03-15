@@ -262,6 +262,14 @@ class DataFiles {
         // update summary stats
         this.summary.total_files++
         this.summary.total_bytes += info.size
+        if (!info.uploaded) {
+            this.summary.files_to_upload++
+            this.summary.bytes_to_upload += info.size
+        }
+        if (!info.uploaded && !info.downloaded) {
+            this.summary.files_to_download++
+            this.summary.bytes_to_download += info.size
+        }
         if (info.date < '20100101') this.summary.pre_2010_files++
         const sg_id = info.name.split("-")[1]
         if (sg_id != Machine.machineID) this.summary.other_sg_files++
