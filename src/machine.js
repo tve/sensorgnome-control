@@ -20,9 +20,9 @@ const check_re = RegExp('^([-a-zA-Z0-9_]+)/\\S+\\s+(\\S+)\\s+armhf\\s+.upgradabl
 
 exports.machineID = Fs.readFileSync("/etc/sensorgnome/id").toString().substring(0, 12)
 
-var bootCountFile = "/etc/bootcount"
+var bootCountFile = "/etc/sensorgnome/bootcount"
 exports.bootCount = Fs.existsSync(bootCountFile) ?
-    Number(Fs.readFileSync(bootCountFile).toString()) % 1000000 : 0
+    Number(Fs.readFileSync(bootCountFile).toString()) % 1000000 : 99990
 
 var versionFile = "/etc/sensorgnome/version";
 
