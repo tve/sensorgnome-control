@@ -75,7 +75,7 @@ class MotusUploader {
         this.session = null // session cookie
 
         // start when the initial reading of the datafiles state is completed
-        matron.on('datafile_summary', ()=> this.start())
+        matron.on('datafile_summary', ()=> this.start())  // FIXME: start should only be called once !?
         matron.on('dash-upload', () => this.uploadSoon())
         matron.on('motus', status => { if (status == "OK") this.uploadSoon(true) })
     }
@@ -98,6 +98,8 @@ class MotusUploader {
         }, force ? 200 : 5000)
         return
         // define function to perform upload
+        // This code reschedules in case of failure, commented out for now for simplicity, prob better
+        // to keep it simple and just rely on the next datafile event...
         const sched = (delay) => setTimeout(() => {
             this.active = true
             this.timer = null

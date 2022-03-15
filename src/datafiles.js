@@ -155,7 +155,7 @@ class DataFiles {
         this.saving = false // lock to avoid concurrent saves
         this.save_timer = null // timer to delay save
 
-        matron.on("datafile", (info) => this.addFile(info, true))
+        matron.on("datafile", (info) => this.addFile(info, /*save=*/true))
         
         // summary information used by the dashboard
         this.summary = {
@@ -319,6 +319,7 @@ class DataFiles {
     }
 
     pubStats() {
+        console.log("DataFile stats:", JSON.stringify(this.summary))
         this.matron.emit("data_file_summary", this.summary)
         this.matron.emit("detection_stats", this.det_by_day, this.det_by_hour)
         //console.log(`DataFiles: det_by_hour ${JSON.stringify(this.det_by_hour)}`)
