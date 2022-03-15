@@ -5,6 +5,7 @@ const AR = require('archiver')
 const Path = require('path')
 const CP = require('child_process')
 const Pam = require('authenticate-pam')
+const Fs = require('fs')
 
 const top100k = Fs.readFileSync("/opt/sensorgnome/web-portal/top-100k-passwords.txt").toString().split('\n')
 
@@ -403,10 +404,9 @@ class Dashboard {
     // See https://stackoverflow.com/a/61313182/3807231
     logs_download(req, resp) {
         console.log("log_download:", req.params.what)
-        let files = [
-            "/var/log/sg-control.log",
-            "/var/log/syslog",
-        ]
+        let files = Fs.readdirSync("/var/log", 'utf8')
+        files = files.filter(f => f.startsWith("sg-control")).map(f=>'/var/log/'+f)
+        files.push("/var/log/syslog")
         let now = new Date()
         let filename = "SG" + Machine.machineID + "-" + now.toISOString() + "-logs.zip"
         // tell the browser that we're sending a zip file
