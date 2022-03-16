@@ -9,7 +9,7 @@ for f in acquisition.txt SG_tag_database.sqlite; do
 done
 
 # need to rebuild binary for authenticate-pam module for current architecture
-(cd $SG/control; npm install authenticate-pam)
+(cd $SG/control; TERM=dumb npm install authenticate-pam | cat)
 
 # enable and start/restart units
 for U in sg-control; do
@@ -32,8 +32,9 @@ for U in sg-control; do
 
     # Restart service, if it is running
     systemctl daemon-reload
-    if systemctl is-active --quiet $U.service; then
-        echo "Restarting $U.service"
-        systemctl restart $U.service
-    fi
+    echo "Skipping restart of sg-control" # so we don't pull the rug out mid-update
+    # if systemctl is-active --quiet $U.service; then
+    #     echo "Restarting $U.service"
+    #     systemctl restart $U.service
+    # fi
 done
