@@ -1,4 +1,5 @@
-# sensorgnome-control
+sensorgnome-control
+===================
 
 Main control process for a sensorgnome field computer.
 
