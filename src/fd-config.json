@@ -1,1 +1,1583 @@
-{"widgets":{"w09397":{"kind":"Stat","rows":1,"cols":2,"static":{"title":"Time source","high_regexp":"(NTP)|(GPS)","high_color":"#4CAF50","color":"#F44336","low_color":"#FFC107","low_regexp":""},"dynamic":{"value":"chrony/time_source"},"id":"w09397"},"w06636":{"kind":"PropsTable","rows":2,"cols":3,"static":{"title":"Sensorgnome","fields":["machineID","version","bootCount"]},"dynamic":{"data":"machineinfo"},"id":"w06636","output":null},"w00178":{"kind":"PropsTable","rows":3,"cols":3,"static":{"title":"GPS","fields":["state","lat","lon","alt","epx","epy","device"]},"dynamic":{"data":"gps"},"id":"w00178","output":null},"w05060":{"kind":"SimpleTable","rows":1,"cols":3,"static":{"title":"Devices","columns":["port","port_path","type","attr"],"labels":["Port","Port path","Type",""]},"dynamic":{"data":"devices"},"id":"w05060"},"w09119":{"kind":"Stat","rows":1,"cols":3,"static":{"title":"SDcard Data Usage","unit":"%","high_threshold":80,"high_color":"#F44336","color":"#FFC107","low_threshold":50,"low_color":"#4CAF50","value":"tr"},"dynamic":{"value":"sdcard_use"},"id":"w09119"},"w04945":{"kind":"DateTime","rows":1,"cols":3,"static":{"title":"Last Upload/Download","value":"5 days ago","high_color":"#FFFFFF","color":"#FFC107","iso_prefix":false,"start_mode":2,"zoom":100,"popup_info":"tada!"},"dynamic":{"value":"data_file_summary/last_updownload"},"id":"w04945"},"w00208":{"kind":"Stat","rows":1,"cols":2,"static":{"title":"Radio Devices","value":"4"},"dynamic":{"value":"radios/all"},"id":"w00208"},"w01467":{"kind":"SparkLine","rows":1,"cols":3,"static":{"title":"Lotek pulses (10s/pt)","show_value":false},"dynamic":{"value":"detections_5min/lotek"},"id":"w01467"},"w00138":{"kind":"SparkLine","rows":1,"cols":3,"static":{"title":"CTT tags (10s/pt)","show_value":false},"dynamic":{"value":"detections_5min/ctt"},"id":"w00138"},"w02180":{"kind":"DateTime","rows":1,"cols":3,"static":{"title":"Last Upload","value":"5 days ago","high_color":"#FFFFFF","color":"#FFC107","start_mode":2,"zoom":80},"dynamic":{"value":"data_file_summary/last_upload"},"id":"w02180"},"w02985":{"kind":"Stat","rows":1,"cols":2,"static":{"title":"Files to upload","value":"1","popup_info":"Number of data files ready for upload to Motus that have not previously been uploaded."},"dynamic":{"value":"data_file_summary/files_to_upload"},"id":"w02985"},"w05810":{"kind":"Panel","rows":1,"cols":3,"static":{"title":"","widgets":["w06081","w01630","w06543"],"solid":false},"dynamic":{},"id":"w05810"},"w06543":{"kind":"PushButton","rows":1,"cols":2,"static":{"title":"DOWNLOAD","icon":"download","output_value":"new","popup_info":"Download all data files to your computer that have not previously been uploaded or downloaded."},"dynamic":{},"id":"w06543","output":"download"},"w03367":{"kind":"PushButton","rows":1,"cols":2,"static":{"title":"ALL","color":"#EEEEEE","icon":"download","output_value":"all"},"dynamic":{},"id":"w03367","output":"download"},"w09972":{"kind":"PushButton","rows":1,"cols":2,"static":{"title":"Upload","icon":"cloud-upload","tooltip":"","output_value":"now","color":"#EEEEEE","popup_info":"Upload all new files to Motus.org now, requires internet connectivity"},"dynamic":{},"id":"w09972","output":"upload"},"w02325":{"kind":"Stat","rows":1,"cols":2,"static":{"title":"Lotek radios","value":"2"},"dynamic":{"value":"radios/vah"},"id":"w02325"},"w06813":{"kind":"Stat","rows":1,"cols":2,"static":{"title":"CTT radios","value":"2"},"dynamic":{"value":"radios/ctt"},"id":"w06813"},"w05188":{"kind":"Stat","rows":1,"cols":2,"static":{"title":"Invalid Port","value":"0","color":"#4CAF50","high_threshold":1,"high_color":"#F44336"},"dynamic":{"value":"radios/bad"},"id":"w05188"},"w04186":{"kind":"Markdown","rows":4,"cols":3,"static":{"title":"Welcome to Sensorgnome","text":"This tab provides overview info, please use the other tabs (tab bar at the top or hamburger menu on mobile devices) to view and edit data files, wifi&network settings, software updates, etc.\n\nGetting started:\n- Configure WiFi in the network tab\n- Configure radios in the radio tab\n- Configure uploads in the config tab\n"},"dynamic":{},"id":"w04186"},"w06078":{"kind":"Stat","rows":1,"cols":1,"static":{"title":"Internet","value":"OFF","high_color":"#4CAF50","high_regexp":"OK","color":"#4CAF50"},"dynamic":{"value":"net_inet_status"},"id":"w06078"},"w03494":{"kind":"PropsTable","rows":3,"cols":6,"static":{"title":"Sensorgnome Information","data":{"info":"Development SensorgNome","who":"Thorsten","contact":"tve@voneicken.com","short label":"sgdev"},"editable":true,"fields":[]},"dynamic":{"data":"deployment/data","fields":"deployment/fields"},"id":"w03494","output":"deployment_update"},"w04506":{"kind":"Toggle","rows":1,"cols":2,"static":{"title":"FindTags","on_value":"on","off_value":"off","value":"on","enabled":false},"dynamic":{},"id":"w04506","output":null},"w08190":{"kind":"Stat","rows":2,"cols":4,"static":{"title":"Current version"},"dynamic":{"value":"machineinfo/version"},"id":"w08190"},"w00791":{"kind":"Markdown","rows":2,"cols":3,"static":{"title":"","text":"# Upgrading the SensorGnome software\n\nTo upgrade the SensorGnome software either check for a new version on the download server or upload a new software ZIP from your computer. Once such as new version is shown as available, use the upgrade button to actually upgrade. Your SensorGnome will not reboot automatically, performing one is recommended but not mandatory."},"dynamic":{},"id":"w00791"},"w01648":{"kind":"PushButton","rows":1,"cols":2,"static":{"title":"Reboot"},"dynamic":{"enabled":"software/enable"},"id":"w01648","output":"software_reboot"},"w03733":{"kind":"Label","rows":1,"cols":4,"static":{"title":"Available version","label":"?"},"dynamic":{},"id":"w03733"},"w01334":{"kind":"PushButton","rows":1,"cols":4,"static":{"title":"check server"},"dynamic":{},"id":"w01334","output":null},"w09454":{"kind":"PushButton","rows":1,"cols":2,"static":{"title":"upload"},"dynamic":{},"id":"w09454","output":null},"w07718":{"kind":"PushButton","rows":1,"cols":2,"static":{"title":"upgrade"},"dynamic":{},"id":"w07718","output":null},"w00071":{"kind":"PropsTable","rows":2,"cols":3,"static":{"title":"Config","data":{"SSID":"my-ssid","Passphrase":"********","Country":"US"},"editable":true,"fields":["ssid","passphrase","country"],"send_all":true},"dynamic":{"data":"net_wifi_config"},"id":"w00071","output":"config_wifi"},"w03153":{"kind":"Stat","rows":1,"cols":1,"static":{"title":"Internet via","value":"OK","high_color":"#F44336","high_regexp":"none","low_regexp":"OFF","color":"#4CAF50","low_color":"#000000"},"dynamic":{"value":"net_default_route"},"id":"w03153"},"w04031":{"kind":"Stat","rows":1,"cols":2,"static":{"title":"GPS","color":"#000000","low_regexp":"no-","low_color":"#F44336","high_regexp":"3D","high_color":"#4CAF50"},"dynamic":{"value":"gps/state"},"id":"w04031"},"w06965":{"kind":"Panel","rows":5,"cols":3,"static":{"title":"","widgets":["w09397","w00208","w04031","w09119","w04186","w04945","w00138","w01467"],"solid":false},"dynamic":{},"id":"w06965","solid":false},"w06221":{"kind":"Panel","rows":3,"cols":3,"static":{"title":"","widgets":["w06636","w00178","w03451"],"solid":false},"dynamic":{},"id":"w06221","solid":true},"w01693":{"kind":"Panel","rows":3,"cols":3,"static":{"title":"Upload to Motus.org","widgets":["w02180","w03683","w02985","w08085","w09972","w07020","w01883"],"solid":false},"dynamic":{},"id":"w01693"},"w01814":{"kind":"Panel","rows":2,"cols":3,"static":{"title":"","widgets":["w02325","w06813","w05188","w04506","w07260"],"solid":false},"dynamic":{},"id":"w01814"},"w06900":{"kind":"SimpleTable","rows":3,"cols":3,"static":{"title":"Mounted Storage","columns":["source","size","avail","use%","target"],"labels":["Device","Size","Avail","%Full","Mount"]},"dynamic":{"data":"df"},"id":"w06900"},"w00917":{"kind":"TimePlot","rows":3,"cols":3,"static":{"title":"Detections (daily)","axes":["data_lines"]},"dynamic":{"data":"detections_daily","labels":"detection_series"},"id":"w00917","output":null},"w09712":{"kind":"TimePlot","rows":3,"cols":3,"static":{"title":"Detections (hourly)","axes":["data_lines"],"popup_info":"woheee!"},"dynamic":{"data":"detections_hourly","labels":"detection_series"},"id":"w09712","output":null},"w08085":{"kind":"Stat","rows":1,"cols":2,"static":{"title":"Bytes to upload","value":"1","unit":"B"},"dynamic":{"value":"data_file_summary/bytes_to_upload"},"id":"w08085"},"w06081":{"kind":"Stat","rows":1,"cols":2,"static":{"title":"Files to download"},"dynamic":{"value":"data_file_summary/files_to_download"},"id":"w06081"},"w01630":{"kind":"Stat","rows":1,"cols":2,"static":{"title":"Bytes to download","unit":"B"},"dynamic":{"value":"data_file_summary/bytes_to_download"},"id":"w01630"},"w01500":{"kind":"Stat","rows":1,"cols":2,"static":{"title":"Total files"},"dynamic":{"value":"data_file_summary/total_files"},"id":"w01500"},"w05368":{"kind":"Stat","rows":1,"cols":2,"static":{"title":"Total bytes","unit":"B"},"dynamic":{"value":"data_file_summary/total_bytes"},"id":"w05368"},"w00248":{"kind":"DateTime","rows":1,"cols":4,"static":{"title":"Last Download","start_mode":2,"low_threshold":0},"dynamic":{"value":"data_file_summary/last_download"},"id":"w00248"},"w09018":{"kind":"Stat","rows":1,"cols":2,"static":{"title":"Pre-2010 files","popup_info":"Pre-2010 files are data files with date prior to 2010, which occurs when data is captured before the Sensorgnome can acquire the correct time. Often these files are from short periods and can be discarded, but in some cases it may be worthwhile to correct the dates manually, if possible."},"dynamic":{"value":"data_file_summary/pre_2010_files"},"id":"w09018"},"w07020":{"kind":"Markdown","rows":1,"cols":4,"static":{"title":"  ","text":"   "},"dynamic":{},"id":"w07020"},"w06821":{"kind":"PushButton","rows":1,"cols":2,"static":{"title":"repeat","color":"#EEEEEE","icon":"download","output_value":"last","enabled":"false","popup_info":"Repeat the last download in case it was misplaced or some error occurred."},"dynamic":{},"id":"w06821","output":"download"},"w09977":{"kind":"Panel","rows":1,"cols":3,"static":{"title":"","widgets":["w05893","w08733","w05111"]},"dynamic":{},"id":"w09977"},"w05047":{"kind":"Panel","rows":1,"cols":3,"static":{"title":"","widgets":["w00248","w06821"]},"dynamic":{},"id":"w05047"},"w05177":{"kind":"Panel","rows":2,"cols":3,"static":{"title":"Problem Files","widgets":["w09018","w02940"]},"dynamic":{},"id":"w05177"},"w02940":{"kind":"Stat","rows":1,"cols":2,"static":{"title":"Other SG","value":"?","popup_info":"Number of files from a different Sensorgnome, i.e., with a different ID. The files probably stem from moving SD cards between Sensorgnomes, which is highly discouraged. Please download a fresh image when reusing SD cards."},"dynamic":{"value":"data_file_summary/other_sg_files"},"id":"w02940"},"w05893":{"kind":"Stat","rows":1,"cols":2,"static":{"title":"Total files"},"dynamic":{"value":"data_file_summary/total_files"},"id":"w05893"},"w08733":{"kind":"Stat","rows":1,"cols":2,"static":{"title":"Total Bytes","unit":"B"},"dynamic":{"value":"data_file_summary/total_bytes"},"id":"w08733"},"w05111":{"kind":"PushButton","rows":1,"cols":2,"static":{"title":"All","icon":"download","color":"#EEEEEE","output_value":"all","popup_info":"Download all files to your computer/phone regardless of prior uploads/downloads."},"dynamic":{},"id":"w05111","output":"download"},"w01536":{"kind":"TextView","rows":3,"cols":3,"static":{"title":"Acquisition Configuration"},"dynamic":{"text":"acquisition"},"id":"w01536","output":null},"w00244":{"kind":"Toggle","rows":1,"cols":3,"static":{"title":"","on_value":"ON","off_value":"OFF","value":"xxx","enabled":true},"dynamic":{"value":"net_wifi_enabled"},"id":"w00244","output":"enable_wifi"},"w01270":{"kind":"Toggle","rows":1,"cols":2,"static":{"title":"","on_value":"ON","off_value":"OFF"},"dynamic":{"value":"net_hotspot_state"},"id":"w01270","output":"enable_hotspot"},"w07763":{"kind":"Markdown","rows":4,"cols":3,"static":{"title":"Network Connectivity","text":"Network connectivity is checked periodically and represented in the \"Motus.org\", \"Internet\", and \"Internet via\" status widgets:\n\n- The \"Internet via\" widget shows the presence of a \"default\" route to the internet.\n- The \"Internet\" widget shows connectivity to a Google server.\n- The \"Motus.org\" widget shows connectivity to the Motus data upload server.\n\nThe WiFi (client) and the HotSpot features can be toggled on/off independently and can be used at the same time.\n- **Be careful not to cut your connection to the Sensorgnome!**\n- The HotSpot password must be at least 8 characters long (max 32).\n- When enabling HotSpot the WiFi may drop for a few seconds.\n- The HotSpot disables itself after 30 minutes (regardless of network activity)."},"dynamic":{},"id":"w07763"},"w01975":{"kind":"Panel","rows":2,"cols":3,"static":{"title":"WiFi Client","widgets":["w00071","w00244","w05477"],"solid":true},"dynamic":{},"id":"w01975"},"w05477":{"kind":"Stat","rows":1,"cols":3,"static":{"title":"","high_regexp":"CONNECTED","high_color":"#4CAF50","low_color":"#000000","low_regexp":"INACTIVE","color":"#EF6C00","zoom":0.95},"dynamic":{"value":"net_wifi_state"},"id":"w05477"},"w00701":{"kind":"Panel","rows":1,"cols":3,"static":{"title":"HotSpot","widgets":["w08793","w01633","w01270"]},"dynamic":{},"id":"w00701"},"w09855":{"kind":"TextView","rows":1,"cols":3,"static":{"title":"Port Mapping","editable":true},"dynamic":{"text":"portmap_file"},"id":"w09855","output":"update_portmap"},"w06015":{"kind":"Panel","rows":4,"cols":3,"static":{"title":"Port Mapping","widgets":["w09855","w05060"],"solid":false},"dynamic":{},"id":"w06015"},"w08687":{"kind":"Stat","rows":1,"cols":1,"static":{"title":"Motus.org","value":"OFF","high_regexp":"OK","high_color":"#4CAF50","color":"#C62828"},"dynamic":{"value":"net_motus_status"},"id":"w08687"},"w03683":{"kind":"Stat","rows":1,"cols":3,"static":{"title":"Motus login","value":"OFF","high_color":"#4CAF50","high_regexp":"OK","color":"#C62828","zoom":0.8},"dynamic":{"value":"motus_login"},"id":"w03683"},"w01633":{"kind":"Stat","rows":1,"cols":3,"static":{"title":"","zoom":0.8,"color":"#424242"},"dynamic":{"value":"net_hotspot_ssid"},"id":"w01633"},"w08793":{"kind":"Label","rows":1,"cols":1,"static":{"title":"","label":"SSID:","justify":"right"},"dynamic":{},"id":"w08793"},"w00710":{"kind":"PropsTable","rows":2,"cols":3,"static":{"title":"Sensorgnome Credentials","editable":true,"send_all":true,"fields":["current_password","new_password","confirm_new_password"]},"dynamic":{"data":"system_creds/data","fields":"system_creds/fields"},"id":"w00710","output":"creds_update"},"w03451":{"kind":"DateTime","rows":1,"cols":3,"static":{"title":"Booted","start_mode":2,"zoom":90},"dynamic":{"value":"boot_time"},"id":"w03451"},"w02040":{"kind":"TextView","rows":3,"cols":3,"static":{"title":"Detection log","autoscroll":true},"dynamic":{"text":"detection_log"},"id":"w02040","output":null},"w03109":{"kind":"TextView","rows":3,"cols":6,"static":{"title":"Content: projects and tag count"},"dynamic":{"text":"tagdb/info"},"id":"w03109","output":null},"w09941":{"kind":"Panel","rows":3,"cols":3,"static":{"title":"Local Tag Database","widgets":["w03109","w06470"],"solid":false},"dynamic":{},"id":"w09941"},"w02087":{"kind":"Panel","rows":6,"cols":3,"static":{"title":"Direction Finding","widgets":["w04955","w02073","w01579","w02533"]},"dynamic":{},"id":"w02087"},"w04955":{"kind":"PropsTable","rows":1,"cols":3,"static":{"title":"TagNames","data":{"tag1":"TestTags#1","tag2":"78664c3304"},"fields":["tag1","tag2"],"editable":true,"send_all":true},"dynamic":{"data":"df_tags"},"id":"w04955","output":"df_tags"},"w02073":{"kind":"Toggle","rows":1,"cols":3,"static":{"title":"enable","on_value":"ON","off_value":"OFF","show_value":true},"dynamic":{"value":"df_enable"},"id":"w02073","output":"df_enable"},"w01579":{"kind":"TextView","rows":2,"cols":6,"static":{"title":"Tags and pulses"},"dynamic":{"text":"df_log"},"id":"w01579","output":""},"w02533":{"kind":"TimePlot","rows":2,"cols":6,"static":{"title":"","left_unit":"dBm"},"dynamic":{},"id":"w02533","output":null},"w07215":{"kind":"Panel","rows":2,"cols":3,"static":{"title":"Overview","widgets":["w08190","w09004","w01648"]},"dynamic":{},"id":"w07215"},"w09004":{"kind":"Toggle","rows":1,"cols":2,"static":{"title":"Enable changes","show_value":false},"dynamic":{"value":"software/enable"},"id":"w09004","output":"software_enable"},"w07463":{"kind":"Panel","rows":3,"cols":3,"static":{"title":"Software Updates","widgets":["w08929","w02323","w06392","w04685"]},"dynamic":{},"id":"w07463"},"w08929":{"kind":"TextView","rows":3,"cols":3,"static":{"title":"Available","text":"  "},"dynamic":{"text":"software/available"},"id":"w08929","output":null},"w02323":{"kind":"PushButton","rows":1,"cols":3,"static":{"title":"check server"},"dynamic":{"enabled":"software/enable"},"id":"w02323","output":"software_check"},"w04685":{"kind":"PushButton","rows":1,"cols":3,"static":{"title":"upload","color":"#EEEEEE","enabled":""},"dynamic":{},"id":"w04685","output":"software_upload"},"w06392":{"kind":"PushButton","rows":1,"cols":3,"static":{"title":"upgrade"},"dynamic":{"enabled":"software/enable"},"id":"w06392","output":"software_upgrade"},"w06470":{"kind":"UploadButton","rows":2,"cols":6,"static":{"title":"Upload new tag database","accept":".csv,.sqlite"},"dynamic":{},"id":"w06470","output":"upload_tagdb"},"w07827":{"kind":"TextView","rows":4,"cols":3,"static":{"title":"Software Update Log","text":"   "},"dynamic":{"text":"software/log"},"id":"w07827","output":null},"w08129":{"kind":"Panel","rows":2,"cols":3,"static":{"title":"System Troubleshooting","widgets":["w01035"]},"dynamic":{},"id":"w08129"},"w01035":{"kind":"PushButton","rows":1,"cols":3,"static":{"title":"Download logs","color":"#EEEEEE","icon":"download","output_value":"all"},"dynamic":{},"id":"w01035","output":"download_logs"},"w01883":{"kind":"PopupButton","rows":1,"cols":2,"static":{"title":"Help","icon":"information-outline","popup_info":"","text":"This page allows data files to be uploaded to Motus.org or to be downloaded to your computer. When there is Internet connectivity files are uploaded automatically when they're complete. The upload button is for situations where you manually establish internet connectivity and need to kick off uploading immediately.\n\nThe red `download` button downloads all files to your computer/phone\nthat have not been uploaded or downloaded yet.\nThe `all` button downloads all files irrespective of prior uploads/downloads (this could be big),\nthis can be useful as a backup.\nThe `repeat` button repeats the last download in case it was misplaced or some error occurred.\n\nPre-2010 files are files that were recorded when the Sensorgnome did not have correct time information. These will have to be corrected manually, if possible (they are included in the normal downloads).\nQuarantined files are very large and suspected to contain just noise, these are included in downloads but not uploads.","color":"#90CAF9"},"dynamic":{},"id":"w01883"},"w07260":{"kind":"PopupButton","rows":1,"cols":4,"static":{"title":"Port Mapping Info","color":"#90CAF9","icon":"information","text":"When a device is plugged into USB its port is represented by a path, such as 1.2.3.\nFor SensorGnome, tag detections need to be reported using a \"port number\" in the range 0..9\n(0 really being 10).\n\nBy default, USB paths are mapped to port numbers, but these may fall outside the range 0..9\nand they may represent a haphazard sequence when compared with a physical hub.\nThe port mapping allows explicit port mappings to be enforced, such that ports on the rPi and\non a hub can be labeled 1..10 in a reasonable order.\nThe mapping simply assigns a port number to a path using a notation like\n`path -> port`, for example, `1.2.3 -> 3` to map path `1.2.3` to port `3`.\n\nOn a __rPi 4B__ the built-in USB ports have paths 1.1 through 1.4 (1.1 is on the bottom closest\nto the Ethernet, 1.4 is at the top outside corner). A 4-port hub plugged into port 4 will result\nin paths 1.4.1 through 1.4.4. A 7-port hub typically consists of two 4-port hubs daisy-chained\ninternally, which results in paths 1.4.1..1.4.3 and 1.4.4.1 through 1.4.4.4 assuming the internal\nchaining is on port 4 (1.4.4).\n\nOn a __rPi 3B__ the built-in USB ports have paths 1.2 through 1.5 (1.2 is on the top closest\nto the Ethernet, 1.5 is at the bottom outside corner). A 4-port hub plugged into the bottom outside\nport will result in paths 1.5.1 through 1.5.4.\n\nIn terms of ordering of mappings: the first line with a matching path wins!\n"},"dynamic":{},"id":"w07260"},"w06456":{"kind":"Panel","rows":3,"cols":3,"static":{"title":"","widgets":["w03494","w02825"]},"dynamic":{},"id":"w06456"},"w02825":{"kind":"Stat","rows":1,"cols":4,"static":{"title":"Motus login","value":"OFF","high_color":"#4CAF50","high_regexp":"OK","color":"#C62828","zoom":0.8},"dynamic":{"value":"motus_login"},"id":"w02825"}},"grids":{"g00001":{"id":"g00001","kind":"FixedGrid","widgets":["w06965","w06221","w00917","w09712"],"min_cols":3,"max_cols":6},"g01892":{"kind":"FixedGrid","title":"","widgets":["w01693","w05810","w09977","w05047","w06900","w05177"],"id":"g01892","max_cols":6,"min_cols":3},"g03145":{"kind":"FixedGrid","title":"","widgets":["w01814","w02040","w06015","w09941","w02087"],"id":"g03145","max_cols":6},"g03307":{"kind":"FixedGrid","title":"","widgets":["w08687","w06078","w03153","w01975","w00701","w07763"],"id":"g03307","min_cols":3,"max_cols":6},"g07380":{"kind":"FixedGrid","title":"","widgets":["w06456","w00710","w01536"],"id":"g07380","max_cols":6},"g05782":{"kind":"FixedGrid","title":"","widgets":["w07215","w07463","w00791","w07827","w08129"],"id":"g05782","max_cols":6}},"dash":{"title":"SG","tabs":["t00001","t01980","t06560","t06959","t08355","t09219"]},"tabs":{"t00001":{"id":"t00001","icon":"view-dashboard","grids":["g00001"]},"t01980":{"icon":"file-multiple","title":"Files","id":"t01980","grids":["g01892"]},"t06560":{"icon":"radio-tower","title":"radios","id":"t06560","grids":["g03145"]},"t06959":{"icon":"lan","title":"network","id":"t06959","grids":["g03307"]},"t08355":{"icon":"tune-vertical","title":"config","id":"t08355","grids":["g07380"]},"t09219":{"icon":"script-text","title":"software","id":"t09219","grids":["g05782"]}},"conn":{"demo":{"enabled":false,"config":false},"websocket":{"enabled":false,"config":false,"address":""},"sockio":{"enabled":true,"config":true,"hostname":"sg.voneicken.com","path":"/fd","tls":false}}}
+{
+  "widgets": {
+    "w09397": {
+      "kind": "Stat",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "Time source",
+        "high_regexp": "(NTP)|(GPS)",
+        "high_color": "#4CAF50",
+        "color": "#F44336",
+        "low_color": "#FFC107",
+        "low_regexp": ""
+      },
+      "dynamic": {
+        "value": "chrony/time_source"
+      },
+      "id": "w09397"
+    },
+    "w06636": {
+      "kind": "PropsTable",
+      "rows": 2,
+      "cols": 3,
+      "static": {
+        "title": "Sensorgnome",
+        "fields": [
+          "machineID",
+          "version",
+          "bootCount"
+        ]
+      },
+      "dynamic": {
+        "data": "machineinfo"
+      },
+      "id": "w06636",
+      "output": null
+    },
+    "w00178": {
+      "kind": "PropsTable",
+      "rows": 3,
+      "cols": 3,
+      "static": {
+        "title": "GPS",
+        "fields": [
+          "state",
+          "lat",
+          "lon",
+          "alt",
+          "epx",
+          "epy",
+          "device"
+        ]
+      },
+      "dynamic": {
+        "data": "gps"
+      },
+      "id": "w00178",
+      "output": null
+    },
+    "w05060": {
+      "kind": "SimpleTable",
+      "rows": 1,
+      "cols": 3,
+      "static": {
+        "title": "Devices",
+        "columns": [
+          "port",
+          "port_path",
+          "type",
+          "attr"
+        ],
+        "labels": [
+          "Port",
+          "Port path",
+          "Type",
+          ""
+        ]
+      },
+      "dynamic": {
+        "data": "devices"
+      },
+      "id": "w05060"
+    },
+    "w09119": {
+      "kind": "Stat",
+      "rows": 1,
+      "cols": 3,
+      "static": {
+        "title": "SDcard Data Usage",
+        "unit": "%",
+        "high_threshold": 80,
+        "high_color": "#F44336",
+        "color": "#FFC107",
+        "low_threshold": 50,
+        "low_color": "#4CAF50",
+        "value": "tr"
+      },
+      "dynamic": {
+        "value": "sdcard_use"
+      },
+      "id": "w09119"
+    },
+    "w04945": {
+      "kind": "DateTime",
+      "rows": 1,
+      "cols": 3,
+      "static": {
+        "title": "Last Upload/Download",
+        "value": "5 days ago",
+        "high_color": "#FFFFFF",
+        "color": "#FFC107",
+        "iso_prefix": false,
+        "start_mode": 2,
+        "zoom": 100,
+        "popup_info": "tada!"
+      },
+      "dynamic": {
+        "value": "data_file_summary/last_updownload"
+      },
+      "id": "w04945"
+    },
+    "w00208": {
+      "kind": "Stat",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "Radio Devices",
+        "value": "4"
+      },
+      "dynamic": {
+        "value": "radios/all"
+      },
+      "id": "w00208"
+    },
+    "w01467": {
+      "kind": "SparkLine",
+      "rows": 1,
+      "cols": 3,
+      "static": {
+        "title": "Lotek pulses (10s/pt)",
+        "show_value": false
+      },
+      "dynamic": {
+        "value": "detections_5min/lotek"
+      },
+      "id": "w01467"
+    },
+    "w00138": {
+      "kind": "SparkLine",
+      "rows": 1,
+      "cols": 3,
+      "static": {
+        "title": "CTT tags (10s/pt)",
+        "show_value": false
+      },
+      "dynamic": {
+        "value": "detections_5min/ctt"
+      },
+      "id": "w00138"
+    },
+    "w02180": {
+      "kind": "DateTime",
+      "rows": 1,
+      "cols": 3,
+      "static": {
+        "title": "Last Upload",
+        "value": "5 days ago",
+        "high_color": "#FFFFFF",
+        "color": "#FFC107",
+        "start_mode": 2
+      },
+      "dynamic": {
+        "value": "data_file_summary/last_upload"
+      },
+      "id": "w02180"
+    },
+    "w02985": {
+      "kind": "Stat",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "Files to upload",
+        "value": "1",
+        "popup_info": "Number of data files ready for upload to Motus that have not previously been uploaded."
+      },
+      "dynamic": {
+        "value": "data_file_summary/files_to_upload"
+      },
+      "id": "w02985"
+    },
+    "w05810": {
+      "kind": "Panel",
+      "rows": 1,
+      "cols": 3,
+      "static": {
+        "title": "",
+        "widgets": [
+          "w06081",
+          "w01630",
+          "w06543"
+        ],
+        "solid": false
+      },
+      "dynamic": {},
+      "id": "w05810"
+    },
+    "w06543": {
+      "kind": "PushButton",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "DOWNLOAD",
+        "icon": "download",
+        "output_value": "new",
+        "popup_info": "Download all data files to your computer that have not previously been uploaded or downloaded."
+      },
+      "dynamic": {},
+      "id": "w06543",
+      "output": "download"
+    },
+    "w03367": {
+      "kind": "PushButton",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "ALL",
+        "color": "#EEEEEE",
+        "icon": "download",
+        "output_value": "all"
+      },
+      "dynamic": {},
+      "id": "w03367",
+      "output": "download"
+    },
+    "w09972": {
+      "kind": "PushButton",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "Upload",
+        "icon": "cloud-upload",
+        "tooltip": "",
+        "output_value": "now",
+        "color": "#EEEEEE",
+        "popup_info": "Upload all new files to Motus.org now, requires internet connectivity"
+      },
+      "dynamic": {},
+      "id": "w09972",
+      "output": "upload"
+    },
+    "w02325": {
+      "kind": "Stat",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "Lotek radios",
+        "value": "2"
+      },
+      "dynamic": {
+        "value": "radios/vah"
+      },
+      "id": "w02325"
+    },
+    "w06813": {
+      "kind": "Stat",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "CTT radios",
+        "value": "2"
+      },
+      "dynamic": {
+        "value": "radios/ctt"
+      },
+      "id": "w06813"
+    },
+    "w05188": {
+      "kind": "Stat",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "Invalid Port",
+        "value": "0",
+        "color": "#4CAF50",
+        "high_threshold": 1,
+        "high_color": "#F44336"
+      },
+      "dynamic": {
+        "value": "radios/bad"
+      },
+      "id": "w05188"
+    },
+    "w04186": {
+      "kind": "Markdown",
+      "rows": 4,
+      "cols": 3,
+      "static": {
+        "title": "Welcome to Sensorgnome",
+        "text": "This tab provides overview info, please use the other tabs (tab bar at the top or hamburger menu on mobile devices) to view and edit data files, wifi&network settings, software updates, etc.\n\nGetting started:\n- Configure WiFi in the network tab\n- Configure radios in the radio tab\n- Configure uploads in the config tab\n"
+      },
+      "dynamic": {},
+      "id": "w04186"
+    },
+    "w06078": {
+      "kind": "Stat",
+      "rows": 1,
+      "cols": 1,
+      "static": {
+        "title": "Internet",
+        "value": "OFF",
+        "high_color": "#4CAF50",
+        "high_regexp": "OK",
+        "color": "#4CAF50",
+        "popup_info": "Internet connectivity check: checks whether a widely used connectivity check URL is reachable, specifically, http://connectivitycheck.gstatic.com/generate_204 used by most Android devices.\nConnectivity is checked periodically and when the network configuration changes."
+      },
+      "dynamic": {
+        "value": "net_inet_status"
+      },
+      "id": "w06078"
+    },
+    "w03494": {
+      "kind": "PropsTable",
+      "rows": 3,
+      "cols": 3,
+      "static": {
+        "title": "Sensorgnome Information",
+        "data": {
+          "info": "Development SensorgNome",
+          "who": "Thorsten",
+          "contact": "tve@voneicken.com",
+          "short label": "sgdev"
+        },
+        "editable": true,
+        "fields": []
+      },
+      "dynamic": {
+        "data": "deployment/data",
+        "fields": "deployment/fields"
+      },
+      "id": "w03494",
+      "output": "deployment_update"
+    },
+    "w04506": {
+      "kind": "Toggle",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "FindTags",
+        "on_value": "on",
+        "off_value": "off",
+        "value": "on",
+        "enabled": false
+      },
+      "dynamic": {},
+      "id": "w04506",
+      "output": null
+    },
+    "w08190": {
+      "kind": "Stat",
+      "rows": 2,
+      "cols": 4,
+      "static": {
+        "title": "Current version"
+      },
+      "dynamic": {
+        "value": "machineinfo/version"
+      },
+      "id": "w08190"
+    },
+    "w00791": {
+      "kind": "Markdown",
+      "rows": 2,
+      "cols": 3,
+      "static": {
+        "title": "",
+        "text": "# Upgrading the SensorGnome software\n\nTo upgrade the SensorGnome software either check for a new version on the download server or upload a new software ZIP from your computer. Once such as new version is shown as available, use the upgrade button to actually upgrade. Your SensorGnome will not reboot automatically, performing one is recommended but not mandatory."
+      },
+      "dynamic": {},
+      "id": "w00791"
+    },
+    "w01648": {
+      "kind": "PushButton",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "Reboot"
+      },
+      "dynamic": {
+        "enabled": "software/enable"
+      },
+      "id": "w01648",
+      "output": "software_reboot"
+    },
+    "w03733": {
+      "kind": "Label",
+      "rows": 1,
+      "cols": 4,
+      "static": {
+        "title": "Available version",
+        "label": "?"
+      },
+      "dynamic": {},
+      "id": "w03733"
+    },
+    "w01334": {
+      "kind": "PushButton",
+      "rows": 1,
+      "cols": 4,
+      "static": {
+        "title": "check server"
+      },
+      "dynamic": {},
+      "id": "w01334",
+      "output": null
+    },
+    "w09454": {
+      "kind": "PushButton",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "upload"
+      },
+      "dynamic": {},
+      "id": "w09454",
+      "output": null
+    },
+    "w07718": {
+      "kind": "PushButton",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "upgrade"
+      },
+      "dynamic": {},
+      "id": "w07718",
+      "output": null
+    },
+    "w00071": {
+      "kind": "PropsTable",
+      "rows": 2,
+      "cols": 3,
+      "static": {
+        "title": "Config",
+        "data": {
+          "SSID": "my-ssid",
+          "Passphrase": "********",
+          "Country": "US"
+        },
+        "editable": true,
+        "fields": [
+          "ssid",
+          "passphrase",
+          "country"
+        ],
+        "send_all": true
+      },
+      "dynamic": {
+        "data": "net_wifi_config"
+      },
+      "id": "w00071",
+      "output": "config_wifi"
+    },
+    "w03153": {
+      "kind": "Stat",
+      "rows": 1,
+      "cols": 1,
+      "static": {
+        "title": "Internet via",
+        "value": "OK",
+        "high_color": "#F44336",
+        "high_regexp": "none",
+        "low_regexp": "OFF",
+        "color": "#4CAF50",
+        "low_color": "#000000",
+        "popup_info": "Interface through which packets to internet hosts are routed.\nEth=ethernet, wlan0=wifi, wwan0=cellular"
+      },
+      "dynamic": {
+        "value": "net_default_route"
+      },
+      "id": "w03153"
+    },
+    "w04031": {
+      "kind": "Stat",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "GPS",
+        "color": "#000000",
+        "low_regexp": "no-",
+        "low_color": "#F44336",
+        "high_regexp": "3D",
+        "high_color": "#4CAF50"
+      },
+      "dynamic": {
+        "value": "gps/state"
+      },
+      "id": "w04031"
+    },
+    "w06965": {
+      "kind": "Panel",
+      "rows": 5,
+      "cols": 3,
+      "static": {
+        "title": "",
+        "widgets": [
+          "w09397",
+          "w00208",
+          "w04031",
+          "w09119",
+          "w04186",
+          "w04945",
+          "w00138",
+          "w01467"
+        ],
+        "solid": false
+      },
+      "dynamic": {},
+      "id": "w06965",
+      "solid": false
+    },
+    "w06221": {
+      "kind": "Panel",
+      "rows": 3,
+      "cols": 3,
+      "static": {
+        "title": "",
+        "widgets": [
+          "w06636",
+          "w00178",
+          "w03451"
+        ],
+        "solid": false
+      },
+      "dynamic": {},
+      "id": "w06221",
+      "solid": true
+    },
+    "w01693": {
+      "kind": "Panel",
+      "rows": 3,
+      "cols": 3,
+      "static": {
+        "title": "Upload to Motus.org",
+        "widgets": [
+          "w02180",
+          "w03683",
+          "w02985",
+          "w08085",
+          "w09972",
+          "w07020",
+          "w01883"
+        ],
+        "solid": false
+      },
+      "dynamic": {},
+      "id": "w01693"
+    },
+    "w01814": {
+      "kind": "Panel",
+      "rows": 2,
+      "cols": 3,
+      "static": {
+        "title": "",
+        "widgets": [
+          "w02325",
+          "w06813",
+          "w05188",
+          "w04506",
+          "w07260"
+        ],
+        "solid": false
+      },
+      "dynamic": {},
+      "id": "w01814"
+    },
+    "w06900": {
+      "kind": "SimpleTable",
+      "rows": 3,
+      "cols": 3,
+      "static": {
+        "title": "Mounted Storage",
+        "columns": [
+          "source",
+          "size",
+          "avail",
+          "use%",
+          "target"
+        ],
+        "labels": [
+          "Device",
+          "Size",
+          "Avail",
+          "%Full",
+          "Mount"
+        ]
+      },
+      "dynamic": {
+        "data": "df"
+      },
+      "id": "w06900"
+    },
+    "w00917": {
+      "kind": "TimePlot",
+      "rows": 3,
+      "cols": 3,
+      "static": {
+        "title": "Detections (daily)",
+        "axes": [
+          "data_lines"
+        ]
+      },
+      "dynamic": {
+        "data": "detections_daily",
+        "labels": "detection_series"
+      },
+      "id": "w00917",
+      "output": null
+    },
+    "w09712": {
+      "kind": "TimePlot",
+      "rows": 3,
+      "cols": 3,
+      "static": {
+        "title": "Detections (hourly)",
+        "axes": [
+          "data_lines"
+        ],
+        "popup_info": "woheee!"
+      },
+      "dynamic": {
+        "data": "detections_hourly",
+        "labels": "detection_series"
+      },
+      "id": "w09712",
+      "output": null
+    },
+    "w08085": {
+      "kind": "Stat",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "Bytes to upload",
+        "value": "1",
+        "unit": "B"
+      },
+      "dynamic": {
+        "value": "data_file_summary/bytes_to_upload"
+      },
+      "id": "w08085"
+    },
+    "w06081": {
+      "kind": "Stat",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "Files to download"
+      },
+      "dynamic": {
+        "value": "data_file_summary/files_to_download"
+      },
+      "id": "w06081"
+    },
+    "w01630": {
+      "kind": "Stat",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "Bytes to download",
+        "unit": "B"
+      },
+      "dynamic": {
+        "value": "data_file_summary/bytes_to_download"
+      },
+      "id": "w01630"
+    },
+    "w01500": {
+      "kind": "Stat",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "Total files"
+      },
+      "dynamic": {
+        "value": "data_file_summary/total_files"
+      },
+      "id": "w01500"
+    },
+    "w05368": {
+      "kind": "Stat",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "Total bytes",
+        "unit": "B"
+      },
+      "dynamic": {
+        "value": "data_file_summary/total_bytes"
+      },
+      "id": "w05368"
+    },
+    "w00248": {
+      "kind": "DateTime",
+      "rows": 1,
+      "cols": 4,
+      "static": {
+        "title": "Last Download",
+        "start_mode": 2,
+        "low_threshold": 0
+      },
+      "dynamic": {
+        "value": "data_file_summary/last_download"
+      },
+      "id": "w00248"
+    },
+    "w09018": {
+      "kind": "Stat",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "Pre-2010 files",
+        "popup_info": "Pre-2010 files are data files with date prior to 2010, which occurs when data is captured before the Sensorgnome can acquire the correct time. Often these files are from short periods and can be discarded, but in some cases it may be worthwhile to correct the dates manually, if possible."
+      },
+      "dynamic": {
+        "value": "data_file_summary/pre_2010_files"
+      },
+      "id": "w09018"
+    },
+    "w07020": {
+      "kind": "Markdown",
+      "rows": 1,
+      "cols": 4,
+      "static": {
+        "title": "  ",
+        "text": "   "
+      },
+      "dynamic": {},
+      "id": "w07020"
+    },
+    "w06821": {
+      "kind": "PushButton",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "repeat",
+        "color": "#EEEEEE",
+        "icon": "download",
+        "output_value": "last",
+        "enabled": "false",
+        "popup_info": "Repeat the last download in case it was misplaced or some error occurred."
+      },
+      "dynamic": {},
+      "id": "w06821",
+      "output": "download"
+    },
+    "w09977": {
+      "kind": "Panel",
+      "rows": 1,
+      "cols": 3,
+      "static": {
+        "title": "",
+        "widgets": [
+          "w05893",
+          "w08733",
+          "w05111"
+        ]
+      },
+      "dynamic": {},
+      "id": "w09977"
+    },
+    "w05047": {
+      "kind": "Panel",
+      "rows": 1,
+      "cols": 3,
+      "static": {
+        "title": "",
+        "widgets": [
+          "w00248",
+          "w06821"
+        ]
+      },
+      "dynamic": {},
+      "id": "w05047"
+    },
+    "w05177": {
+      "kind": "Panel",
+      "rows": 2,
+      "cols": 3,
+      "static": {
+        "title": "Problem Files",
+        "widgets": [
+          "w09018",
+          "w02940"
+        ]
+      },
+      "dynamic": {},
+      "id": "w05177"
+    },
+    "w02940": {
+      "kind": "Stat",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "Other SG",
+        "value": "?",
+        "popup_info": "Number of files from a different Sensorgnome, i.e., with a different ID. The files probably stem from moving SD cards between Sensorgnomes, which is highly discouraged. Please download a fresh image when reusing SD cards."
+      },
+      "dynamic": {
+        "value": "data_file_summary/other_sg_files"
+      },
+      "id": "w02940"
+    },
+    "w05893": {
+      "kind": "Stat",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "Total files"
+      },
+      "dynamic": {
+        "value": "data_file_summary/total_files"
+      },
+      "id": "w05893"
+    },
+    "w08733": {
+      "kind": "Stat",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "Total Bytes",
+        "unit": "B"
+      },
+      "dynamic": {
+        "value": "data_file_summary/total_bytes"
+      },
+      "id": "w08733"
+    },
+    "w05111": {
+      "kind": "PushButton",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "All",
+        "icon": "download",
+        "color": "#EEEEEE",
+        "output_value": "all",
+        "popup_info": "Download all files to your computer/phone regardless of prior uploads/downloads."
+      },
+      "dynamic": {},
+      "id": "w05111",
+      "output": "download"
+    },
+    "w01536": {
+      "kind": "TextView",
+      "rows": 3,
+      "cols": 3,
+      "static": {
+        "title": "Acquisition Configuration"
+      },
+      "dynamic": {
+        "text": "acquisition"
+      },
+      "id": "w01536",
+      "output": null
+    },
+    "w00244": {
+      "kind": "Toggle",
+      "rows": 1,
+      "cols": 3,
+      "static": {
+        "title": "",
+        "on_value": "ON",
+        "off_value": "OFF",
+        "value": "xxx",
+        "enabled": true,
+        "popup_info": "The Wifi client can be used at the same time as a hotspot and/or ethernet."
+      },
+      "dynamic": {
+        "value": "net_wifi_enabled"
+      },
+      "id": "w00244",
+      "output": "enable_wifi"
+    },
+    "w01270": {
+      "kind": "Toggle",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "",
+        "on_value": "ON",
+        "off_value": "OFF",
+        "popup_info": "The HotSpot can be used at the same time as Wifi and Internet. There is no password, but the only reachable service is this dashboard via HTTPS and a password.\nNotes: When enabling HotSpot the WiFi may drop for a few seconds.\nThe HotSpot disables itself after 30 minutes (regardless of network activity)."
+      },
+      "dynamic": {
+        "value": "net_hotspot_state"
+      },
+      "id": "w01270",
+      "output": "enable_hotspot"
+    },
+    "w01975": {
+      "kind": "Panel",
+      "rows": 2,
+      "cols": 3,
+      "static": {
+        "title": "WiFi Client",
+        "widgets": [
+          "w00071",
+          "w00244",
+          "w05477"
+        ],
+        "solid": true
+      },
+      "dynamic": {},
+      "id": "w01975"
+    },
+    "w05477": {
+      "kind": "Stat",
+      "rows": 1,
+      "cols": 3,
+      "static": {
+        "title": "",
+        "high_regexp": "CONNECTED",
+        "high_color": "#4CAF50",
+        "low_color": "#000000",
+        "low_regexp": "INACTIVE",
+        "color": "#EF6C00",
+        "zoom": 0.95,
+        "popup_info": "If the status keeps cycling between associating and disconnected/inactive then most likely the password is incorrect. Unfortunately there is no good error message for this common failure case..."
+      },
+      "dynamic": {
+        "value": "net_wifi_state"
+      },
+      "id": "w05477"
+    },
+    "w00701": {
+      "kind": "Panel",
+      "rows": 1,
+      "cols": 3,
+      "static": {
+        "title": "HotSpot",
+        "widgets": [
+          "w08793",
+          "w01633",
+          "w01270"
+        ]
+      },
+      "dynamic": {},
+      "id": "w00701"
+    },
+    "w09855": {
+      "kind": "TextView",
+      "rows": 1,
+      "cols": 3,
+      "static": {
+        "title": "Port Mapping",
+        "editable": true
+      },
+      "dynamic": {
+        "text": "portmap_file"
+      },
+      "id": "w09855",
+      "output": "update_portmap"
+    },
+    "w06015": {
+      "kind": "Panel",
+      "rows": 4,
+      "cols": 3,
+      "static": {
+        "title": "Port Mapping",
+        "widgets": [
+          "w09855",
+          "w05060"
+        ],
+        "solid": false
+      },
+      "dynamic": {},
+      "id": "w06015"
+    },
+    "w08687": {
+      "kind": "Stat",
+      "rows": 1,
+      "cols": 1,
+      "static": {
+        "title": "Motus.org",
+        "value": "OFF",
+        "high_regexp": "OK",
+        "high_color": "#4CAF50",
+        "color": "#C62828",
+        "popup_info": "Connectivity to motus.org: checks whether HTTP requests complete, specifically to https://www.motus.org/data, which is used to upload data files.\nConnectivity is checked periodically and when the network configuration changes."
+      },
+      "dynamic": {
+        "value": "net_motus_status"
+      },
+      "id": "w08687"
+    },
+    "w03683": {
+      "kind": "Stat",
+      "rows": 1,
+      "cols": 3,
+      "static": {
+        "title": "Motus login",
+        "value": "OFF",
+        "high_color": "#4CAF50",
+        "high_regexp": "OK",
+        "color": "#C62828"
+      },
+      "dynamic": {
+        "value": "motus_login"
+      },
+      "id": "w03683"
+    },
+    "w01633": {
+      "kind": "Stat",
+      "rows": 1,
+      "cols": 3,
+      "static": {
+        "title": "",
+        "zoom": 0.8,
+        "color": "#424242"
+      },
+      "dynamic": {
+        "value": "net_hotspot_ssid"
+      },
+      "id": "w01633"
+    },
+    "w08793": {
+      "kind": "Label",
+      "rows": 1,
+      "cols": 1,
+      "static": {
+        "title": "",
+        "label": "SSID:",
+        "justify": "right"
+      },
+      "dynamic": {},
+      "id": "w08793"
+    },
+    "w00710": {
+      "kind": "PropsTable",
+      "rows": 2,
+      "cols": 6,
+      "static": {
+        "title": "Sensorgnome Credentials",
+        "editable": true,
+        "send_all": true,
+        "fields": [
+          "current_password",
+          "new_password",
+          "confirm_new_password"
+        ]
+      },
+      "dynamic": {
+        "data": "system_creds/data",
+        "fields": "system_creds/fields"
+      },
+      "id": "w00710",
+      "output": "creds_update"
+    },
+    "w03451": {
+      "kind": "DateTime",
+      "rows": 1,
+      "cols": 3,
+      "static": {
+        "title": "Booted",
+        "start_mode": 2,
+        "zoom": 90
+      },
+      "dynamic": {
+        "value": "boot_time"
+      },
+      "id": "w03451"
+    },
+    "w02040": {
+      "kind": "TextView",
+      "rows": 3,
+      "cols": 3,
+      "static": {
+        "title": "Detection log",
+        "autoscroll": true
+      },
+      "dynamic": {
+        "text": "detection_log"
+      },
+      "id": "w02040",
+      "output": null
+    },
+    "w03109": {
+      "kind": "TextView",
+      "rows": 3,
+      "cols": 6,
+      "static": {
+        "title": "Content: projects and tag count"
+      },
+      "dynamic": {
+        "text": "tagdb/info"
+      },
+      "id": "w03109",
+      "output": null
+    },
+    "w09941": {
+      "kind": "Panel",
+      "rows": 3,
+      "cols": 3,
+      "static": {
+        "title": "Local Tag Database",
+        "widgets": [
+          "w03109",
+          "w06470"
+        ],
+        "solid": false
+      },
+      "dynamic": {},
+      "id": "w09941"
+    },
+    "w02087": {
+      "kind": "Panel",
+      "rows": 6,
+      "cols": 3,
+      "static": {
+        "title": "Direction Finding",
+        "widgets": [
+          "w04955",
+          "w02073",
+          "w01579",
+          "w02533"
+        ]
+      },
+      "dynamic": {},
+      "id": "w02087"
+    },
+    "w04955": {
+      "kind": "PropsTable",
+      "rows": 1,
+      "cols": 3,
+      "static": {
+        "title": "TagNames",
+        "data": {
+          "tag1": "TestTags#1",
+          "tag2": "78664c3304"
+        },
+        "fields": [
+          "tag1",
+          "tag2"
+        ],
+        "editable": true,
+        "send_all": true
+      },
+      "dynamic": {
+        "data": "df_tags"
+      },
+      "id": "w04955",
+      "output": "df_tags"
+    },
+    "w02073": {
+      "kind": "Toggle",
+      "rows": 1,
+      "cols": 3,
+      "static": {
+        "title": "enable",
+        "on_value": "ON",
+        "off_value": "OFF",
+        "show_value": true
+      },
+      "dynamic": {
+        "value": "df_enable"
+      },
+      "id": "w02073",
+      "output": "df_enable"
+    },
+    "w01579": {
+      "kind": "TextView",
+      "rows": 2,
+      "cols": 6,
+      "static": {
+        "title": "Tags and pulses"
+      },
+      "dynamic": {
+        "text": "df_log"
+      },
+      "id": "w01579",
+      "output": ""
+    },
+    "w02533": {
+      "kind": "TimePlot",
+      "rows": 2,
+      "cols": 6,
+      "static": {
+        "title": "",
+        "left_unit": "dBm"
+      },
+      "dynamic": {},
+      "id": "w02533",
+      "output": null
+    },
+    "w07215": {
+      "kind": "Panel",
+      "rows": 2,
+      "cols": 3,
+      "static": {
+        "title": "Overview",
+        "widgets": [
+          "w08190",
+          "w09004",
+          "w01648"
+        ]
+      },
+      "dynamic": {},
+      "id": "w07215"
+    },
+    "w09004": {
+      "kind": "Toggle",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "Enable changes",
+        "show_value": false
+      },
+      "dynamic": {
+        "value": "software/enable"
+      },
+      "id": "w09004",
+      "output": "software_enable"
+    },
+    "w07463": {
+      "kind": "Panel",
+      "rows": 4,
+      "cols": 3,
+      "static": {
+        "title": "Software Updates",
+        "widgets": [
+          "w08929",
+          "w02323",
+          "w06392",
+          "w05346",
+          "w04685"
+        ]
+      },
+      "dynamic": {},
+      "id": "w07463"
+    },
+    "w08929": {
+      "kind": "TextView",
+      "rows": 4,
+      "cols": 4,
+      "static": {
+        "title": "Available",
+        "text": "  "
+      },
+      "dynamic": {
+        "text": "software/available"
+      },
+      "id": "w08929",
+      "output": null
+    },
+    "w02323": {
+      "kind": "PushButton",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "check",
+        "output_value": "check",
+        "popup_info": "Check the operating system repositories for packages to upgrade.\nRequires internet connectivity.\nDoes not perform any changes.\n"
+      },
+      "dynamic": {
+        "enabled": "software/enable"
+      },
+      "id": "w02323",
+      "output": "software_check"
+    },
+    "w04685": {
+      "kind": "PushButton",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "upload",
+        "color": "#EEEEEE",
+        "enabled": "",
+        "output_value": "upload"
+      },
+      "dynamic": {},
+      "id": "w04685",
+      "output": "software_upload"
+    },
+    "w06392": {
+      "kind": "PushButton",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "sg upgrade",
+        "output_value": "sensorgnome",
+        "popup_info": "Upgrade the Sensorgnome packages shown in the \"available\" widget.\nThis may upgrade some system packages because they are dependencies."
+      },
+      "dynamic": {
+        "enabled": "software/enable"
+      },
+      "id": "w06392",
+      "output": "software_upgrade"
+    },
+    "w06470": {
+      "kind": "UploadButton",
+      "rows": 2,
+      "cols": 6,
+      "static": {
+        "title": "Upload new tag database",
+        "accept": ".csv,.sqlite"
+      },
+      "dynamic": {},
+      "id": "w06470",
+      "output": "upload_tagdb"
+    },
+    "w07827": {
+      "kind": "TextView",
+      "rows": 4,
+      "cols": 3,
+      "static": {
+        "title": "Software Update Log",
+        "text": "   "
+      },
+      "dynamic": {
+        "text": "software/log"
+      },
+      "id": "w07827",
+      "output": null
+    },
+    "w08129": {
+      "kind": "Panel",
+      "rows": 1,
+      "cols": 3,
+      "static": {
+        "title": "System Troubleshooting",
+        "widgets": [
+          "w01035"
+        ]
+      },
+      "dynamic": {},
+      "id": "w08129"
+    },
+    "w01035": {
+      "kind": "PushButton",
+      "rows": 1,
+      "cols": 6,
+      "static": {
+        "title": "Download logs",
+        "color": "#EEEEEE",
+        "icon": "download",
+        "output_value": "all"
+      },
+      "dynamic": {},
+      "id": "w01035",
+      "output": "download_logs"
+    },
+    "w01883": {
+      "kind": "PopupButton",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "Help",
+        "icon": "information-outline",
+        "popup_info": "",
+        "text": "This page allows data files to be uploaded to Motus.org or to be downloaded to your computer. When there is Internet connectivity files are uploaded automatically when they're complete. The upload button is for situations where you manually establish internet connectivity and need to kick off uploading immediately.\n\nThe red `download` button downloads all files to your computer/phone\nthat have not been uploaded or downloaded yet.\nThe `all` button downloads all files irrespective of prior uploads/downloads (this could be big),\nthis can be useful as a backup.\nThe `repeat` button repeats the last download in case it was misplaced or some error occurred.\n\nPre-2010 files are files that were recorded when the Sensorgnome did not have correct time information. These will have to be corrected manually, if possible (they are included in the normal downloads).\nQuarantined files are very large and suspected to contain just noise, these are included in downloads but not uploads.",
+        "color": "#90CAF9"
+      },
+      "dynamic": {},
+      "id": "w01883"
+    },
+    "w07260": {
+      "kind": "PopupButton",
+      "rows": 1,
+      "cols": 4,
+      "static": {
+        "title": "Port Mapping Info",
+        "color": "#90CAF9",
+        "icon": "information",
+        "text": "When a device is plugged into USB its port is represented by a path, such as 1.2.3.\nFor SensorGnome, tag detections need to be reported using a \"port number\" in the range 0..9\n(0 really being 10).\n\nBy default, USB paths are mapped to port numbers, but these may fall outside the range 0..9\nand they may represent a haphazard sequence when compared with a physical hub.\nThe port mapping allows explicit port mappings to be enforced, such that ports on the rPi and\non a hub can be labeled 1..10 in a reasonable order.\nThe mapping simply assigns a port number to a path using a notation like\n`path -> port`, for example, `1.2.3 -> 3` to map path `1.2.3` to port `3`.\n\nOn a __rPi 4B__ the built-in USB ports have paths 1.1 through 1.4 (1.1 is on the bottom closest\nto the Ethernet, 1.4 is at the top outside corner). A 4-port hub plugged into port 4 will result\nin paths 1.4.1 through 1.4.4. A 7-port hub typically consists of two 4-port hubs daisy-chained\ninternally, which results in paths 1.4.1..1.4.3 and 1.4.4.1 through 1.4.4.4 assuming the internal\nchaining is on port 4 (1.4.4).\n\nOn a __rPi 3B__ the built-in USB ports have paths 1.2 through 1.5 (1.2 is on the top closest\nto the Ethernet, 1.5 is at the bottom outside corner). A 4-port hub plugged into the bottom outside\nport will result in paths 1.5.1 through 1.5.4.\n\nIn terms of ordering of mappings: the first line with a matching path wins!\n"
+      },
+      "dynamic": {},
+      "id": "w07260"
+    },
+    "w05346": {
+      "kind": "PushButton",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "sysupgrade",
+        "color": "#EEEEEE",
+        "output_value": "system",
+        "popup_info": "Upgrade all packages listed in the \"available\" widget, including Sensorgnome and system packages.\nThis is not recommended unless you have a way to recover, i.e., swap out a freshly flashed SDcard.\nAfter the upgrade, a reboot is generally recommended."
+      },
+      "dynamic": {
+        "enabled": "software/enable"
+      },
+      "id": "w05346",
+      "output": "software_upgrade"
+    },
+    "w05237": {
+      "kind": "Stat",
+      "rows": 1,
+      "cols": 4,
+      "static": {
+        "title": "Motus login",
+        "value": "OFF",
+        "high_color": "#4CAF50",
+        "high_regexp": "OK",
+        "color": "#C62828"
+      },
+      "dynamic": {
+        "value": "motus_login"
+      },
+      "id": "w05237"
+    },
+    "w07069": {
+      "kind": "Panel",
+      "rows": 3,
+      "cols": 3,
+      "static": {
+        "title": "",
+        "widgets": [
+          "w00710",
+          "w05237"
+        ]
+      },
+      "dynamic": {},
+      "id": "w07069"
+    }
+  },
+  "grids": {
+    "g00001": {
+      "id": "g00001",
+      "kind": "FixedGrid",
+      "widgets": [
+        "w06965",
+        "w06221",
+        "w00917",
+        "w09712"
+      ],
+      "min_cols": 3,
+      "max_cols": 6
+    },
+    "g01892": {
+      "kind": "FixedGrid",
+      "title": "",
+      "widgets": [
+        "w01693",
+        "w05810",
+        "w09977",
+        "w05047",
+        "w06900",
+        "w05177"
+      ],
+      "id": "g01892",
+      "max_cols": 6,
+      "min_cols": 3
+    },
+    "g03145": {
+      "kind": "FixedGrid",
+      "title": "",
+      "widgets": [
+        "w01814",
+        "w02040",
+        "w06015",
+        "w09941",
+        "w02087"
+      ],
+      "id": "g03145",
+      "max_cols": 6
+    },
+    "g03307": {
+      "kind": "FixedGrid",
+      "title": "",
+      "widgets": [
+        "w08687",
+        "w06078",
+        "w03153",
+        "w01975",
+        "w00701"
+      ],
+      "id": "g03307",
+      "min_cols": 3,
+      "max_cols": 6
+    },
+    "g07380": {
+      "kind": "FixedGrid",
+      "title": "",
+      "widgets": [
+        "w07069",
+        "w03494",
+        "w01536"
+      ],
+      "id": "g07380",
+      "max_cols": 6
+    },
+    "g05782": {
+      "kind": "FixedGrid",
+      "title": "",
+      "widgets": [
+        "w07215",
+        "w07463",
+        "w00791",
+        "w07827",
+        "w08129"
+      ],
+      "id": "g05782",
+      "max_cols": 6
+    }
+  },
+  "dash": {
+    "title": "SG",
+    "tabs": [
+      "t00001",
+      "t01980",
+      "t06560",
+      "t06959",
+      "t08355",
+      "t09219"
+    ]
+  },
+  "tabs": {
+    "t00001": {
+      "id": "t00001",
+      "icon": "view-dashboard",
+      "grids": [
+        "g00001"
+      ]
+    },
+    "t01980": {
+      "icon": "file-multiple",
+      "title": "Files",
+      "id": "t01980",
+      "grids": [
+        "g01892"
+      ]
+    },
+    "t06560": {
+      "icon": "radio-tower",
+      "title": "radios",
+      "id": "t06560",
+      "grids": [
+        "g03145"
+      ]
+    },
+    "t06959": {
+      "icon": "lan",
+      "title": "network",
+      "id": "t06959",
+      "grids": [
+        "g03307"
+      ]
+    },
+    "t08355": {
+      "icon": "tune-vertical",
+      "title": "config",
+      "id": "t08355",
+      "grids": [
+        "g07380"
+      ]
+    },
+    "t09219": {
+      "icon": "script-text",
+      "title": "software",
+      "id": "t09219",
+      "grids": [
+        "g05782"
+      ]
+    }
+  },
+  "conn": {
+    "demo": {
+      "enabled": false,
+      "config": false
+    },
+    "websocket": {
+      "enabled": false,
+      "config": false,
+      "address": ""
+    },
+    "sockio": {
+      "enabled": true,
+      "config": true,
+      "hostname": "sg.voneicken.com",
+      "path": "/fd",
+      "tls": false
+    }
+  }
+}
