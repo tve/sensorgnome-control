@@ -340,7 +340,7 @@ class FlexDash {
         if (!this.saving) {
             setTimeout(() => {
                 console.log(`SIO write config`)
-                Fs.writeFile(this.config_file, JSON.stringify(this.fd_config), (err) => {
+                Fs.writeFile(this.config_file, JSON.stringify(this.fd_config, null, 2), (err) => {
                     if (err) {
                         console.log("ERROR: failed to save FlexDash config: ", err)
                     }
