@@ -103,7 +103,7 @@ class Upgrader {
       try {
         while (true) {
           let { bytesRead, buffer } = await fd.read({ position: pos, length: 24 })
-          console.log("watchLog @"+pos+" -> "+bytesRead)
+          //console.log("watchLog @"+pos+" -> "+bytesRead)
           if (bytesRead == 0) break
           buffer = buffer.toString('utf8', 0, bytesRead)
           pos += bytesRead
@@ -124,7 +124,7 @@ class Upgrader {
     try {
       const watcher = Fsp.watch(upgrade_log, { persistent: false })
       for await (const ev of watcher) {
-        read()
+        await read()
       }
     } catch(err) {
       if (err.name === 'AbortError') return
@@ -147,8 +147,11 @@ class Upgrader {
       }).catch(err => console.log(err))
   }
 
-  upgrade() {
-    this.exec(upgrader_dir + "/upgrade.sh", ["-s"], { detached: true, timeout: 180*1000})
+  // perform an upgrade, runs apt-get upgrade in a script that deals with systemd
+  // what==system -> apt upgrade, what==sensorgnome -> apt upgrade sensorgnome
+  upgrade(what) {
+    const opt = what == "system" ? ["-s"] : [what]
+    this.exec(upgrader_dir + "/upgrade.sh", opt, { detached: true, timeout: 180*1000})
     .then(out => {
       // let pkgs = []
       // let m

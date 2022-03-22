@@ -395,7 +395,7 @@ class Dashboard {
 
     handle_dash_software_reboot() { Upgrader.reboot() }
     handle_dash_software_check() { Upgrader.check() }
-    handle_dash_software_upgrade() { Upgrader.upgrade() }
+    handle_dash_software_upgrade(what) { Upgrader.upgrade(what) }
 
     // download logs button (what must be "all" for now)
     handle_dash_download_logs(what, socket) {
