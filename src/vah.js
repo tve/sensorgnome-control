@@ -120,7 +120,7 @@ VAH.prototype.serverReady = function(data) {
 };
 
 VAH.prototype.logChildError = function(data) {
-    console.log("VAH child got error: " + data.toString() + "\n");
+    console.log("VAH stderr: " + data.toString().trim());
 };
 
 VAH.prototype.connectCmd = function() {
@@ -217,6 +217,7 @@ VAH.prototype.gotCmdReply = function (data) {
 
         if (reply.async) {
             // if async field is present, this is not a reply to a command
+            console.log("VAH async: ", JSON.stringify(reply));
             this.matron.emit(reply.event, reply.devLabel, reply);
         } else {
             // deal with the new reply

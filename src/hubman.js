@@ -38,7 +38,7 @@
      stat: filesystem stat object (from when device was first detected)
    }
 
-   NOTE: the port assignment is in flusx and being moved into the hub manager instead of being
+   NOTE: the port assignment is in flux and being moved into the hub manager instead of being
    an external script. For now the port numbers generated externally are ignored and "recomputed"
    here. The reason for all this is to simplify the interactive editing of port assignments.
 
@@ -105,7 +105,7 @@ class HubMan {
             let stat = Fs.statSync(path)
             if (! this.devs[port]) {
                 this.devs[port] = {path, attr, stat}
-                //console.log("Added " + path + " and devs[port] is " + JSON.stringify(this.devs[port]))
+                console.log("Added " + path + " and devs[port] is " + JSON.stringify(this.devs[port]))
                 this.matron.emit("devAdded", this.devs[port])
             }
         } catch (e) {

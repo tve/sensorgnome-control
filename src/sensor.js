@@ -81,6 +81,10 @@ Sensor.prototype.devRemoved = function(dev) {
             this.schedules[i].stop();
 
     this.hw_delete();
+    this.close();
+}
+
+Sensor.prototype.close = function() {
     var plugins = this.plan.plugins;
     for (var i in plugins) {
         var plugin = plugins[i];
@@ -90,7 +94,7 @@ Sensor.prototype.devRemoved = function(dev) {
 };
 
 Sensor.prototype.devStalled = function(vahDevLabel) {
-    console.log("Got devStalled with " + vahDevLabel + "\n");
+    console.log("Got devStalled with " + vahDevLabel);
     if (vahDevLabel = this.dev.attr.port)
         this.stalled();
 };
@@ -107,12 +111,13 @@ Sensor.prototype.init = function() {
 
 Sensor.prototype.initDone = function() {
     var cmd = "open " + this.dev.attr.port + " " + this.hw_devPath() + " " + this.plan.rate + " " + this.plan.channels;
+    console.log("Opening VAH: " + cmd);
     this.matron.emit("vahSubmit", cmd, this.vahOpenReply, this);
 };
 
 Sensor.prototype.vahOpenReply = function (reply, self) {
     if (reply.error) {
-// DEBUG: console.log("sensor vahopenreply got " + JSON.stringify(reply) + "\n");
+        // console.log("sensor vahopenreply got " + JSON.stringify(reply) + "\n");
         // schedule a retry on this device (every 10 seconds up to 10 times)
         if (++self.numOpenRetries < 10) {
             setTimeout (self.this_init, 10000);

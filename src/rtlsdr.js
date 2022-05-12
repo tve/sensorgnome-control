@@ -43,7 +43,7 @@ RTLSDR = function(matron, dev, devPlan) {
     // e.g. /tmp/rtlsdr-1:4.sock for a device with usb path 1:4 (bus:dev)
     this.sockPath = "/tmp/rtlsdr-" + dev.attr.usbPath + ".sock";
     // path to rtl_tcp
-    this.prog = "/usr/bin/rtl_tcp";
+    this.prog = "/usr/local/bin/rtl_tcp";
 
     // hardware rate needed to achieve plan rate;
     // same algorithm as used in vamp-alsa-host/RTLSDRMinder::getHWRateForRate
@@ -52,14 +52,12 @@ RTLSDR = function(matron, dev, devPlan) {
 
     var rate = devPlan.plan.rate;
     if (rate <= 0 || rate > 3200000) {
-console.log("rtlsdr: requested rate not within hardware range; using 48000");
+        console.log("rtlsdr: requested rate not within hardware range; using 48000");
         rate = 48000;
     }
 
     this.hw_rate = rate;
-    for(;;) {
-        if ((this.hw_rate >= 225001 && this.hw_rate <= 300000) || (this.hw_rate >= 900001 && this.hw_rate <= 3200000))
-            break;
+    while (!(this.hw_rate >= 225001 && this.hw_rate <= 300000) && !(this.hw_rate >= 900001 && this.hw_rate <= 3200000)) {
         this.hw_rate += rate;
     }
 
@@ -72,9 +70,9 @@ console.log("rtlsdr: requested rate not within hardware range; using 48000");
     this.this_cmdSockConnected = this.cmdSockConnected.bind(this);
     this.this_connectCmd       = this.connectCmd.bind(this);
     this.this_serverReady      = this.serverReady.bind(this);
-    this.this_cmdSockError     = this.cmdSockError.bind(this);
+    //this.this_cmdSockError     = this.cmdSockError.bind(this);
     this.this_cmdSockClose     = this.cmdSockClose.bind(this);
-    this.this_cmdSockEnd       = this.cmdSockEnd.bind(this);
+    //this.this_cmdSockEnd       = this.cmdSockEnd.bind(this);
     this.this_spawnServer      = this.spawnServer.bind(this);
 
     // handle situation where program owning other connection to rtl_tcp dies
@@ -87,9 +85,11 @@ console.log("rtlsdr: requested rate not within hardware range; using 48000");
     // as the info is available elsewhere
     this.gotCmdHeader = false;
 
-    this.inDieHandler = false; // when true, the device's death is already being handled
+    this.restart = false; // when true, we're killing the server and want a restart
 
     this.killing = false; // when true, we've deliberately killed the server
+
+    console.log("rtlsdr: created");
 };
 
 RTLSDR.prototype = Object.create(Sensor.Sensor.prototype);
@@ -126,19 +126,17 @@ RTLSDR.prototype.rtltcpCmds = {
     rtl_xtal:          11, // set use of crystal built into rtl8232 chip? (vs off-chip tuner); 0 = no, 1 = yes
     tuner_xtal:        12, // set use of crystal on tuner (vs off-board tuner); 0 = no, 1 = yes
     tuner_gain_index:  13, // tuner gain setting by index into array of possible values; array size is returned when first connecting to rtl_tcp
-    streaming:         14  // have rtl_tcp start (1) or stop (0) submitting URBs and sending sample data to other connection
+    streaming:         96  // have rtl_tcp start (1) or stop (0) submitting URBs and sending sample data to other connection
 };
 
 RTLSDR.prototype.hw_devPath = function() {
-
     // the device path parsable by vamp-alsa-host/RTLMinder;
     // it looks like rtlsdr:/tmp/rtlsdr-1:4.sock
-
     return "rtlsdr:" + this.sockPath;
 };
 
 RTLSDR.prototype.hw_init = function(callback) {
-// DEBUG: console.log("calling hw_init on rtlsdr");
+    //console.log("calling hw_init on rtlsdr");
     this.initCallback = callback;
     this.spawnServer();   // launch the rtl_tcp process
 };
@@ -147,34 +145,34 @@ RTLSDR.prototype.spawnServer = function() {
     if (this.quitting)
         return;
     this.cmdSock = null;
-// DEBUG: console.log("about to delete command socket with path: " + this.sockPath + "\n");
+    //console.log("about to delete command socket with path: " + this.sockPath);
     try {
         // Note: node throws on this call if this.sockPath doesn't exist;
         Fs.unlinkSync(this.sockPath);
-    } catch (e)
-    {
-// DEBUG: console.log("Error removing command socket: " + e.toString() + "\n");
+    } catch (e) {
+        //console.log("Error removing command socket: " + e.toString());
     };
 
     // set the libusb buffer size so it holds approximately 100 ms of I/Q data
     // We round up to the nearest multiple of 512 bytes, as required by libusb
-
     var usb_buffer_size = this.hw_rate * 2 * 0.100;
     usb_buffer_size = 512 * Math.ceil(usb_buffer_size / 512.0);
 
     var args = ["-p", this.sockPath, "-d", this.dev.attr.usbPath, "-s", this.hw_rate, "-B", usb_buffer_size];
-// DEBUG: console.log("RTLSDR about to spawn server with options: " + JSON.stringify(args) + "\n");
-    var server = ChildProcess.spawn(this.prog, args);
-    server.on("exit", this.this_serverDied);
+    console.log("RTLSDR spawning server: " + this.prog + " " + args.join(" "));
+    var server = ChildProcess.spawn(this.prog, args, { 'shell': false });
+    server.on("close", this.this_serverDied);
     server.on("error", this.this_serverError);
     server.stdout.on("data", this.this_serverReady);
-    server.stderr.on("data", this.this_logServerError);
+    server.stderr.on("data", (data) => console.log("RTLSDR server stderr: " + data.toString().trim()));
+    server.stderr.on("close", () => console.log("RTLSDR server stderr closed"));
     this.server = server;
 };
 
 RTLSDR.prototype.serverReady = function(data) {
     if (this.inDieHandler)
         return;
+    console.log("RTLSDR server stdout: " + data.toString().trim());
     if (data.toString().match(/Listening/)) {
         if(this.server) {
             this.server.stdout.removeListener("data", this.this_serverReady);
@@ -185,48 +183,46 @@ RTLSDR.prototype.serverReady = function(data) {
 
 RTLSDR.prototype.connectCmd = function() {
     // server is listening for connections, so connect
-// DEBUG: console.log("RTLSDR connected to server\n");
+    console.log("RTLSDR connected to rtl_tcp server");
     if (this.cmdSock || this.inDieHandler) {
         return;
     }
-// DEBUG: console.log("about to connect command socket with path: " + this.sockPath + "\n");
+    //console.log("connecting command socket with path: " + this.sockPath);
     this.cmdSock = Net.connect(this.sockPath, this.this_cmdSockConnected);
     this.cmdSock.on("close" , this.this_cmdSockClose);
     this.cmdSock.on("data"  , this.this_gotCmdReply);
 };
 
-RTLSDR.prototype.cmdSockError = function(e) {
-// DEBUG: console.log("Got command socket error, e=0\n");
-    if (! e)
-        return;
-// DEBUG: console.log("Got command socket error " + e.toString() + "\n");
-    if (this.cmdSock) {
-        this.cmdSock.destroy();
-        this.cmdSock = null;
-    }
-    if (this.quitting || this.inDieHandler)
-        return;
-    setTimeout(this.this_hw_stalled, 5001);
-};
+// RTLSDR.prototype.cmdSockError = function(e) {
+//     if (! e)
+//         return;
+//     console.log("Got command socket error " + e.toString());
+//     if (this.cmdSock) {
+//         this.cmdSock.destroy();
+//         this.cmdSock = null;
+//     }
+//     if (this.quitting || this.inDieHandler)
+//         return;
+//     setTimeout(this.this_hw_stalled, 5001);
+// };
 
-RTLSDR.prototype.cmdSockEnd = function(e) {
-// DEBUG: console.log("Got command socket end, e=0\n");
-    if (! e)
-        return;
-// DEBUG: console.log("Got command socket end " + e.toString() + "\n");
-    if (this.cmdSock) {
-        this.cmdSock.destroy();
-        this.cmdSock = null;
-    }
-    if (this.quitting || this.inDieHandler)
-        return;
-    setTimeout(this.this_hw_stalled, 5001);
-};
+// RTLSDR.prototype.cmdSockEnd = function(e) {
+//     if (! e)
+//         return;
+//     console.log("Got command socket end " + e.toString());
+//     if (this.cmdSock) {
+//         this.cmdSock.destroy();
+//         this.cmdSock = null;
+//     }
+//     if (this.quitting || this.inDieHandler)
+//         return;
+//     setTimeout(this.this_hw_stalled, 5001);
+// };
 
 RTLSDR.prototype.cmdSockClose = function(e) {
     if (!e )
         return;
-// DEBUG: console.log("Got command socket close " + e.toString() + "\n");
+    //console.log("Got command socket close " + e.toString());
     if (this.cmdSock) {
         this.cmdSock.destroy();
         this.cmdSock = null;
@@ -238,7 +234,7 @@ RTLSDR.prototype.cmdSockClose = function(e) {
 
 RTLSDR.prototype.cmdSockConnected = function() {
     // process any queued command
-// DEBUG: console.log("Got command socket connected\n");
+    //console.log("Got command socket connected");
     if (this.initCallback) {
         var cb = this.initCallback;
         this.initCallback = null;
@@ -251,22 +247,24 @@ RTLSDR.prototype.VAHdied = function() {
 };
 
 RTLSDR.prototype.serverError = function(err) {
-// DEBUG: console.log("rtl_tcp server got error:\n" + JSON.stringify(err) + "\n")
+    console.log("rtl_tcp server got error: " + JSON.stringify(err))
 };
 
 RTLSDR.prototype.serverDied = function(code, signal) {
-    if (this.killing)
-        return;
-// DEBUG: console.log("rtl_tcp server died\ncode: " + code + "\nsignal:" + signal + "\n")
-    this.hw_reset();
+    console.log("rtl_tcp server died, code:" + code + " signal:" + signal)
+    this.server = null
+    this.close() // in Sensor
+    if (!this.killing) console.log("rtl_tcp server died, code:" + code + " signal:" + signal)
+    if (this.restart || (code && !signal)) this.hw_restart();
 };
 
 RTLSDR.prototype.hw_delete = function() {
-// DEBUG: console.log("rtlsdr::hw_delete\n");
+    //console.log("rtlsdr::hw_delete");
     if (this.server) {
         this.killing = true;
         this.server.kill("SIGKILL");
-        this.server = null;
+        console.log("rtl_tcp server", this.server.pid, this.server.killed ? "killed" : "not killed");
+        //this.server = null;
     }
     if (this.cmdSock) {
         this.cmdSock.destroy();
@@ -276,20 +274,21 @@ RTLSDR.prototype.hw_delete = function() {
 
 RTLSDR.prototype.hw_startStop = function(on) {
     // just send the 'streaming' command with appropriate value
-    this.hw_setParam({par:"streaming", val:on});
-// DEBUG: console.log("rtlsdr::hw_startStop = " + on + "\n");
+    this.hw_setParam({par:"streaming", val:on?1:0});
+    console.log("rtlsdr::hw_startStop = " + on);
 };
 
-// hw_reset is called when either data from the device seems to have stalled
+// hw_restart is called when either data from the device seems to have stalled
 // (which can be due to chrony stepping the clock forward) or when rtl_tcp
 // has died
+RTLSDR.prototype.hw_restart = function() {
+    // console.log("rtl_tcp server died, restarting")
+    // this.restart = false
+    // this.killing = false
+    // setTimeout(() => this.init(), 1000)
 
-RTLSDR.prototype.hw_reset = function() {
-    if (this.inDieHandler)
-        return;
-    this.inDieHandler = true;
     // pretend the device has been removed then added
-// DEBUG: console.log("rtlsdr::hw_reset\n");
+    console.log("rtlsdr::hw_reset - faking a remove & re-add");
     // copy the device structure (really - this is the best node has to offer for cloning POD?)
     var dev = JSON.parse(JSON.stringify(this.dev));
     // re-add after 5 seconds
@@ -300,13 +299,14 @@ RTLSDR.prototype.hw_reset = function() {
 
 RTLSDR.prototype.hw_stalled = function() {
     // relaunch rtl_tcp and re-establish connection
-// DEBUG: console.log("rtlsdr::hw_stalled\n");
-    this.hw_reset();
+    console.log("rtlsdr::hw_stalled");
+    this.restart = true
+    this.hw_delete()
 };
 
 RTLSDR.prototype.hw_setParam = function(parSetting, callback) {
     // create the 5-byte command and send it to the socket
-    var cmdBuf = new Buffer(5);
+    var cmdBuf = Buffer.alloc(5);
     var par = parSetting.par, val = parSetting.val;
 
     // fix up any parameter values to match rtl_tcp semantics
@@ -332,7 +332,7 @@ RTLSDR.prototype.hw_setParam = function(parSetting, callback) {
     }
     var cmdNo = this.rtltcpCmds[parSetting.par];
     if (cmdNo && this.cmdSock) {
-// DEBUG: console.log("RTLSDR: about to set parameter " + par + " to " + val + "\n");
+        console.log(`RTLSDR: set parameter ${par} (${cmdNo}) to ${val}`);
         try {
             cmdBuf.writeUInt8(cmdNo, 0);
             cmdBuf.writeUInt32BE(val, 1); // note: rtl_tcp expects big-endian
@@ -344,7 +344,7 @@ RTLSDR.prototype.hw_setParam = function(parSetting, callback) {
 };
 
 RTLSDR.prototype.logServerError = function(data) {
-    console.log("rtl_tcp got error: " + data.toString() + "\n");
+    console.log("rtl_tcp got error: " + data.toString().trim());
 };
 
 RTLSDR.prototype.gotCmdReply = function(data) {
@@ -357,8 +357,10 @@ RTLSDR.prototype.gotCmdReply = function(data) {
     // of JSON strings, parsing each complete string into
     // this.dev.settings
 
+
     // skip the 12 byte header
     this.replyBuf += data.toString('utf8', this.gotCmdHeader ? 0 : 12);
+    //console.log("gotCmdReply: " + data.toString('utf8', this.gotCmdHeader ? 0 : 12));
     this.gotCmdHeader = true;
     for(;;) {
 	var eol = this.replyBuf.indexOf("\n");
