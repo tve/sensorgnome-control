@@ -11,6 +11,9 @@ done
 # need to rebuild binary for authenticate-pam module for current architecture
 (cd $SG/control; TERM=dumb npm install authenticate-pam | cat)
 
+# need to disable kernel RTLSDR driver
+echo "blacklist dvb_usb_rtl28xxu" >/etc/modprobe.d/blacklist-rtl28xxu.conf
+
 # enable and start/restart units
 for U in sg-control; do
     # code from debhelper's postinst-systemd-enable template

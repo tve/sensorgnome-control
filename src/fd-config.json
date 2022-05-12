@@ -1420,6 +1420,63 @@
       },
       "dynamic": {},
       "id": "w07069"
+    },
+    "w03544": {
+      "kind": "Panel",
+      "rows": 4,
+      "cols": 3,
+      "static": {
+        "title": "Sixfab UPS HAT",
+        "widgets": [
+          "w09420",
+          "w08882",
+          "w07252"
+        ]
+      },
+      "dynamic": {},
+      "id": "w03544"
+    },
+    "w09420": {
+      "kind": "PropsTable",
+      "rows": 2,
+      "cols": 3,
+      "static": {
+        "title": "Input",
+        "fields": []
+      },
+      "dynamic": {
+        "data": "ups_hat/input"
+      },
+      "id": "w09420",
+      "output": null
+    },
+    "w08882": {
+      "kind": "PropsTable",
+      "rows": 4,
+      "cols": 3,
+      "static": {
+        "title": "Battery",
+        "fields": []
+      },
+      "dynamic": {
+        "data": "ups_hat/battery"
+      },
+      "id": "w08882",
+      "output": null
+    },
+    "w07252": {
+      "kind": "PropsTable",
+      "rows": 2,
+      "cols": 3,
+      "static": {
+        "title": "System",
+        "fields": []
+      },
+      "dynamic": {
+        "data": "ups_hat/system"
+      },
+      "id": "w07252",
+      "output": null
     }
   },
   "grids": {
@@ -1430,7 +1487,8 @@
         "w06965",
         "w06221",
         "w00917",
-        "w09712"
+        "w09712",
+        "w03544"
       ],
       "min_cols": 3,
       "max_cols": 6

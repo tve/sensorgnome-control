@@ -10,6 +10,7 @@ const Fs = require('fs')
 const top100k = Fs.readFileSync("/opt/sensorgnome/web-portal/top-100k-passwords.txt").toString().split('\n')
 
 const TAGDBFILE   = "/etc/sensorgnome/SG_tag_database.sqlite" // FIXME: needs to come from main.js...
+const SixfabUpsHat = "/opt/sensorgnome/ups-hat/ups_manager.py"
 
 // The Dashboard class communicates between the web UI (FlexDash) and the "core" processing,
 // mainly using the "Matron" event system. It consists of a number of handlers divided into two
@@ -89,6 +90,8 @@ class Dashboard {
         FlexDash.set('df_enable', 'OFF')
         FlexDash.set('df_tags', this.df_tags)
         FlexDash.set('df_log', "")
+
+        this.startUpsHatUpdater()
     }
     
     // generate info about a device, called on devAdded
@@ -422,6 +425,34 @@ class Dashboard {
         archive.pipe(resp)
         files.forEach(f => archive.file(f, { name: Path.basename(f) }))
         archive.finalize()
+    }
+
+    // ===== Sixfab UPS HAT information
+
+    // get all the available info about the UPS HAT from a custom python script that queries the
+    // sixfab power-api. This produces a bunch of json metrics which we just dump into flexdash.
+    // It returns true if successful, false otherwise
+    getUpsHatInfo() {
+        return new Promise((resolve, reject) => {
+            ChildProcess.execFile(SixfabUpsHat, (code, stdout, stderr) => {
+                //console.log(`Exec "${cmd} ${args.join(" ")}" -> code=${code} stdout=${stdout} stderr=${stderr}`)
+                if (code || stderr) reject(new Error(`${SixfabUpsHat} failed: ${stderr||code}`))
+                try {
+                    let data = JSON.parse(stdout)
+                    FlexDash.set('ups_hat', data)
+                    resolve(true)
+                } catch (e) {
+                    console.log(`Got : ${stdout}`)
+                    reject(new Error(`${SixfabUpsHat} failed: ${e}`))
+                }
+            })
+        })
+    }
+
+    startUpsHatUpdater() {
+        let ok = this.getUpsHatInfo()
+          .then(() => { setInterval(() => this.getUpsHatInfo(), 60*1000) })
+          .catch((e) => { console.log("Assuming no Sixfab UPS HAT:", e) })
     }
 
 }
