@@ -2,6 +2,6 @@
 SG_HOST=${1:-sg-eth}
 ./gen-package.sh
 PKG=$(ls -r packages | head -1)
-scp packages/$PKG pi@$SG_HOST:
-ssh pi@$SG_HOST sudo apt install --reinstall ./$PKG
-#ssh pi@$SG_HOST sudo systemctl restart sg-control
+scp packages/$PKG gnome@$SG_HOST:
+ssh gnome@$SG_HOST sudo apt install --reinstall ./$PKG
+#ssh gnome@$SG_HOST sudo systemctl restart sg-control

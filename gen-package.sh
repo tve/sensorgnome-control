@@ -11,7 +11,7 @@ mkdir src/public/flexdash
 curl -L https://s3.amazonaws.com/s3.voneicken.com/flexdash/flexdash-0.3.10.tar.gz | \
     tar xzf - -C src/public/flexdash
 
-# install the control application files as user pi=1000
+# install the control application files as user gnome=1000
 SG=$DESTDIR/opt/sensorgnome
 install -d $SG/control
 cp -r src/* $SG/control
