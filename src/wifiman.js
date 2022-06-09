@@ -30,7 +30,7 @@ const URL_MOTUS = 'https://www.motus.org/data' // Motus connectivity check
 const INET_RECHECK_INIT = 10 * 1000
 const INET_RECHECK_MAX = 3600 * 1000
 
-const HOTSPOT_SCRIPT = "/opt/sensorgnome/wifi-button/scripts/wifi-hotspot.sh"
+const HOTSPOT_SCRIPT = "/opt/sensorgnome/wifi-button/wifi-hotspot.sh"
 const WPA_CLI = "/usr/sbin/wpa_cli"
 const RFKILL = "/usr/sbin/rfkill"
 
