@@ -72,7 +72,8 @@ class FlexDash {
                 maxAge: 3600000, // 1 hour
                 secure: 'auto',
                 // need sameSite=none to develop using https
-                sameSite: 'none', // may be a problem with 3-rd part cookie blocking
+                //sameSite: 'none', // may be a problem with 3rd party cookie blocking
+                sameSite: 'strict', // strict needed for HTTP to work
             },
         })
         this.app.use(this.session)
