@@ -165,9 +165,11 @@
       "static": {
         "title": "Last Upload",
         "value": "5 days ago",
-        "high_color": "#FFFFFF",
-        "color": "#FFC107",
-        "start_mode": 2
+        "high_color": "#F44336",
+        "start_mode": 2,
+        "low_color": "#4CAF50",
+        "low_threshold": null,
+        "high_threshold": null
       },
       "dynamic": {
         "value": "data_file_summary/last_upload"
@@ -537,18 +539,21 @@
     },
     "w01693": {
       "kind": "Panel",
-      "rows": 3,
+      "rows": 4,
       "cols": 3,
       "static": {
         "title": "Upload to Motus.org",
         "widgets": [
           "w02180",
-          "w03683",
+          "w08008",
           "w02985",
           "w08085",
           "w09972",
-          "w07020",
-          "w01883"
+          "w03683",
+          "w03111",
+          "w01883",
+          "w01540",
+          "w06423"
         ],
         "solid": false
       },
@@ -725,17 +730,6 @@
       },
       "id": "w09018"
     },
-    "w07020": {
-      "kind": "Markdown",
-      "rows": 1,
-      "cols": 4,
-      "static": {
-        "title": "  ",
-        "text": "   "
-      },
-      "dynamic": {},
-      "id": "w07020"
-    },
     "w06821": {
       "kind": "PushButton",
       "rows": 1,
@@ -783,7 +777,7 @@
     },
     "w05177": {
       "kind": "Panel",
-      "rows": 2,
+      "rows": 1,
       "cols": 3,
       "static": {
         "title": "Problem Files",
@@ -995,7 +989,7 @@
     "w03683": {
       "kind": "Stat",
       "rows": 1,
-      "cols": 3,
+      "cols": 2,
       "static": {
         "title": "Motus login",
         "value": "OFF",
@@ -1477,6 +1471,66 @@
       },
       "id": "w07252",
       "output": null
+    },
+    "w03111": {
+      "kind": "Stat",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "Project ID",
+        "high_threshold": 1,
+        "high_color": "#4CAF50",
+        "color": "#F44336"
+      },
+      "dynamic": {
+        "value": "motus_recv/project_id"
+      },
+      "id": "w03111"
+    },
+    "w06423": {
+      "kind": "Stat",
+      "rows": 1,
+      "cols": 4,
+      "static": {
+        "title": "Deployment name",
+        "zoom": 0.8
+      },
+      "dynamic": {
+        "value": "motus_recv/deployment_name"
+      },
+      "id": "w06423"
+    },
+    "w01540": {
+      "kind": "Stat",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "Deployment",
+        "color": "#F44336",
+        "high_regexp": "active",
+        "high_color": "#4CAF50"
+      },
+      "dynamic": {
+        "value": "motus_recv/deployment_status"
+      },
+      "id": "w01540"
+    },
+    "w08008": {
+      "kind": "Stat",
+      "rows": 1,
+      "cols": 3,
+      "static": {
+        "title": "Upload result",
+        "high_regexp": "OK",
+        "high_color": "#4CAF50",
+        "low_regexp": "FAILED",
+        "low_color": "#F44336"
+      },
+      "dynamic": {
+        "value": "motus_upload/status",
+        "popup_info": "motus_upload/info"
+      },
+      "id": "w08008"
     }
   },
   "grids": {
@@ -1501,8 +1555,8 @@
         "w05810",
         "w09977",
         "w05047",
-        "w06900",
-        "w05177"
+        "w05177",
+        "w06900"
       ],
       "id": "g01892",
       "max_cols": 6,

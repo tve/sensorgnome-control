@@ -22,6 +22,7 @@ const URL_TEST = '/data'
 const URL_VERIFY = '/data/project/sgJobs'
 const URL_UPLOAD = '/data/project/sgJobs'
 const URL_LOGIN = '/data/login'
+const URL_RECEIVERS = '/api/receivers'
 const URL_CONN = 'http://connectivitycheck.gstatic.com/generate_204' // Android connectivity check
 const MAX_SIZE = 10*1024*1024 // 10MB max archive size (well, actually a little more)
 
@@ -46,6 +47,8 @@ class MotusUploader {
         this.matron = matron
         //this.active = false // whether the uploader is active
         this.session = null // session cookie
+
+        this.project_id = null // motus project ID necessary for uploads
 
         // start when the initial reading of the datafiles state is completed
         matron.once('datafile_summary', ()=> this.start()) 
@@ -121,13 +124,22 @@ class MotusUploader {
         console.log(`Checking Motus upload of ${files.length} files`)
         try {
             //await this.test_inet_connectivity()
+            if (!this.project_id) {
+                const recv_info = await this.get_receiver_info()
+                this.matron.emit('motusRecv', recv_info)
+                if (!recv_info.project) throw new Error("Receiver not registered with a project")
+                this.project_id = 1111 // recv_info.project
+            }
             const login_url = SERVER+URL_LOGIN // await this.test_motus_connectivity()
             this.session = await this.login(login_url, Deployment.upload_username, Deployment.upload_password)
             const upload_info = await this.performFilesUpload(files)
             DataFiles.updateUpDownDate('uploaded', files.map(f=>f[0]), upload_info)
+            this.matron.emit('motusUploadResult', {status: "OK", info: null})
             return true
         } catch(e) {
             console.log(e.message)
+            this.matron.emit('motusUploadResult', { status: "FAILED",
+                info: 'Upload failed with error: "' + e.message + '"'})
             throw e
         }
     }
@@ -179,6 +191,43 @@ class MotusUploader {
     //         throw new Error(`Motus conn check cannot reach ${SERVER}: ${e.message}`)
     //     }
     // }
+
+    async get_receiver_info() {
+        let resp
+        // Motus API resuests need to have a timestamp...
+        const date = (new Date()).toISOString().replace(/[-:T]/g,'').replace(/\..*/,'')
+        try {
+            resp = await centra(SERVER+URL_RECEIVERS, 'GET')
+                .query({json: JSON.stringify({date})})
+                .timeout(20*1000)
+                .send()
+        } catch (err) {
+            throw new Error("Motus API: cannot retrieve receivers:" + err)
+        }
+
+        if (resp.statusCode == 200) {
+            const txt = await resp.text()
+            if (!txt.startsWith('{')) throw new Error(`Fetch receivers got non-json response`)
+            const j = JSON.parse(txt)
+            //console.log("Upload verify response:", JSON.stringify(j))
+            if (!("data" in j)) throw new Error(`Fetch receivers got no data`)
+            let status = "unknown"
+            let project = null
+            let deployment = "unknown"
+            for (const r of j.data) {
+                if (r.receiverID == "SG-"+Machine.machineID) {
+                    if (r.deploymentStatus == "active" || !project) {
+                        status = r.deploymentStatus
+                        project = r.recvProjectID
+                        deployment = r.deploymentName
+                    }
+                    console.log("Motus receiver info: " + JSON.stringify(r))
+                }
+            }
+            return {status, project, deployment}
+        }
+        throw new Error(`Fetch receivers error: status ${resp.statusCode}`)
+    }
 
     // login to Motus. On success returns session cookie, on bad user/pass returns null,
     // on error throws an exception
@@ -269,7 +318,7 @@ class MotusUploader {
     async verify_archive(archive_sha1, filename) {
         const t0 = Date.now()
         const resp = await centra(SERVER + URL_VERIFY)
-            .query({ projectID: 460, verifyHash: archive_sha1, fileName: filename })
+            .query({ projectID: this.project_id, verifyHash: archive_sha1, fileName: filename })
             .header({ cookie: this.session })
             .timeout(300*1000)
             .send()
@@ -292,7 +341,13 @@ class MotusUploader {
             throw new Error(`Upload verify result unparseable: ${j.msg}`)
         }
         if (resp.statusCode == 302) {
-            throw new Error("Upload verify got redirect, bad password? " + resp.headers.location)
+            let txt = "Upload verify got redirect to " + resp.headers.location
+            if (resp.headers.location.startsWith('/login')) txt += " -- session expired?"
+            if (resp.headers.location.startsWith('/data')) {
+                txt += ` -- does Motus user '${Deployment.upload_username}' have upload permission` +
+                       ` for project ${this.project_id}?`
+            }
+            throw new Error(txt)
         }
         throw new Error(`Upload verify error: status ${resp.statusCode}`)
     }
@@ -303,7 +358,7 @@ class MotusUploader {
         // start the request
         const t0 = Date.now()
         const resp = await centra(SERVER + URL_UPLOAD, 'POST')
-            .query({ projectID: 460, filePartName, action: "start" })
+            .query({ projectID: this.project_id, filePartName, action: "start" })
             .header({ cookie: this.session, 'Content-Type': 'application/zip' })
             .timeout(120*1000) // FIXME: may need to calculate based on archive size
             .body(archive)
@@ -324,7 +379,7 @@ class MotusUploader {
     // Returns the JobID if successful. Throws otherwise.
     async upload_finalize(localFileName, filePartName) {
         const resp = await centra(SERVER + URL_UPLOAD, 'GET')
-        .query({ projectID: 460, localFileName, filePartName, action: 'transfer' })
+        .query({ projectID: this.project_id, localFileName, filePartName, action: 'transfer' })
         .header({ cookie: this.session })
         .send()
         const txt = await resp.text()

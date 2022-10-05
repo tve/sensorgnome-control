@@ -27,7 +27,8 @@ class Dashboard {
             // normal events funneled through matron (i.e. from app)
             'gotGPSFix', 'chrony', 'gotTag', 'setParam', 'setParamError', 'devAdded', 'devRemoved',
             'df', 'sdcardUse', 'vahData', 'netDefaultRoute', 'netInet', 'netMotus', 'netWifiState',
-            'netHotspotState', 'netWifiConfig', 'portmapFile', 'tagDBInfo',
+            'netHotspotState', 'netWifiConfig', 'portmapFile', 'tagDBInfo', 'motusRecv',
+            'motusUploadResult',
             // dashboard events triggered by a message from FlexDash
             'dash_download', 'dash_upload', 'dash_deployment_update', 'dash_enable_wifi',
             'dash_enable_hotspot', 'dash_config_wifi', 'dash_update_portmap', 'dash_creds_update',
@@ -62,6 +63,8 @@ class Dashboard {
         this.df_enable = false
         this.df_tags = {tag1: "1.1", tag2: '78664c3304'}
         this.df_log = []
+
+        this.handle_motusRecv({})
 
         console.log("Dashboard handlers registered")
     }
@@ -141,6 +144,7 @@ class Dashboard {
     handle_portmapFile(txt) { FlexDash.set('portmap_file', txt) }
     handle_dash_update_portmap(portmap) { HubMan.setPortmap(portmap) }
     handle_tagDBInfo(data) { FlexDash.set('tagdb', data) }
+    handle_motusUploadResult(data) { FlexDash.set('motus_upload', data) }
 
     // ===== Network / Internet
 
@@ -163,6 +167,18 @@ class Dashboard {
     handle_dash_enable_wifi(state) { WifiMan.enableWifi(state == "ON").then(() => {}) }
     handle_dash_enable_hotspot(state) { WifiMan.enableHotspot(state == "ON") }
     handle_dash_config_wifi(config) { WifiMan.setWifiConfig(config).then(() => {}) }
+
+    // upload info
+    handle_motusRecv(info) {
+        const dash = {
+            project_id: info.project || "UNSET",
+            deployment_status: info.status || "UNKNOWN",
+            deployment_name: info.deployment,
+            project_color: info.project ? "green" : "red",
+            status_color: info.status == "active" ? "green" : "red",
+        }
+        FlexDash.set('motus_recv', dash)
+    }
 
     // ===== Deployment configuration
     
