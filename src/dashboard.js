@@ -481,7 +481,7 @@ class Dashboard {
             setInterval(() => this.getUpsHatInfo(), 60*1000)
         })
         .catch((e) => {
-            console.log("Assuming no Sixfab UPS HAT:", e)
+            console.log("Assuming no Sixfab UPS HAT:", e.message)
             FlexDash.set('ups_hat', {input: {status:"HAT not installed"}, system:{}, battery:{}})
         })
     }
