@@ -91,6 +91,8 @@ class Dashboard {
         FlexDash.set('df_tags', this.df_tags)
         FlexDash.set('df_log', "")
 
+        FlexDash.telegraf = this.telegraf.bind(this)
+
         this.startUpsHatUpdater()
     }
     
@@ -466,6 +468,13 @@ class Dashboard {
             console.log("Assuming no Sixfab UPS HAT:", e)
             FlexDash.set('ups_hat', {input: {status:"HAT not installed"}, system:{}, battery:{}})
         })
+    }
+
+    // ===== Return monitoring data for telegraf in json format
+    // This is in the dashboard module because most of the data is grabbed from the dashboard
+    // state variables.
+    telegraf() {
+        return {}
     }
 
 }

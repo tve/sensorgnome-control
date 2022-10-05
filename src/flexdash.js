@@ -125,6 +125,7 @@ class FlexDash {
         // mount static content, publicly accessible
         this.app.get('/', (...args) => this.sendIndexHtml(...args))
         this.app.post('/login', Express.json(), (req, res) => this.login(req, res))
+        this.app.get('/telegraf', (req, res) => this.sendTelegraf(req, res))
         this.app.use(Express.static(__dirname + '/public', { extensions: ['html'] }))
 
         // mount redirects for captive portal
@@ -167,6 +168,11 @@ class FlexDash {
                 .replace(/<title>[^<]+/, `<title>${Deployment.short_label}`)
             res.end(data)
         })
+    }
+
+    // send monitoring metrics for telegraf (json format)
+    sendTelegraf(req, res) {
+
     }
     
     registerGetHandler(path, handler) {
