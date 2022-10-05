@@ -20,15 +20,5 @@ Also the term "master" has been replaced by "main".
 
 - the UI widgets still need polish...
 - need to hide the icons/buttons in the top-right corner
-- rtlsdr radios do not work, do not plug any in
 - after a file download the dashboard is unresponsive for 10-20 seconds because the websocket disconnects, has to time-out and reconnect
-- ability to upload tag database is missing
 - logging is too verbose, need to distinguish info/warn/err
-- software tab doesn't work
-
-## To-Do in priority order
-
-- provide software update capability
-- upload tag database
-- security and authentication: enter 'system' password and HTTPS
-- 

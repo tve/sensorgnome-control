@@ -1,7 +1,8 @@
 #! /bin/bash -e
 SG_HOST=${1:-sg-eth}
+rm -rf src/public/flexdash
 ./gen-package.sh
 PKG=$(ls -r packages | head -1)
 scp packages/$PKG gnome@$SG_HOST:
-ssh gnome@$SG_HOST sudo apt install --reinstall ./$PKG
-#ssh gnome@$SG_HOST sudo systemctl restart sg-control
+ssh gnome@$SG_HOST sudo -S apt install --reinstall ./$PKG
+echo ssh gnome@$SG_HOST sudo systemctl restart sg-control
