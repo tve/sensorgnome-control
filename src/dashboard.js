@@ -441,8 +441,16 @@ class Dashboard {
                     let data = JSON.parse(stdout)
                     FlexDash.set('ups_hat', data)
                     resolve(true)
+                    // if the UPS HAT says that we should shut down, do it
+                    if (data['shutdown']) {
+                        console.log("UPS HAT says we should shut down")
+                        MotusUp.uploadSoon(true) // force upload asap
+                        // shut down before next HAT query
+                        setTimeout(() => Upgrader.shutdown(), 50*1000)
+                    }
                 } catch (e) {
-                    console.log(`Got : ${stdout}`)
+                    //console.log(`Got : ${stdout}`)
+                    FlexDash.set('ups_hat', {input: {status:"error querying HAT"}, system:{}, battery:{}})
                     reject(new Error(`${SixfabUpsHat} failed: ${e}`))
                 }
             })

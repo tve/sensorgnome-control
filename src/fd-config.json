@@ -1423,7 +1423,7 @@
     },
     "w03544": {
       "kind": "Panel",
-      "rows": 4,
+      "rows": 5,
       "cols": 3,
       "static": {
         "title": "Sixfab UPS HAT",
@@ -1452,7 +1452,7 @@
     },
     "w08882": {
       "kind": "PropsTable",
-      "rows": 4,
+      "rows": 5,
       "cols": 3,
       "static": {
         "title": "Battery",

@@ -65,6 +65,12 @@ class Upgrader {
     )
   }
 
+  shutdown() {
+    CP.execFile("/usr/sbin/shutdown", ["-h", "now"], (err, stdout, stderr) =>
+        console.log(err || stderr || stdout)
+    )
+  }
+
   // exec returns a promise!
   exec(cmd, args, opts) {
     const uplog = Fs.openSync(upgrade_log, 'a')
