@@ -29,13 +29,15 @@ const Cors = require('cors')  // Cross-origin resource sharing middleware for Ex
 const Session = require('express-session')
 const MemoryStore = require('memorystore')(Session)
 const { Server } = require("socket.io")
+//const SIOClient = require("socket.io-client")
 const Pam = require('authenticate-pam')
 const { machineID } = require('./machine.js')
+
+const runClient = false
 
 // list of paths that are used by connectivity checks of mobile devices that we want to redirect
 // to the dashboard so when the device connects to our hotspot the dashboard pops up
 // From https://github.com/tretos53/Captive-Portal/blob/master/default_nginx
-// Should move this to nginx once we support https and ened it anyway...
 const captive = [ "/generate_204", "/gen_204", "/blank.html", "mobile/status.php", "hotspot-detect.html" ]
 //const captive_ua = [ "CaptiveNetworkSupport" ] // needed for some iOS devices?
 //const captive_dest = [ "connectivitycheck.gstatic.com" ] // I believe the generate_204 captures this
@@ -52,6 +54,7 @@ class FlexDash {
         this.app = null // Express app
         this.webserver = null // HTTP server
         this.uploads = {} // uploads in progress indexed by upload id
+        this.clio = null // socket.io client
         console.log("FlexDash constructed")
     }
 
@@ -151,6 +154,24 @@ class FlexDash {
         this.webserver.listen(8080, 'localhost', () => {
             console.log("SensorGnome FlexDash listening on port %d in %s mode",
                 this.webserver.address().port, this.app.settings.env)
+        })
+
+        if (runClient) this.startClient()
+    }
+
+    // start the socket.io client that connects to a Sensorgnome hub (central management server)
+    startClient() {
+        this.clio = SIOClient.io()
+        const opts = { path: '/sg' }
+        const url = `http://192.168.0.2:8080/?sg=${machineID}`
+        this.clisock = this.clio(url, opts)
+
+        this.clisock.on('disconnect', () => {
+            this.clisock = null
+        })
+        this.clisock.on('connect', () => {
+            console.log("Connected to Sensorgnome Hub")
+            this.sendData(this.clisock)
         })
     }
 
