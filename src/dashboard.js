@@ -127,7 +127,7 @@ class Dashboard {
         }
     }
     
-    handle_gotGPSFix(fix) { console.log("Dashboard setting GPS fix"); FlexDash.set('gps', fix) } // {lat, lon, alt, time, state, ...}
+    handle_gotGPSFix(fix) { FlexDash.set('gps', fix) } // {lat, lon, alt, time, state, ...}
     handle_chrony(info) { FlexDash.set('chrony', info) } // {rms_error, time_source}
     handle_df(info) { FlexDash.set('df', info) } // {source, fstype, size, used, use%, target}
     handle_sdcardUse(pct) { FlexDash.set('sdcard_use', pct) }
