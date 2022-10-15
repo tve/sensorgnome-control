@@ -23,6 +23,9 @@ if ! egrep -q sg-control /etc/rsyslog.conf; then
     echo 'local6.* -/var/log/sg-control.log' >>/etc/rsyslog.conf
 fi
 
+# dir for motus uploader state
+mkdir -p /var/lib/sensorgnome
+
 # enable and start/restart units
 for U in sg-control; do
     # code from debhelper's postinst-systemd-enable template
