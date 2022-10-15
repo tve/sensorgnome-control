@@ -23,8 +23,10 @@ const URL_VERIFY = '/data/project/sgJobs'
 const URL_UPLOAD = '/data/project/sgJobs'
 const URL_LOGIN = '/data/login'
 const URL_RECEIVERS = '/api/receivers'
+const URL_COOKIE = 'https://www.sensorgnome.net/agent/session' // get a cookie to allow uploads
 const URL_CONN = 'http://connectivitycheck.gstatic.com/generate_204' // Android connectivity check
 const MAX_SIZE = 10*1024*1024 // 10MB max archive size (well, actually a little more)
+const AUTH = 'cookie' // switch between cookie from sensorgnome.net and login into motus.org
 
 // https://stackoverflow.com/a/67729663/3807231
 function stream2buffer(stream) {
@@ -124,14 +126,23 @@ class MotusUploader {
         console.log(`Checking Motus upload of ${files.length} files`)
         try {
             //await this.test_inet_connectivity()
+            // if we don't know our project ID we need to find out from the motus API
             if (!this.project_id) {
                 const recv_info = await this.get_receiver_info()
                 this.matron.emit('motusRecv', recv_info)
                 if (!recv_info.project) throw new Error("Receiver not registered with a project")
-                this.project_id = 1111 // recv_info.project
+                this.project_id = recv_info.project
             }
-            const login_url = SERVER+URL_LOGIN // await this.test_motus_connectivity()
-            this.session = await this.login(login_url, Deployment.upload_username, Deployment.upload_password)
+            // check whether we have a valid session or whether we need to auth
+            if (this.session) this.session = await this.checkSession()
+            if (!this.session) {
+                // need to get fresh session creds
+                if (AUTH == 'cookie') {
+                    this.session = await this.getSession()
+                } else {
+                    this.session = await this.login(Deployment.upload_username, Deployment.upload_password)
+                }
+            }
             const upload_info = await this.performFilesUpload(files)
             DataFiles.updateUpDownDate('uploaded', files.map(f=>f[0]), upload_info)
             this.matron.emit('motusUploadResult', {status: "OK", info: null})
@@ -229,12 +240,87 @@ class MotusUploader {
         throw new Error(`Fetch receivers error: status ${resp.statusCode}`)
     }
 
-    // login to Motus. On success returns session cookie, on bad user/pass returns null,
-    // on error throws an exception
-    async login(login_url, user, pass) {
+    // Refresh the session cookie.
+    async checkSession() {
+        // request the top 'manage data' page, this will tell us whether the JSESSION is still valid
         let resp
         try {
-            resp = await centra(login_url, 'POST')
+            console.log(`Checking Motus session at ${SERVER+URL_TEST}, cookie: ${this.session}`)
+            resp = await centra(SERVER + URL_TEST, 'GET')
+                .timeout(20*1000)
+                .header({ cookie: this.session })
+                .send()
+        } catch (err) {
+            FlexDash.set('motus_login', err.message || "error")
+            throw err
+        }
+        if (resp.statusCode == 200) {
+            console.log("Motus session is still valid")
+            return this.session
+        }
+        console.log(`Motus session is invalid, status: ${resp.statusCode}`)
+        try {
+            const ss = this.session.match(/session_token=([^;]+)/)[0]
+            console.log(`Refreshing Motus session at ${SERVER+URL_LOGIN}, cookie: ${ss}`)
+            resp = await centra(SERVER + URL_LOGIN, 'GET')
+                .timeout(20*1000)
+                .header({ cookie: ss, referer: SERVER+URL_TEST })
+                .send()
+        } catch (err) {
+            FlexDash.set('motus_login', err.message || "error")
+            throw err
+        }
+        if (resp.statusCode == 302 && resp.headers.location == SERVER+URL_TEST) {
+            console.log("Motus session refresh successful", resp.headers['set-cookie'])
+            return resp.headers['set-cookie']
+        }
+        console.log("Motus session refresh failed:", resp.statusCode, resp.headers)
+        return null
+    }
+
+    sgAuthHeader() {
+        const id = Machine.machineID.includes('-') ? Machine.machineID : 'SG-'+Machine.machineID
+        const data = id + ":" + Machine.machineKey
+        const b64 = Buffer.from(data).toString('base64')
+        return { 'Authorization': `Basic ${b64}` }
+    }
+
+    // getSession requests a fresh session cookie from the sensorgnome server
+    async getSession() {
+        let resp
+        try {
+            console.log(`Getting session at ${URL_COOKIE}`)
+            resp = await centra(URL_COOKIE, 'POST')
+                .timeout(60*1000)
+                .header(this.sgAuthHeader())
+                .send()
+            if (resp.statusCode == 200) {
+                let ss = await resp.json()
+                const st = ss.session_token
+                ss = Object.keys(ss).map(k => k+'='+ss[k].value).join('; ')
+                console.log("Got session:", ss, "token=", st)
+                return ss
+            }
+        } catch (err) {
+            FlexDash.set('motus_login', err.message || "error")
+            throw err
+        }
+        //console.log(resp)
+        if (resp.statusCode == 401) throw new Error("Forgot auth header")
+        if (resp.statusCode == 403) {
+            FlexDash.set('motus_login', "sensorgnome.net reject", resp.body)
+            throw new Error(resp.body)
+        }
+        FlexDash.set('motus_login', "Cannot refresh session")
+        throw new Error("Cannot refresh session: " + resp.statusCode)
+    }
+
+    // login to Motus. On success returns session cookie, on bad user/pass returns null,
+    // on error throws an exception
+    async login(user, pass) {
+        let resp
+        try {
+            resp = await centra(SERVER + URL_LOGIN, 'POST')
                 .body({ login_name: user, login_password: pass }, 'form')
                 .timeout(20*1000)
                 .send()
@@ -318,7 +404,7 @@ class MotusUploader {
     async verify_archive(archive_sha1, filename) {
         const t0 = Date.now()
         const resp = await centra(SERVER + URL_VERIFY)
-            .query({ projectID: this.project_id, verifyHash: archive_sha1, fileName: filename })
+            .query({ projectID: 460 /*this.project_id*/, verifyHash: archive_sha1, fileName: filename })
             .header({ cookie: this.session })
             .timeout(300*1000)
             .send()
@@ -358,7 +444,7 @@ class MotusUploader {
         // start the request
         const t0 = Date.now()
         const resp = await centra(SERVER + URL_UPLOAD, 'POST')
-            .query({ projectID: this.project_id, filePartName, action: "start" })
+            .query({ projectID: 460 /*this.project_id*/, filePartName, action: "start" })
             .header({ cookie: this.session, 'Content-Type': 'application/zip' })
             .timeout(120*1000) // FIXME: may need to calculate based on archive size
             .body(archive)
@@ -379,7 +465,7 @@ class MotusUploader {
     // Returns the JobID if successful. Throws otherwise.
     async upload_finalize(localFileName, filePartName) {
         const resp = await centra(SERVER + URL_UPLOAD, 'GET')
-        .query({ projectID: this.project_id, localFileName, filePartName, action: 'transfer' })
+        .query({ projectID: 460/*this.project_id*/, localFileName, filePartName, action: 'transfer' })
         .header({ cookie: this.session })
         .send()
         const txt = await resp.text()

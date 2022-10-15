@@ -19,6 +19,7 @@ const upgrader_dir = '/opt/sensorgnome/upgrader'
 const check_re = RegExp('^([-a-zA-Z0-9_]+)/\\S+\\s+(\\S+)\\s+armhf\\s+.upgradable from: ([-a-z0-9_.]+)', 'gm')
 
 exports.machineID = Fs.readFileSync("/etc/sensorgnome/id").toString().substring(0, 12)
+exports.machineKey = Fs.readFileSync("/etc/sensorgnome/key").toString().trim()
 
 var bootCountFile = "/etc/sensorgnome/bootcount"
 exports.bootCount = Fs.existsSync(bootCountFile) ?
