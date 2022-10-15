@@ -14,8 +14,14 @@ done
 # need to disable kernel RTLSDR driver
 echo "blacklist dvb_usb_rtl28xxu" >/etc/modprobe.d/blacklist-rtl28xxu.conf
 
-# tweak rsyslog config to log to sg-control.log
-$SG/control/sg-control.syslog
+# tweak rsyslog config to log to sg-control.log -- the service file causes logging to
+# facility local6, here we tell rsyslog to log that to /var/log/sg-control.log
+if ! egrep -q sg-control /etc/rsyslog.conf; then
+    sed -i -e '/log\/syslog/s/authpriv.none/authpriv.none,local6.none/' /etc/rsyslog.conf
+    echo '' >>/etc/rsyslog.conf
+    echo '# Sensorgnome sg-control' >>/etc/rsyslog.conf
+    echo 'local6.* -/var/log/sg-control.log' >>/etc/rsyslog.conf
+fi
 
 # enable and start/restart units
 for U in sg-control; do
