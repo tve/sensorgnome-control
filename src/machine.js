@@ -14,7 +14,7 @@ const Fsp = require('fs/promises')
 const CP = require('child_process')
 
 const log_key = 'software/log'  // flexdash key for text log of actions
-const upgrade_log = '/data/upgrade.log'
+const upgrade_log = '/var/log/upgrade.log'
 const upgrader_dir = '/opt/sensorgnome/upgrader'
 const check_re = RegExp('^([-a-zA-Z0-9_]+)/\\S+\\s+(\\S+)\\s+armhf\\s+.upgradable from: ([-a-z0-9_.]+)', 'gm')
 
