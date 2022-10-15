@@ -164,7 +164,7 @@ class MotusUploader {
             const { archive, sha1 } = await this.archive_sha1(files)
             // we need a filename for the archive, use the date of the first file plus a part of the sha1
             const date = (new Date(files[0][2]*1000)).toISOString().replace(/-/g, '').replace(/T.*/, "")
-            filename = `SG-${Machine.machineID}-${date}-${sha1.substr(0,8)}.zip`
+            filename = `${Machine.machineID}-${date}-${sha1.substr(0,8)}.zip`
             console.log(`Motus upload starting for ${filename} with ${files.length} files`)
             //console.log(`***** computed SHA1: ${sha1}`)
             // issue de-duplication verification request
@@ -226,7 +226,7 @@ class MotusUploader {
             let project = null
             let deployment = "unknown"
             for (const r of j.data) {
-                if (r.receiverID == "SG-"+Machine.machineID) {
+                if (r.receiverID == Machine.machineID) {
                     if (r.deploymentStatus == "active" || !project) {
                         status = r.deploymentStatus
                         project = r.recvProjectID

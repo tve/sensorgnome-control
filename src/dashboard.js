@@ -79,7 +79,7 @@ class Dashboard {
         // set (relatively) static data
         this.setDeployment()
         FlexDash.set('acquisition', JSON.stringify(Acquisition, null, 2))
-        FlexDash.set('net_hotspot_ssid', "SG-"+Machine.machineID)
+        FlexDash.set('net_hotspot_ssid', Machine.machineID)
         this.setDashCreds({ current_password: "?????????", new_password: "", confirm_new_password: ""})
 
         // some static machine info
@@ -386,7 +386,7 @@ class Dashboard {
         }
         // download date, will be recorded in "database"
         let now = new Date()
-        let filename = "SG" + Machine.machineID + "-" + now.toISOString() + ".zip"
+        let filename = Machine.machineID + "-" + now.toISOString() + ".zip"
         // tell the browser that we're sending a zip file
         resp.writeHead(200, {
             'Content-Type': 'application/zip',
@@ -431,7 +431,7 @@ class Dashboard {
         files = files.filter(f => f.startsWith("sg-control")).map(f=>'/var/log/'+f)
         files.push("/var/log/syslog")
         let now = new Date()
-        let filename = "SG" + Machine.machineID + "-" + now.toISOString() + "-logs.zip"
+        let filename = Machine.machineID + "-" + now.toISOString() + "-logs.zip"
         // tell the browser that we're sending a zip file
         resp.writeHead(200, {
             'Content-Type': 'application/zip',

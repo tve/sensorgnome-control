@@ -73,7 +73,8 @@ class DataSaver {
 
         const shortLabel = Deployment.short_label.replace(/-/g, '_')
         const bootCount = ('000' + Machine.bootCount).slice(-3)
-        let basename = [shortLabel, Machine.machineID, bootCount, date, source].join('-')
+        const id = Machine.machineID.replace(/^[^-]+-/, '')
+        let basename = [shortLabel, id, bootCount, date, source].join('-')
         return [dayPart, basename]
     }
 

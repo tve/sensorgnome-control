@@ -12,9 +12,9 @@ fs = require('fs')
 exports.index = function(req, res) {
     res.render('index',
 	       { 
-		   title: 'Welcome to your SensorGnome',
-		   machine_id: Machine.machineID,
-                   deployment: Deployment.short_label,
-                   bootcount: Machine.bootCount
+				title: 'Welcome to your SensorGnome',
+				machine_id: Machine.machineID,
+				deployment: Deployment.short_label,
+				bootcount: Machine.bootCount
 	       });
 };

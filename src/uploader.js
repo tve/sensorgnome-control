@@ -136,7 +136,7 @@ Uploader.prototype.pushDevRemoved = function(msg) {
 
 Uploader.prototype.pushStartupInfo = function() {
     var ts = (new Date()).getTime()/1000;
-    this.child.stdin.write( "SG-" + Machine.machineID + "\n" + "M," + ts + ",machineID," + Machine.machineID + "\n" +
+    this.child.stdin.write( Machine.machineID + "\n" + "M," + ts + ",machineID," + Machine.machineID + "\n" +
                             "M," + ts + ",bootCount," + Machine.bootCount + "\n");
 };
 

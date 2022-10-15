@@ -97,7 +97,7 @@ describe('DataFiles', () => {
         }
         try { fs.unlinkSync("/tmp/test_datafile.json") } catch(e){}
         df = new DataFiles(matron, "../test_assets", "/tmp/test_datafile.json")
-        Machine = {machineID: "7F5ERPI46977"} // global
+        Machine = {machineID: "SG-7F5ERPI46977"} // global
     })
 
     afterEach(() => {

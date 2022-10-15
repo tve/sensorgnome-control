@@ -271,8 +271,7 @@ class DataFiles {
             this.summary.bytes_to_download += info.size
         }
         if (info.date < '20100101') this.summary.pre_2010_files++
-        const sg_id = info.name.split("-")[1]
-        if (sg_id != Machine.machineID) this.summary.other_sg_files++
+        if (info.name != Machine.machineID) this.summary.other_sg_files++
 
         // update daily stats
         const secs_per_day = 24 * 3600
