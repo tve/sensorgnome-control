@@ -90,6 +90,7 @@ var clockNotSet = true;
 
 // Propagate GPS fix info into data files
 TheMatron.on("gotGPSFix", function(fix) {
+    if (!fix.state?.includes('fix') || !fix.time) return
     let line = "G," + fix.time + "," + fix.lat + "," + fix.lon + "," + fix.alt + "\n"
     AllOut.write(line)
     LifetagOut.write(line)
@@ -107,7 +108,7 @@ TheMatron.on("vahData", (d) => { AllOut.write(d) })
 TheMatron.on("setParam", (s) => {
     AllOut.write(["S", s.time, s.port, s.par, s.val, s.errCode, s.err].join(',') + "\n")
 })
-// Propagate gps fixes to all data files
+// Propagate time to all data files
 TheMatron.on("gpsSetClock", (prec, elapsed) => {
     const line = ["C", Date.now() / 1000, prec, elapsed].join(',') + "\n"
     AllOut.write(line)

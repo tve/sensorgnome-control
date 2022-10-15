@@ -29,6 +29,7 @@ sudo install -m 644 -o 0 -g 0 *.service $DESTDIR/etc/systemd/system
 sudo install -d $DESTDIR/etc/logrotate.d
 sudo install -m 644 sg-control.rotate $DESTDIR/etc/logrotate.d/sg-control
 
+
 cp -r DEBIAN $DESTDIR
 sed -e "/^Version/s/:.*/: $(TZ=PST8PDT date +%Y.%j)/" -i $DESTDIR/DEBIAN/control # set version: YYYY.DDD
 mkdir -p packages
