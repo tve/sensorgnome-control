@@ -183,14 +183,18 @@ class Dashboard {
     // ===== Deployment configuration
     
     setDeployment() {
-        let data = Object.fromEntries(
-            Object.entries(Deployment.data).map(e => 
-                [ e[0].replace(/_/g,' '),
-                  e[0].includes('password') ? "********" : e[1]]
-        ))
-        delete data['module options']
-        let fields = ['short label', 'memo', 'upload username', 'upload password']
-        FlexDash.set('deployment', { fields, data })
+        // let data = Object.fromEntries(
+        //     Object.entries(Deployment.data).map(e => 
+        //         [ e[0].replace(/_/g,' '),
+        //           e[0].includes('password') ? "********" : e[1]]
+        // ))
+        // delete data['module options']
+        // let fields = ['short label', 'memo', 'upload username', 'upload password']
+        const d = Deployment.data
+        FlexDash.set('deployment', {
+            fields: ["label","memo"],
+            data: { label: d.short_label, memo: d.memo },
+         })
     }
 
     handle_dash_deployment_update(update) {

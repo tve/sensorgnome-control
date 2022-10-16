@@ -37,7 +37,7 @@
     },
     "w00178": {
       "kind": "PropsTable",
-      "rows": 3,
+      "rows": 4,
       "cols": 3,
       "static": {
         "title": "GPS",
@@ -192,10 +192,10 @@
     },
     "w05810": {
       "kind": "Panel",
-      "rows": 1,
+      "rows": 4,
       "cols": 3,
       "static": {
-        "title": "",
+        "title": "Manual Download",
         "widgets": [
           "w06081",
           "w01630",
@@ -292,21 +292,10 @@
       },
       "id": "w05188"
     },
-    "w04186": {
-      "kind": "Markdown",
-      "rows": 4,
-      "cols": 3,
-      "static": {
-        "title": "Welcome to Sensorgnome",
-        "text": "This tab provides overview info, please use the other tabs (tab bar at the top or hamburger menu on mobile devices) to view and edit data files, wifi&network settings, software updates, etc.\n\nGetting started:\n- Configure WiFi in the network tab\n- Configure radios in the radio tab\n- Configure uploads in the config tab\n"
-      },
-      "dynamic": {},
-      "id": "w04186"
-    },
     "w06078": {
       "kind": "Stat",
       "rows": 1,
-      "cols": 1,
+      "cols": 2,
       "static": {
         "title": "Internet",
         "value": "OFF",
@@ -319,28 +308,6 @@
         "value": "net_inet_status"
       },
       "id": "w06078"
-    },
-    "w03494": {
-      "kind": "PropsTable",
-      "rows": 3,
-      "cols": 3,
-      "static": {
-        "title": "Sensorgnome Information",
-        "data": {
-          "info": "Development SensorgNome",
-          "who": "Thorsten",
-          "contact": "tve@voneicken.com",
-          "short label": "sgdev"
-        },
-        "editable": true,
-        "fields": []
-      },
-      "dynamic": {
-        "data": "deployment/data",
-        "fields": "deployment/fields"
-      },
-      "id": "w03494",
-      "output": "deployment_update"
     },
     "w04506": {
       "kind": "Toggle",
@@ -465,7 +432,7 @@
     "w03153": {
       "kind": "Stat",
       "rows": 1,
-      "cols": 1,
+      "cols": 2,
       "static": {
         "title": "Internet via",
         "value": "OK",
@@ -484,7 +451,7 @@
     "w04031": {
       "kind": "Stat",
       "rows": 1,
-      "cols": 2,
+      "cols": 3,
       "static": {
         "title": "GPS",
         "color": "#000000",
@@ -500,16 +467,15 @@
     },
     "w06965": {
       "kind": "Panel",
-      "rows": 5,
+      "rows": 4,
       "cols": 3,
       "static": {
-        "title": "",
+        "title": "Overview",
         "widgets": [
           "w09397",
           "w00208",
-          "w04031",
+          "w08305",
           "w09119",
-          "w04186",
           "w04945",
           "w00138",
           "w01467"
@@ -522,13 +488,15 @@
     },
     "w06221": {
       "kind": "Panel",
-      "rows": 3,
+      "rows": 4,
       "cols": 3,
       "static": {
         "title": "",
         "widgets": [
           "w06636",
+          "w04031",
           "w00178",
+          "w05027",
           "w03451"
         ],
         "solid": false
@@ -549,10 +517,9 @@
           "w02985",
           "w08085",
           "w09972",
-          "w03683",
+          "w01540",
           "w03111",
           "w01883",
-          "w01540",
           "w06423"
         ],
         "solid": false
@@ -746,49 +713,6 @@
       "id": "w06821",
       "output": "download"
     },
-    "w09977": {
-      "kind": "Panel",
-      "rows": 1,
-      "cols": 3,
-      "static": {
-        "title": "",
-        "widgets": [
-          "w05893",
-          "w08733",
-          "w05111"
-        ]
-      },
-      "dynamic": {},
-      "id": "w09977"
-    },
-    "w05047": {
-      "kind": "Panel",
-      "rows": 1,
-      "cols": 3,
-      "static": {
-        "title": "",
-        "widgets": [
-          "w00248",
-          "w06821"
-        ]
-      },
-      "dynamic": {},
-      "id": "w05047"
-    },
-    "w05177": {
-      "kind": "Panel",
-      "rows": 1,
-      "cols": 3,
-      "static": {
-        "title": "Problem Files",
-        "widgets": [
-          "w09018",
-          "w02940"
-        ]
-      },
-      "dynamic": {},
-      "id": "w05177"
-    },
     "w02940": {
       "kind": "Stat",
       "rows": 1,
@@ -845,7 +769,7 @@
     },
     "w01536": {
       "kind": "TextView",
-      "rows": 3,
+      "rows": 6,
       "cols": 3,
       "static": {
         "title": "Acquisition Configuration"
@@ -972,7 +896,7 @@
     "w08687": {
       "kind": "Stat",
       "rows": 1,
-      "cols": 1,
+      "cols": 2,
       "static": {
         "title": "Motus.org",
         "value": "OFF",
@@ -985,22 +909,6 @@
         "value": "net_motus_status"
       },
       "id": "w08687"
-    },
-    "w03683": {
-      "kind": "Stat",
-      "rows": 1,
-      "cols": 2,
-      "static": {
-        "title": "Motus login",
-        "value": "OFF",
-        "high_color": "#4CAF50",
-        "high_regexp": "OK",
-        "color": "#C62828"
-      },
-      "dynamic": {
-        "value": "motus_login"
-      },
-      "id": "w03683"
     },
     "w01633": {
       "kind": "Stat",
@@ -1031,9 +939,9 @@
     "w00710": {
       "kind": "PropsTable",
       "rows": 2,
-      "cols": 6,
+      "cols": 3,
       "static": {
-        "title": "Sensorgnome Credentials",
+        "title": "Sensorgnome Web UI & Hotspot Password",
         "editable": true,
         "send_all": true,
         "fields": [
@@ -1385,51 +1293,6 @@
       "id": "w05346",
       "output": "software_upgrade"
     },
-    "w05237": {
-      "kind": "Stat",
-      "rows": 1,
-      "cols": 4,
-      "static": {
-        "title": "Motus login",
-        "value": "OFF",
-        "high_color": "#4CAF50",
-        "high_regexp": "OK",
-        "color": "#C62828"
-      },
-      "dynamic": {
-        "value": "motus_login"
-      },
-      "id": "w05237"
-    },
-    "w07069": {
-      "kind": "Panel",
-      "rows": 3,
-      "cols": 3,
-      "static": {
-        "title": "",
-        "widgets": [
-          "w00710",
-          "w05237"
-        ]
-      },
-      "dynamic": {},
-      "id": "w07069"
-    },
-    "w03544": {
-      "kind": "Panel",
-      "rows": 5,
-      "cols": 3,
-      "static": {
-        "title": "Sixfab UPS HAT",
-        "widgets": [
-          "w09420",
-          "w08882",
-          "w07252"
-        ]
-      },
-      "dynamic": {},
-      "id": "w03544"
-    },
     "w09420": {
       "kind": "PropsTable",
       "rows": 2,
@@ -1460,7 +1323,7 @@
     },
     "w07252": {
       "kind": "PropsTable",
-      "rows": 2,
+      "rows": 3,
       "cols": 3,
       "static": {
         "title": "System",
@@ -1531,6 +1394,152 @@
         "popup_info": "motus_upload/info"
       },
       "id": "w08008"
+    },
+    "w05027": {
+      "kind": "PropsTable",
+      "rows": 2,
+      "cols": 3,
+      "static": {
+        "title": "",
+        "editable": true,
+        "popup_info": "Label: the label is shown at the top-left of the dashboard and is used in the filenames of all data files produced.\n\nMemo: a memo field for your use, for example to remember peculiarities about the set-up."
+      },
+      "dynamic": {
+        "data": "deployment/data",
+        "fields": "deployment/fields"
+      },
+      "id": "w05027",
+      "output": "deployment_update"
+    },
+    "w08305": {
+      "kind": "PopupButton",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "Help",
+        "color": "#03A9F4",
+        "icon": "information-outline",
+        "text": "This tab provides overview info, please use the other tabs (tab bar at the top or hamburger menu on mobile devices) to view and edit data files, wifi&network settings, software updates, etc.\n\nGetting started:\n- Configure WiFi in the network tab\n- Configure radios in the radio tab\n- Configure uploads in the config tab\n"
+      },
+      "dynamic": {},
+      "id": "w08305"
+    },
+    "w07004": {
+      "kind": "Panel",
+      "rows": 4,
+      "cols": 3,
+      "static": {
+        "title": "Sixfab UPS HAT",
+        "widgets": [
+          "w09420",
+          "w08882",
+          "w07252"
+        ]
+      },
+      "dynamic": {},
+      "id": "w07004"
+    },
+    "w07658": {
+      "kind": "Panel",
+      "rows": 2,
+      "cols": 3,
+      "static": {
+        "title": "Network Connectivity",
+        "widgets": [
+          "w08687",
+          "w06078",
+          "w03153",
+          "w01266",
+          "w06246"
+        ]
+      },
+      "dynamic": {},
+      "id": "w07658"
+    },
+    "w01266": {
+      "kind": "Stat",
+      "rows": 1,
+      "cols": 3,
+      "static": {
+        "title": "DNS"
+      },
+      "dynamic": {
+        "value": null
+      },
+      "id": "w01266"
+    },
+    "w06246": {
+      "kind": "Stat",
+      "rows": 1,
+      "cols": 3,
+      "static": {
+        "title": "Gateway"
+      },
+      "dynamic": {
+        "value": null
+      },
+      "id": "w06246"
+    },
+    "w02700": {
+      "kind": "PropsTable",
+      "rows": 2,
+      "cols": 4,
+      "static": {
+        "title": "credentials",
+        "data": {
+          "user": " ",
+          "password": ""
+        },
+        "fields": [
+          "user",
+          "password"
+        ],
+        "editable": true,
+        "send_all": true
+      },
+      "dynamic": {},
+      "id": "w02700",
+      "output": "motus_login"
+    },
+    "w08345": {
+      "kind": "Panel",
+      "rows": 2,
+      "cols": 3,
+      "static": {
+        "title": "Motus login",
+        "widgets": [
+          "w04637",
+          "w02700",
+          "w03092"
+        ],
+        "solid": true
+      },
+      "dynamic": {},
+      "id": "w08345"
+    },
+    "w04637": {
+      "kind": "Label",
+      "rows": 1,
+      "cols": 6,
+      "static": {
+        "title": "",
+        "label": "A Motus login is usually not needed."
+      },
+      "dynamic": {},
+      "id": "w04637"
+    },
+    "w03092": {
+      "kind": "Stat",
+      "rows": 2,
+      "cols": 2,
+      "static": {
+        "title": "",
+        "value": "motus_login"
+      },
+      "dynamic": {
+        "value": "motus_login"
+      },
+      "id": "w03092"
     }
   },
   "grids": {
@@ -1541,8 +1550,7 @@
         "w06965",
         "w06221",
         "w00917",
-        "w09712",
-        "w03544"
+        "w09712"
       ],
       "min_cols": 3,
       "max_cols": 6
@@ -1553,10 +1561,8 @@
       "widgets": [
         "w01693",
         "w05810",
-        "w09977",
-        "w05047",
-        "w05177",
-        "w06900"
+        "w06900",
+        "w08345"
       ],
       "id": "g01892",
       "max_cols": 6,
@@ -1579,9 +1585,7 @@
       "kind": "FixedGrid",
       "title": "",
       "widgets": [
-        "w08687",
-        "w06078",
-        "w03153",
+        "w07658",
         "w01975",
         "w00701"
       ],
@@ -1593,9 +1597,9 @@
       "kind": "FixedGrid",
       "title": "",
       "widgets": [
-        "w07069",
-        "w03494",
-        "w01536"
+        "w00710",
+        "w01536",
+        "w07004"
       ],
       "id": "g07380",
       "max_cols": 6
