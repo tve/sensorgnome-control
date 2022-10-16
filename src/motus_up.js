@@ -61,7 +61,7 @@ function parseCookies(header) {
 // Refresh the session cookie. Makes a request to see whether the current session cookie (JSESSIONID)
 // is still valid and return if it is. If it is not, attempts to get a fresh session cookie (and
 // session_token) using the session token.
-// Returns { cookie, session_token }. Returns a null cookie if no valid one can be obtained.
+// Returns [ cookie, session_token ]. Returns a null cookie if no valid one can be obtained.
 // Raises if there is an error.
 async function refreshSession(cookie, session_token) {
     // request the top 'manage data' page, this will tell us whether the JSESSION is still valid
@@ -72,10 +72,10 @@ async function refreshSession(cookie, session_token) {
         .send()
     if (resp.statusCode == 200) {
         console.log("Motus session is still valid")
-        return {cookie, session_token}
+        return [cookie, session_token]
     }
     console.log(`Motus session is invalid, status: ${resp.statusCode}`)
-    if (!session_token) return {cookie: null, session_token} // got no basis to refresh
+    if (!session_token) return [ null, session_token ] // got no basis to refresh
 
     // use session_token to refresh session cookie
     console.log(`Refreshing Motus session at ${SERVER+URL_LOGIN}, token: ${session_token}`)
@@ -88,7 +88,7 @@ async function refreshSession(cookie, session_token) {
         return parseCookies(resp.headers['set-cookie'])
     }
     console.log("Motus session refresh failed:", resp.statusCode, resp.headers)
-    return {cookie: null, session_token}
+    return [ null, session_token ]
 }
 
 // login to Motus. On success returns session cookie, on bad user/pass returns null,
@@ -293,7 +293,7 @@ class MotusUploader {
             this.matron.emit('motusUploadResult', {status: "OK", info: null})
             return true
         } catch(e) {
-            const info = `Upload failed while ${phase} with error: ${e.message}`
+            const info = `Upload failed while ${phase} with error: ${e.stack}`
             console.log(info)
             this.matron.emit('motusUploadResult', { status: "FAILED", info })
             throw e
@@ -414,7 +414,7 @@ class MotusUploader {
             .header({ cookie: this.session })
             .timeout(300*1000)
             .send()
-        console.log("Verify completed in", Date.now() - t0, "ms")
+        //console.log("Verify request completed in", Date.now() - t0, "ms")
         if (resp.statusCode == 200) {
             const txt = await resp.text()
             if (txt.startsWith('<')) throw new Error(`Upload verify got non-json response`)
