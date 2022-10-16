@@ -2,12 +2,14 @@
 
 const DATADIR     = "/data/SGdata"                 // where data files are located
 const CONFDIR     = "/etc/sensorgnome"             // where config files are located
-const DATAFILE    = CONFDIR+"/datafiles.json"      // where database about data files is located
 const DEPLOYMENT  = CONFDIR+"/deployment.json"     // SensorGnome deployment info
 const ACQUISITION = CONFDIR+"/acquisition.txt"     // Receiver/sensor configuration
 const PORTMAP     = CONFDIR+"/usb-port-map.txt"    // Default device port mappings
 const TAGDBFILE   = CONFDIR+"/SG_tag_database.sqlite"
 const DEVROOT     = "/dev/sensorgnome"             // Dir where uDev rules add device files
+const VARDIR      = "/var/lib/sensorgnome"         // where runtime state files are located
+const DATAFILE    = VARDIR+"/datafiles.json"       // where database about data files is located
+const STATEFILE   = VARDIR+"/motus_up.json"        // where motus upload state is stored
 
 // process.on("uncaughtException", function(err) {
 //      console.log('Caught exception: ' + err);
@@ -75,7 +77,7 @@ TagFinder = new (require('./tagfinder.js').TagFinder)(
 DataSaver     = new (require('./datasaver.js').DataSaver) (TheMatron, DATADIR)
 DataFiles     = new (require('./datafiles.js').DataFiles) (TheMatron, DATADIR, DATAFILE)
 SafeStream    = require('./safestream.js').SafeStream
-MotusUp       = new (require('./motus_up.js').MotusUploader) (TheMatron)
+MotusUp       = new (require('./motus_up.js').MotusUploader) (TheMatron, STATEFILE)
 // Create the two datafiles we write to for Lotek and CTT detections
 // Rotate every hour and also if hitting 1MB in size
 AllOut        = new SafeStream(TheMatron, "all", ".txt", 1000000, 3600, "parse") // 1MB max filesize

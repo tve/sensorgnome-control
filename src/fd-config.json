@@ -192,14 +192,19 @@
     },
     "w05810": {
       "kind": "Panel",
-      "rows": 4,
+      "rows": 3,
       "cols": 3,
       "static": {
         "title": "Manual Download",
         "widgets": [
           "w06081",
           "w01630",
-          "w06543"
+          "w06543",
+          "w01500",
+          "w05368",
+          "w03367",
+          "w00248",
+          "w06821"
         ],
         "solid": false
       },
@@ -684,19 +689,6 @@
       },
       "id": "w00248"
     },
-    "w09018": {
-      "kind": "Stat",
-      "rows": 1,
-      "cols": 2,
-      "static": {
-        "title": "Pre-2010 files",
-        "popup_info": "Pre-2010 files are data files with date prior to 2010, which occurs when data is captured before the Sensorgnome can acquire the correct time. Often these files are from short periods and can be discarded, but in some cases it may be worthwhile to correct the dates manually, if possible."
-      },
-      "dynamic": {
-        "value": "data_file_summary/pre_2010_files"
-      },
-      "id": "w09018"
-    },
     "w06821": {
       "kind": "PushButton",
       "rows": 1,
@@ -712,45 +704,6 @@
       "dynamic": {},
       "id": "w06821",
       "output": "download"
-    },
-    "w02940": {
-      "kind": "Stat",
-      "rows": 1,
-      "cols": 2,
-      "static": {
-        "title": "Other SG",
-        "value": "?",
-        "popup_info": "Number of files from a different Sensorgnome, i.e., with a different ID. The files probably stem from moving SD cards between Sensorgnomes, which is highly discouraged. Please download a fresh image when reusing SD cards."
-      },
-      "dynamic": {
-        "value": "data_file_summary/other_sg_files"
-      },
-      "id": "w02940"
-    },
-    "w05893": {
-      "kind": "Stat",
-      "rows": 1,
-      "cols": 2,
-      "static": {
-        "title": "Total files"
-      },
-      "dynamic": {
-        "value": "data_file_summary/total_files"
-      },
-      "id": "w05893"
-    },
-    "w08733": {
-      "kind": "Stat",
-      "rows": 1,
-      "cols": 2,
-      "static": {
-        "title": "Total Bytes",
-        "unit": "B"
-      },
-      "dynamic": {
-        "value": "data_file_summary/total_bytes"
-      },
-      "id": "w08733"
     },
     "w05111": {
       "kind": "PushButton",
@@ -1499,7 +1452,7 @@
       },
       "dynamic": {},
       "id": "w02700",
-      "output": "motus_login"
+      "output": "motus_creds"
     },
     "w08345": {
       "kind": "Panel",
@@ -1534,10 +1487,13 @@
       "cols": 2,
       "static": {
         "title": "",
-        "value": "motus_login"
+        "value": "motus_login",
+        "iso_prefix": false,
+        "zoom": 0.9
       },
       "dynamic": {
-        "value": "motus_login"
+        "value": "motus_login/status",
+        "popup_info": "motus_login/info"
       },
       "id": "w03092"
     }

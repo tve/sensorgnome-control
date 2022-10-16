@@ -28,7 +28,6 @@ const URL_TOKEN = 'https://www.sensorgnome.net/agent/token' // get a token to al
 const URL_CONN = 'http://connectivitycheck.gstatic.com/generate_204' // Android connectivity check
 const MAX_SIZE = 10*1024*1024 // 10MB max archive size (well, actually a little more)
 const AUTH = 'cookie' // switch between cookie from sensorgnome.net and login into motus.org
-const STATEFILE = '/var/lib/sensorgnome/motus_up.json'
 
 // https://stackoverflow.com/a/67729663/3807231
 function stream2buffer(stream) {
@@ -50,7 +49,7 @@ function buffer2sha1(buffer) {
 
 function parseCookies(header) {
     let cookies = Object.fromEntries(
-        resp.headers['set-cookie'].map(c => {
+        header.map(c => {
             const [k,v] = c.replace(/;.*$/, '').trim().split('=')
             return [k, `${k}=${v}`]
         })
@@ -93,7 +92,7 @@ async function refreshSession(cookie, session_token) {
 
 // login to Motus. On success returns session cookie, on bad user/pass returns null,
 // on error throws an exception
-async function login(user, pass) {
+async function motusLogin(user, pass) {
     console.log(`Performing Motus login at ${SERVER+URL_LOGIN}, user: ${user}`)
     const resp = await centra(SERVER + URL_LOGIN, 'POST')
         .body({ login_name: user, login_password: pass }, 'form')
@@ -172,8 +171,9 @@ async function getToken() {
 //===== Uploader class
 
 class MotusUploader {
-    constructor(matron) {
+    constructor(matron, statefile) {
         this.matron = matron
+        this.statefile = statefile
         //this.active = false // whether the uploader is active
         this.session = null // session cookie
         this.state = {
@@ -191,14 +191,9 @@ class MotusUploader {
         this.readState()
         this.uploadSoon()
         this.matron.on("datafile", () => this.uploadSoon())
-        this.matron.on('dash-upload', () => this.uploadSoon())
+        this.matron.on('dash_upload', () => this.uploadSoon())
         this.matron.on('motus', status => { if (status == "OK") this.uploadSoon(true) })
-        this.matron.on('motus-creds', () => {
-            // user updated creds, let's check'em
-            const login_url = SERVER+URL_LOGIN
-            this.login(login_url, Deployment.upload_username, Deployment.upload_password)
-                .then(()=>{}).catch(e=>{})
-        })
+        this.matron.on('dash_motus_creds', (data) => this.motusCreds(data).then(()=>{}))
     }
 
     // schedule an upload to happen "soon"
@@ -494,7 +489,7 @@ class MotusUploader {
     // read the state file
     readState() {
         try {
-            let data = fs.readFileSync(STATEFILE)
+            let data = fs.readFileSync(this.statefile)
             data = JSON.parse(data)
             if (typeof data != 'object') return
             if (data.sgid == Machine.machineID && data.sgkey == Machine.machineKey) {
@@ -510,12 +505,32 @@ class MotusUploader {
     // write the state file
     writeState() {
         try {
-            fs.writeFileSync(STATEFILE, JSON.stringify(this.state))
+            fs.writeFileSync(this.statefile, JSON.stringify(this.state))
         } catch (e) {
             console.log("Error writing state file", this.stateFile, e)
         }
     }
 
+    async motusCreds(data) {
+        console.log(`Motus credentials:`, data)
+        if (data.user && data.password) {
+            FlexDash.set('motus_login', {status: "checking...", info:null})
+            try {
+                const ss = await motusLogin(data.user.trim(), data.password.trim())
+                this.session = ss.cookie
+                this.state.session_token = ss.session_token
+                this.writeState()
+                FlexDash.set('motus_login', {status: "ok", info: null})
+            } catch (e) {
+                if (e.message.startsWith('bad'))
+                    FlexDash.set('motus_login', {status: e.message, info: null})
+                else
+                    FlexDash.set('motus_login', {status: "error", info: e.message})
+            }
+        } else {
+            FlexDash.set('motus_login', {status: "incomplete", info: null})
+        }
+    }
 }
 
 module.exports = { MotusUploader }

@@ -34,7 +34,7 @@ class Dashboard {
             'dash_enable_hotspot', 'dash_config_wifi', 'dash_update_portmap', 'dash_creds_update',
             'dash_upload_tagdb', 'dash_df_enable', 'dash_df_tags', 'dash_software_reboot',
             'dash_software_enable', 'dash_software_check', 'dash_software_upgrade',
-            'dash_download_logs'
+            'dash_download_logs',
         ]) {
             this.matron.on(ev, (...args) => {
                 let fn = 'handle_'+ev
