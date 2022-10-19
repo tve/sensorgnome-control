@@ -128,7 +128,6 @@ class WifiMan {
         //console.log("Default route:", route)
         this.default_route = route
         this.matron.emit("netDefaultRoute", route || (no_dhcp ? "no-DHCP" : "none"))
-        console.log("Default gw:", gw)
         this.matron.emit("netDefaultGw", route && gw ? gw : "none")
     }
 
