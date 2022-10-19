@@ -329,6 +329,7 @@ class FlexDash {
         }
         // FD wants each top-level key in its own message
         for (let k of Object.keys(this.fd_config)) {
+            if (k == "conn") continue // don't overwrite connection info
             socket.emit("set", "$config/" + k, this.fd_config[k])
         }
     }

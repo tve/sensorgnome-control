@@ -28,7 +28,7 @@ class Dashboard {
             'gotGPSFix', 'chrony', 'gotTag', 'setParam', 'setParamError', 'devAdded', 'devRemoved',
             'df', 'sdcardUse', 'vahData', 'netDefaultRoute', 'netInet', 'netMotus', 'netWifiState',
             'netHotspotState', 'netWifiConfig', 'portmapFile', 'tagDBInfo', 'motusRecv',
-            'motusUploadResult',
+            'motusUploadResult', 'netDefaultGw', 'netDNS',
             // dashboard events triggered by a message from FlexDash
             'dash_download', 'dash_upload', 'dash_deployment_update', 'dash_enable_wifi',
             'dash_enable_hotspot', 'dash_config_wifi', 'dash_update_portmap', 'dash_creds_update',
@@ -152,6 +152,8 @@ class Dashboard {
     handle_netInet(status) { FlexDash.set('net_inet_status', status) }
     handle_netMotus(status) { FlexDash.set('net_motus_status', status) }
     handle_netDefaultRoute(state) { FlexDash.set('net_default_route', state || "none") }
+    handle_netDefaultGw(state) { FlexDash.set('net_default_gw', state) }
+    handle_netDNS(state) { FlexDash.set('net_dns', state) }
     handle_netHotspotState(state) { FlexDash.set('net_hotspot_state', state || "??") }
     handle_netWifiState(state) {
         FlexDash.set('net_wifi_state', state || "??")

@@ -272,7 +272,7 @@ class DataFiles {
         }
         if (info.date < '20100101') this.summary.pre_2010_files++
         const id = Machine.machineID.substring(Machine.machineID.indexOf('-')+1)
-        if (!info.name.include(id)) this.summary.other_sg_files++
+        if (!info.name?.includes(id)) this.summary.other_sg_files++
 
         // update daily stats
         const secs_per_day = 24 * 3600
