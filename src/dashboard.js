@@ -94,7 +94,7 @@ class Dashboard {
         FlexDash.set('df_tags', this.df_tags)
         FlexDash.set('df_log', "")
 
-        FlexDash.telegraf = this.telegraf.bind(this)
+        FlexDash.monitoring = this.monitoring.bind(this)
 
         this.startUpsHatUpdater()
     }
@@ -492,11 +492,31 @@ class Dashboard {
         })
     }
 
-    // ===== Return monitoring data for telegraf in json format
+    // ===== Return monitoring data in json format
     // This is in the dashboard module because most of the data is grabbed from the dashboard
     // state variables.
-    telegraf() {
-        return {}
+    monitoring() {
+        return {
+            radios: {
+                counts: FlexDash.get('radios'),
+                devices: FlexDash.get('devices'),
+            },
+            detections: {
+                series: FlexDash.get('detection_series'),
+                daily: FlexDash.get('detections_daily'),
+                daily: FlexDash.get('detections_hourly'),
+                tagdb: FlexDash.get('tagdb'),
+            },
+            gps: FlexDash.get('gps'),
+            uploads: {
+                result: FlexDash.get('motus_upload'),
+                project_id: FlexDash.get('motus_recv/project_id'),
+                deployment_status: FlexDash.get('motus_recv/status'),
+            },
+            files: {
+                summary: FlexDash.get('data_file_summary'),
+            },
+        }
     }
 
 }

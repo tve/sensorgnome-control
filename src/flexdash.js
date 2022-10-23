@@ -55,6 +55,7 @@ class FlexDash {
         this.webserver = null // HTTP server
         this.uploads = {} // uploads in progress indexed by upload id
         this.clio = null // socket.io client
+        this.monitoring = null // callback to get monitoring data
         console.log("FlexDash constructed")
     }
 
@@ -128,7 +129,7 @@ class FlexDash {
         // mount static content, publicly accessible
         this.app.get('/', (...args) => this.sendIndexHtml(...args))
         this.app.post('/login', Express.json(), (req, res) => this.login(req, res))
-        this.app.get('/telegraf', (req, res) => this.sendTelegraf(req, res))
+        this.app.get('/monitoring', (req, res) => this.sendMonitoring(req, res))
         this.app.use(Express.static(__dirname + '/public', { extensions: ['html'] }))
 
         // mount redirects for captive portal
@@ -156,24 +157,24 @@ class FlexDash {
                 this.webserver.address().port, this.app.settings.env)
         })
 
-        if (runClient) this.startClient()
+        // if (runClient) this.startClient()
     }
 
-    // start the socket.io client that connects to a Sensorgnome hub (central management server)
-    startClient() {
-        this.clio = SIOClient.io()
-        const opts = { path: '/sg' }
-        const url = `http://192.168.0.2:8080/?sg=${machineID}`
-        this.clisock = this.clio(url, opts)
+    // // start the socket.io client that connects to a Sensorgnome hub (central management server)
+    // startClient() {
+    //     this.clio = SIOClient.io()
+    //     const opts = { path: '/sg' }
+    //     const url = `http://192.168.0.2:8080/?sg=${machineID}`
+    //     this.clisock = this.clio(url, opts)
 
-        this.clisock.on('disconnect', () => {
-            this.clisock = null
-        })
-        this.clisock.on('connect', () => {
-            console.log("Connected to Sensorgnome Hub")
-            this.sendData(this.clisock)
-        })
-    }
+    //     this.clisock.on('disconnect', () => {
+    //         this.clisock = null
+    //     })
+    //     this.clisock.on('connect', () => {
+    //         console.log("Connected to Sensorgnome Hub")
+    //         this.sendData(this.clisock)
+    //     })
+    // }
 
     // send top-level '/' in the form of a patched public/flexdash.html with title/name patched
     sendIndexHtml(req, res) {
@@ -191,9 +192,10 @@ class FlexDash {
         })
     }
 
-    // send monitoring metrics for telegraf (json format)
-    sendTelegraf(req, res) {
-
+    // send monitoring metrics (json format)
+    sendMonitoring(req, res) {
+        const data = this.monitoring?.() || {}
+        res.json(data)
     }
     
     registerGetHandler(path, handler) {
@@ -215,6 +217,14 @@ class FlexDash {
         } catch (err) {
             console.log(`FD: Internal error setting ${path}: ${err}`)
         }
+    }
+
+    // get is used by the monitoring handler to extract info (not pretty, but it works...)
+    get(path) {
+        let pp = path.split('/')
+        let p = pp.pop()
+        let node = this.walkTree(this.fd_data, pp)
+        return node[p]
     }
 
     unset(path) {
