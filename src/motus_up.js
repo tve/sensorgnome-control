@@ -1,9 +1,11 @@
 // motus_up - upload files to motus.org
 // Copyright ©2021 Thorsten von Eicken
 
-        // in theory we can stream the archive into the request body, but for some reason this
-        // produces a different stream, most likely something in archiver is non-deterministic
-
+// FIXME: due to not having the auth fixed in the back-end we get tokens for project 460.
+// When state is restored and the project is 460, the restored data is dropped to force full
+// re-auth so receivers switch to a proper token once things are implemented in the back-end.
+// In the meantime, the UI should show the actual project while the project returned by the
+// SG server is used in uploads.
 
 const AR = require('archiver')
 const { createWriteStream } = require('fs')
@@ -143,18 +145,19 @@ function sgAuthHeader() {
 }
 
 // getToken requests a fresh session_token from the sensorgnome server
-// Returns { cookie, session_token }. Raises if no valid token can be obtained.
-async function getToken() {
+// Returns { cookie, session_token, project }. Raises if no valid token can be obtained.
+async function getToken(project) {
     try {
         console.log(`Getting token at ${URL_TOKEN}`)
         const resp = await centra(URL_TOKEN, 'POST')
             .timeout(60*1000)
             .header(sgAuthHeader())
+            .query({project})
             .send()
         if (resp.statusCode == 200) {
             let ss = await resp.json()
             if (!ss.cookie || !ss.session_token) throw new Error("server response is missing cookie or token")
-            console.log("Got token:", ss)
+            console.log("Got token:", ss.session_token.substring(0, 25) + "...")
             return ss
         }
         //console.log(resp)
@@ -180,7 +183,7 @@ class MotusUploader {
             sgid: null,
             sgkey: null,
             session_token: null,
-            project: null
+            project: null, // project ID used for uploads, session_token must be for that!
         }
 
         // start when the initial reading of the datafiles state is completed
@@ -273,9 +276,10 @@ class MotusUploader {
             if (!this.session) {
                 now("logging in")
                 // see whether the server has creds for us...
-                const resp = await getToken()
+                const resp = await getToken(this.state.project)
                 this.session = resp.cookie
                 st = resp.session_token
+                if (resp.project) this.state.project = resp.project // allow server to force project
             }
             // save the session_token if it has changed
             if (this.state.session_token != st) {
@@ -414,7 +418,7 @@ class MotusUploader {
             const txt = await resp.text()
             if (txt.startsWith('<')) throw new Error(`Upload verify got non-json response`)
             const j = JSON.parse(txt)
-            //console.log("Upload verify response:", JSON.stringify(j))
+            //console.log("Upload verify response:", txt)
             if ("filePartName" in j) return [ true, j.filePartName]
             if (j.error) throw new Error(`Upload verify error: ${j.error}`)
             if (j.msg) console.log(`Upload verify: ${j.msg.replace(/[\n\r]/sg, " ")}`)
@@ -493,7 +497,7 @@ class MotusUploader {
             data = JSON.parse(data)
             if (typeof data != 'object') return
             if (data.sgid == Machine.machineID && data.sgkey == Machine.machineKey) {
-                this.state = data
+                if (data.project != 460) this.state = data // force re-auth 'til back-end fixed
             }
         } catch (e) {
             if (e.code == 'ENOENT') return
@@ -511,6 +515,7 @@ class MotusUploader {
         }
     }
 
+    // receive motus creds entered by user into UI and log in to obtain session_token
     async motusCreds(data) {
         console.log(`Motus credentials:`, data)
         if (data.user && data.password) {
