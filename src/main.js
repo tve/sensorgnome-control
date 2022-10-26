@@ -42,7 +42,7 @@ Zlib          = require('zlib');
 Machine       = require('./machine.js')
 // load configuration
 var Config    = require("./config.js")
-Deployment    = new Config.Deployment(DEPLOYMENT)
+//Deployment    = new Config.Deployment(DEPLOYMENT)
 Acquisition   = new Config.Acquisition(ACQUISITION)
 
 // Matron is a global object on which all SensorGnome event listeners
@@ -68,10 +68,16 @@ CornellTagXCVR= require("./cornelltagxcvr.js");
 
 //WavMaker      = require('./wavmaker.js');
 
-TagFinder = new (require('./tagfinder.js').TagFinder)(
-    TheMatron, "/usr/bin/find_tags_unifile", [ TAGDBFILE, CONFDIR+"/SG_tag_database.csv"],
-    Deployment.module_options.find_tags.params
-)
+TagFinder     = null
+function makeTagFinder() {
+    TagFinder = new (require('./tagfinder.js').TagFinder)(
+        TheMatron, "/usr/bin/find_tags_unifile", [ TAGDBFILE, CONFDIR+"/SG_tag_database.csv"],
+        Acquisition.module_options.find_tags.params
+    )
+}
+makeTagFinder()
+TheMatron.on('lotekFreqChg', () => {
+    console.log("Restarting tagFinder"); TagFinder.quit(); makeTagFinder(); TagFinder.start() })
 
 // Start the data file saving/writing/etc...
 DataSaver     = new (require('./datasaver.js').DataSaver) (TheMatron, DATADIR)

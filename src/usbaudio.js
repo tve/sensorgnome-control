@@ -113,10 +113,13 @@ USBAudio.prototype.hw_stalled = function() {
 
 
 USBAudio.prototype.hw_setParam = function(parSetting, callback) {
-    var parName = this.translateParamName(parSetting.par);
-    ChildProcess.execFile(this.command,
-                          this.baseArgs.concat(parName, parSetting.val),
-                          callback);
+    if (this.command) {
+        var parName = this.translateParamName(parSetting.par);
+        console.log(`USBAudio ${this.dev.attr.usbPath}: setting ${parSetting.par} to ${parSetting.val}`);
+        ChildProcess.execFile(this.command,
+                            this.baseArgs.concat(parName, parSetting.val),
+                            callback);
+    }
 };
 
 exports.USBAudio = USBAudio;

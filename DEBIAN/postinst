@@ -2,9 +2,9 @@
 echo "Running sg-control postinst in $(pwd)"
 SG=/opt/sensorgnome # would be nice to derive that from some env var...
 
-# install acquisition.txt and tag database if not there
+# install acquisition.json and tag database if not there
 SRC=$SG/templates
-for f in acquisition.txt SG_tag_database.sqlite; do
+for f in acquisition.json SG_tag_database.sqlite; do
     [[ -f /etc/sensorgnome/$f ]] || cp $SRC/$f /etc/sensorgnome
 done
 

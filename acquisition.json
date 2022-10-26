@@ -1,0 +1,261 @@
+{
+        "gps": {
+            "secondsBetweenFixes": 300
+        },
+        "short_label": "changeMe",
+        "memo": "memo for you about this SensorGnome",
+        "lotek_freq": 166.38,
+        "module_options": {
+            "find_tags": {
+                "params": [ "--default-freq", 0, "--pulse-slop", 1.5 ],
+                "enabled": true
+            }
+        },
+        "plans": [
+            {
+                "key": {
+                    "port": ".*",
+                    "devType": "rtlsdr"
+                },
+                "rate": 48000,
+                "channels": 2,
+                "schedule": {
+                    "type": "AlwaysOn"
+                },
+                "devParams": [
+                    {
+                        "name": "frequency",
+                        "schedule": {
+                            "type": "Constant",
+                            "value": 0
+                        }
+                    },
+                   {
+                       "name": "gain_mode",
+                       "schedule": {
+                           "type": "Constant",
+                           "value": 1
+                       }
+                   },
+                   {
+                       "name": "tuner_gain",
+                       "schedule": {
+                           "type": "Constant",
+                           "value": 40.2
+                       }
+                   },
+                    {
+                        "name": "test_mode",
+                        "schedule": {
+                            "type": "Constant",
+                            "value": 0
+                        }
+                    },
+                    {
+                        "name": "agc_mode",
+                        "schedule": {
+                            "type": "Constant",
+                            "value": 0
+                        }
+                    }
+                ],
+                "raw": {
+                    "enabled": false,
+                    "chunkMinutes": 0.5
+                },
+                "plugins": [
+                    {
+                        "library": "lotek-plugins.so",
+                        "name": "findpulsefdbatch",
+                        "outputID": "pulses",
+                        "params": [
+                            {
+                                "name": "plen",
+                                "value": 2.5
+                            },
+                            {
+                                "name": "minfreq",
+                                "value": 2
+                            },
+                            {
+                                "name": "maxfreq",
+                                "value": 8
+                            },
+                            {
+                                "name": "fftsize",
+                                "value": 24
+                            },
+                            {
+                                "name": "minsnr",
+                                "value": 10
+                            },
+                            {
+                                "name": "noisesize",
+                                "value": 5
+                            },
+                            {
+                                "name": "pulsesep",
+                                "value": 1
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "key": {
+                    "port": ".*",
+                    "devType": "funcubeProPlus"
+                },
+                "rate": 48000,
+                "channels": 2,
+                "schedule": {
+                    "type": "AlwaysOn"
+                },
+                "devParams": [
+                    {
+                        "name": "frequency",
+                        "schedule": {
+                            "type": "Constant",
+                            "value": 0
+                        }
+                    },
+                    {
+                        "name": "lna_gain",
+                        "schedule": {
+                            "type": "Constant",
+                            "value": 1
+                        }
+                    },
+                    {
+                        "name": "rf_filter",
+                        "schedule": {
+                            "type": "Constant",
+                            "value": 6
+                        }
+                    },
+                    {
+                        "name": "mixer_gain",
+                        "schedule": {
+                            "type": "Constant",
+                            "value": 1
+                        }
+                    },
+                    {
+                        "name": "if_filter",
+                        "schedule": {
+                            "type": "Constant",
+                            "value": 0
+                        }
+                    },
+                    {
+                        "name": "if_gain",
+                        "schedule": {
+                            "type": "Constant",
+                            "value": 0
+                        }
+                    }
+                ],
+                "raw": {
+                    "enabled": false,
+                    "chunkMinutes": 0.5
+                },
+                "plugins": [
+                    {
+                        "library": "lotek-plugins.so",
+                        "name": "findpulsefdbatch",
+                        "outputID": "pulses",
+                        "params": [
+                            {
+                                "name": "plen",
+                                "value": 2.5
+                            },
+                            {
+                                "name": "minfreq",
+                                "value": 2
+                            },
+                            {
+                                "name": "maxfreq",
+                                "value": 8
+                            },
+                            {
+                                "name": "fftsize",
+                                "value": 24
+                            },
+                            {
+                                "name": "minsnr",
+                                "value": 6
+                            },
+                            {
+                                "name": "noisesize",
+                                "value": 5
+                            },
+                            {
+                                "name": "pulsesep",
+                                "value": 1
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "key": {
+                    "port": ".*",
+                    "devType": "funcubePro"
+                },
+                "rate": 48000,
+                "channels": 2,
+                "schedule": {
+                    "type": "AlwaysOn"
+                },
+                "devParams": [
+                    {
+                        "name": "frequency",
+                        "schedule": {
+                            "type": "Constant",
+                            "value": 0
+                        }
+                    }
+                ],
+                "raw": {
+                    "enabled": false,
+                    "chunkMinutes": 0.5
+                },
+                "plugins": [
+                    {
+                        "library": "lotek-plugins.so",
+                        "name": "findpulsefdbatch",
+                        "outputID": "pulses",
+                        "params": [
+                            {
+                                "name": "plen",
+                                "value": 2.5
+                            },
+                            {
+                                "name": "minfreq",
+                                "value": 0
+                            },
+                            {
+                                "name": "maxfreq",
+                                "value": 24
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "key": {
+                    "port": ".*",
+                    "devType": "usbAudio"
+                },
+                "rate": 48000,
+                "channels": 1,
+                "schedule": {
+                    "type": "AlwaysOn"
+                },
+                "raw": {
+                    "enabled": false,
+                    "chunkMinutes": 0.5
+                }
+            }
+        ]
+}

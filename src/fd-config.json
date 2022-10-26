@@ -537,7 +537,7 @@
     },
     "w01814": {
       "kind": "Panel",
-      "rows": 2,
+      "rows": 3,
       "cols": 3,
       "static": {
         "title": "",
@@ -546,7 +546,9 @@
           "w06813",
           "w05188",
           "w04506",
-          "w07260"
+          "w07260",
+          "w06035",
+          "w01745"
         ],
         "solid": false
       },
@@ -1504,6 +1506,33 @@
         "popup_info": "motus_login/info"
       },
       "id": "w03092"
+    },
+    "w06035": {
+      "kind": "Stat",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "Lotek Frequency",
+        "unit": "Mhz",
+        "iso_prefix": false
+      },
+      "dynamic": {
+        "value": "lotek_freq"
+      },
+      "id": "w06035"
+    },
+    "w01745": {
+      "kind": "PushButton",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "change freq",
+        "color": "#EEEEEE",
+        "output_value": "true"
+      },
+      "dynamic": {},
+      "id": "w01745",
+      "output": "lotek_freq_change"
     }
   },
   "grids": {

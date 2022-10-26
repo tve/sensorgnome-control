@@ -39,7 +39,7 @@ class TagFinder {
             }
         }
 
-        // if we have no tag file, print an error once, and then sleep for a bit a retry
+        // if we have no tag file, print an error once, and then sleep for a bit and retry
         if (! this.tagDBFile) {
             if (! this.noTagFile) {
                 let info = `No tag database for tag finder, looking at ` + this.tagFiles.join(", ")
@@ -61,6 +61,11 @@ class TagFinder {
                 this.pubTagInfo(this.tagDBFile, stdout.replace(/\|/g, ": ").replace(/\n/g, " tags\n"))
             }
         })
+
+        // publish the frequency to the dashboard
+        const f = this.params.indexOf('--default-freq')
+        if (f >= 0) this.matron.emit("lotekFreq", this.params[f+1].toFixed(3))
+        console.log("Lotek freq f=" + f + " params=" + this.params)
     
         // launch the tag finder process
         const p = this.params.concat("-c", "8", this.tagDBFile)
@@ -85,8 +90,10 @@ class TagFinder {
 
     childDied(code, signal) {
         this.child = null
-        if (!this.quitting) setTimeout(() => this.start(), 5000)
-        console.log("Tag finder died, restarting in 5 secs")
+        if (!this.quitting) {
+            setTimeout(() => this.start(), 5000)
+            console.log("Tag finder died, restarting in 5 secs")
+        }
     }
 
     quit() {

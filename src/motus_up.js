@@ -110,8 +110,9 @@ async function motusLogin(user, pass) {
 async function getReceiverInfo() {
     // Motus API requests need to have a timestamp...
     const date = (new Date()).toISOString().replace(/[-:T]/g,'').replace(/\..*/,'')
+    const query = JSON.stringify({date, serialNo: Machine.machineID})
     const resp = await centra(SERVER+URL_RECEIVERS, 'GET')
-        .query({json: JSON.stringify({date, serialNo: Machine.machineID})})
+        .query({json: query})
         .timeout(20*1000)
         .send()
     if (resp.statusCode == 200) {
@@ -132,7 +133,7 @@ async function getReceiverInfo() {
         }
         return deployment
     }
-    throw new Error(`Unexpected status ${resp.statusCode}`)
+    throw new Error(`Unexpected status ${resp.statusCode} query: ${query}`)
 }
 
 //===== functions related to auth helpers at sensorgnome server

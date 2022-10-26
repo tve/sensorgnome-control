@@ -12,6 +12,8 @@ const top100k = Fs.readFileSync("/opt/sensorgnome/web-portal/top-100k-passwords.
 const TAGDBFILE   = "/etc/sensorgnome/SG_tag_database.sqlite" // FIXME: needs to come from main.js...
 const SixfabUpsHat = "/opt/sensorgnome/ups-hat/ups_manager.py"
 
+const LotekFreqs = [ 166.380, 150.100, 150.500 ]
+
 // The Dashboard class communicates between the web UI (FlexDash) and the "core" processing,
 // mainly using the "Matron" event system. It consists of a number of handlers divided into two
 // groups: the "handleSomeEvent" handlers that react to Matron events and propagate the data to
@@ -28,13 +30,13 @@ class Dashboard {
             'gotGPSFix', 'chrony', 'gotTag', 'setParam', 'setParamError', 'devAdded', 'devRemoved',
             'df', 'sdcardUse', 'vahData', 'netDefaultRoute', 'netInet', 'netMotus', 'netWifiState',
             'netHotspotState', 'netWifiConfig', 'portmapFile', 'tagDBInfo', 'motusRecv',
-            'motusUploadResult', 'netDefaultGw', 'netDNS',
+            'motusUploadResult', 'netDefaultGw', 'netDNS', 'lotekFreq',
             // dashboard events triggered by a message from FlexDash
             'dash_download', 'dash_upload', 'dash_deployment_update', 'dash_enable_wifi',
             'dash_enable_hotspot', 'dash_config_wifi', 'dash_update_portmap', 'dash_creds_update',
             'dash_upload_tagdb', 'dash_df_enable', 'dash_df_tags', 'dash_software_reboot',
             'dash_software_enable', 'dash_software_check', 'dash_software_upgrade',
-            'dash_download_logs',
+            'dash_download_logs', 'dash_lotek_freq_change',
         ]) {
             this.matron.on(ev, (...args) => {
                 let fn = 'handle_'+ev
@@ -145,6 +147,7 @@ class Dashboard {
     handle_dash_update_portmap(portmap) { HubMan.setPortmap(portmap) }
     handle_tagDBInfo(data) { FlexDash.set('tagdb', data) }
     handle_motusUploadResult(data) { FlexDash.set('motus_upload', data) }
+    handle_lotekFreq(f) { FlexDash.set('lotek_freq', f) }
 
     // ===== Network / Internet
 
@@ -192,19 +195,30 @@ class Dashboard {
         // ))
         // delete data['module options']
         // let fields = ['short label', 'memo', 'upload username', 'upload password']
-        const d = Deployment.data
         FlexDash.set('deployment', {
             fields: ["label","memo"],
-            data: { label: d.short_label, memo: d.memo },
+            data: { label: Acquisition.short_label, memo: Acquisition.memo },
          })
     }
 
     handle_dash_deployment_update(update) {
-        Deployment.update(Object.fromEntries(
+        Acquisition.update(Object.fromEntries(
             Object.entries(update).map(e => [e[0].replace(/ /g,'_'), e[1]])))
         this.setDeployment()
-        FlexDash.set('motus_login', `checking...`)
-        this.matron.emit("motus-creds")
+        // FlexDash.set('motus_login', `checking...`)
+        // this.matron.emit("motus-creds")
+    }
+
+    handle_dash_lotek_freq_change() {
+        // update the acquisition settings
+        let ix = LotekFreqs.indexOf(Acquisition.lotek_freq)
+        console.log(LotekFreqs, Acquisition.lotek_freq, ix)
+        ix = (ix+1) % LotekFreqs.length
+        const f = LotekFreqs[ix]
+        Acquisition.update({lotek_freq: f})
+        // restart the radios and tag finder
+        this.matron.emit("lotekFreqChg", f)
+        HubMan.resetDevices()
     }
 
     setDashCreds(creds, message) {
@@ -266,7 +280,7 @@ class Dashboard {
     detectionLogPush(data) {
         this.detection_log.push(data)
         let dll = this.detection_log.length
-        if (dll > 50) this.detection_log.splice(0, dll-50)
+        if (dll > 100) this.detection_log.splice(0, dll-100)
         FlexDash.set("detection_log", this.detection_log.join("\n"))
     }
 

@@ -19,7 +19,7 @@ sudo chown -R 1000:1000 $SG/control
 
 # install default acquisition file and tag database into templates dir
 sudo install -d $DESTDIR/opt/sensorgnome/templates -o 1000 -g 1000
-sudo install -m 644 acquisition.txt SG_tag_database.sqlite $DESTDIR/opt/sensorgnome/templates
+sudo install -m 644 acquisition.json SG_tag_database.sqlite $DESTDIR/opt/sensorgnome/templates
 
 # service file should be owned by root
 sudo install -d $DESTDIR/etc/systemd/system -o 0 -g 0

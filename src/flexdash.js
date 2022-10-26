@@ -186,8 +186,8 @@ class FlexDash {
             }
 
             data = data.toString()
-                .replace(/title:.*/, `title: '${Deployment.short_label}',`)
-                .replace(/<title>[^<]+/, `<title>${Deployment.short_label}`)
+                .replace(/title:.*/, `title: '${Acquisition.short_label}',`)
+                .replace(/<title>[^<]+/, `<title>${Acquisition.short_label}`)
             res.end(data)
         })
     }
@@ -210,7 +210,7 @@ class FlexDash {
             node[p] = value
             if (this.io) {
                 // set may be called before start so can't emit, data will be sent on connection
-                //if (path.startsWith('detections_hou')) console.log("SET", path, value)
+                //if (path.startsWith('lotek')) console.log("SET", path, value)
                 this.io.emit('set', path, value)
             }
             //if (path != 'tag' && !path.startsWith('detection')) console.log(`SIO set data ${path}`)
