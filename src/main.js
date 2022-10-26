@@ -2,8 +2,7 @@
 
 const DATADIR     = "/data/SGdata"                 // where data files are located
 const CONFDIR     = "/etc/sensorgnome"             // where config files are located
-const DEPLOYMENT  = CONFDIR+"/deployment.json"     // SensorGnome deployment info
-const ACQUISITION = CONFDIR+"/acquisition.txt"     // Receiver/sensor configuration
+const ACQUISITION = CONFDIR+"/acquisition.json"    // Receiver/sensor configuration
 const PORTMAP     = CONFDIR+"/usb-port-map.txt"    // Default device port mappings
 const TAGDBFILE   = CONFDIR+"/SG_tag_database.sqlite"
 const DEVROOT     = "/dev/sensorgnome"             // Dir where uDev rules add device files

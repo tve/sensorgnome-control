@@ -87,11 +87,11 @@ class Acquisition {
             text = text.replace(/\/\/.*$/mg, "") // remove trailing '//' comments
             var d = JSON.parse(text)
             for (let j in d) this[j] = d[j]
-            console.log(`loteq freq: ${this.lotek_freq}`)
+            console.log(`lotek freq: ${this.lotek_freq}`)
             if (this.lotek_freq) this.fix_freq(this.lotek_freq)
             console.log(`Aquisition: found ${this.plans.length} plans`)
         } catch (e) {
-            console.log("Error loading acquisition.txt:", e.message)
+            console.log("Error loading acquisition.txt:", e)
             throw e
         }
     }
@@ -115,11 +115,9 @@ class Acquisition {
 
     // update the radio frequencies to a given lotek freq
     fix_freq(f) {
-        console.log("fix_freq", f)
         for (let plan of this.plans) {
             for (let dp of plan.devParams || []) {
-                if (dp.name == "frequency")
-                {
+                if (dp.name == "frequency") {
                     const freq = f-0.004
                     console.log(`setting ${plan.key.devType} frequency to ${freq}`)
                     dp.schedule.value = freq

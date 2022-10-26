@@ -212,7 +212,6 @@ class Dashboard {
     handle_dash_lotek_freq_change() {
         // update the acquisition settings
         let ix = LotekFreqs.indexOf(Acquisition.lotek_freq)
-        console.log(LotekFreqs, Acquisition.lotek_freq, ix)
         ix = (ix+1) % LotekFreqs.length
         const f = LotekFreqs[ix]
         Acquisition.update({lotek_freq: f})
