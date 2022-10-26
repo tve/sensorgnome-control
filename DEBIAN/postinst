@@ -26,6 +26,21 @@ fi
 # dir for motus uploader state
 mkdir -p /var/lib/sensorgnome
 
+# Upgrade from 2.0-rc4 to 2.0-rc5: folding deployment.txt into acquisition.json
+# Caveat: we're ignoring any modifies acquisition.json...
+DEP=/etc/sensorgnome/deployment.json
+ACQ=/etc/sensorgnome/acquisition.json
+if [[ -f $DEP ]]; then
+    echo "Migrating deployment.txt into acquisition.json"
+    mv /opt/sensorgnome/templates/acquisition.json /etc/sensorgnome
+    sl=$(jq .short_label $DEP)
+    mo=$(jq .memo $DEP)
+    sed -E -i -e "s/\"short_label\": \"[^\"]*\"/\"short_label\": $sl/" \
+              -e "s/\"memo\": \"[^\"]*\"/\"memo\": $mo/" \
+              $ACQ
+    rm -f $DEP /etc/sensorgnome/acquisition.txt
+fi
+
 # enable and start/restart units
 for U in sg-control; do
     # code from debhelper's postinst-systemd-enable template
