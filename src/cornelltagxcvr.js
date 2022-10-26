@@ -58,7 +58,7 @@ CornellTagXCVR.prototype.init = function() {
             terminal: false 
         });
         this.rl.on("line", this.this_gotTag);
-        //console.log('Starting read stream at', this.dev.path);
+        console.log('Starting read stream at', this.dev.path);
     } catch (e) {
         // not sure what to do here
         console.log("Failed to open CornellTagXCVR at " + this.dev.path + "\n");

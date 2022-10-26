@@ -88,7 +88,7 @@ class HubMan {
             return
         }
         let attr = this.attrOf(filename)
-        //if (! attr.port_path) return  // not a USB-port device - we don't care
+        if (! attr.port_path) return  // not a USB-port device - we don't care
 
         // temporary hacks, need to change uDev rules instead
         if (attr.type.includes("Cornell")) attr.type = "CTT/CornellRcvr"
@@ -116,6 +116,7 @@ class HubMan {
                 this.matron.emit("devRemoved", this.devs[port])
                 delete this.devs[port]
             }
+            //console.log(`event ${event} for ${path}: ${e.stack}`)
         }
     }
 
