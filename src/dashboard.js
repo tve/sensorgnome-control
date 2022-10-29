@@ -197,11 +197,12 @@ class Dashboard {
         // let fields = ['short label', 'memo', 'upload username', 'upload password']
         FlexDash.set('deployment', {
             fields: ["label","memo"],
-            data: { label: Acquisition.short_label, memo: Acquisition.memo },
+            data: { label: Acquisition.label, memo: Acquisition.memo },
          })
     }
 
     handle_dash_deployment_update(update) {
+        console.log("handle_dash_deployment_update", update)
         Acquisition.update(Object.fromEntries(
             Object.entries(update).map(e => [e[0].replace(/ /g,'_'), e[1]])))
         this.setDeployment()

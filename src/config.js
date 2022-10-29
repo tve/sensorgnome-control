@@ -4,10 +4,10 @@ var Fs = require("fs")
 var Fsp = require("fs").promises
 
 // fields that can be updated
-const UPDATABLE = [ 'short_label', 'memo', 'lotek_freq']
+const UPDATABLE = [ 'label', 'memo', 'lotek_freq']
 
 // const defaults = {
-//     short_label: "changeMe",
+//     label: "changeMe",
 //     memo: "memo for you about this SensorGnome",
 //     lotek_freq: 166.38,
 //     module_options: {
@@ -86,6 +86,12 @@ class Acquisition {
             let text = Fs.readFileSync(path).toString()
             text = text.replace(/\/\/.*$/mg, "") // remove trailing '//' comments
             var d = JSON.parse(text)
+            // handle upgrade when we switched from short_label to label in rc-6
+            if (d.short_label && !d.label) {
+                d.label = d.short_label
+                delete d.short_label
+            }
+            //
             for (let j in d) this[j] = d[j]
             console.log(`lotek freq: ${this.lotek_freq}`)
             if (this.lotek_freq) this.fix_freq(this.lotek_freq)
@@ -145,7 +151,7 @@ class Acquisition {
                 try {
                     console.log("Saving ", this.path)
                     const data = {}
-                    for (let k of ['short_label','memo','lotek_freq','gps','plans','module_options'])
+                    for (let k of ['label','memo','lotek_freq','gps','plans','module_options'])
                         data[k] = this[k]
                     await Fsp.writeFile(this.path + "~", JSON.stringify(data, null, 2))
                     try {

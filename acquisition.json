@@ -2,7 +2,7 @@
         "gps": {
             "secondsBetweenFixes": 300
         },
-        "short_label": "changeMe",
+        "label": "changeMe",
         "memo": "memo for you about this SensorGnome",
         "lotek_freq": 166.38,
         "module_options": {

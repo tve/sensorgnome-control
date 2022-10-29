@@ -14,7 +14,7 @@ exports.index = function(req, res) {
 	       { 
 				title: 'Welcome to your SensorGnome',
 				machine_id: Machine.machineID,
-				deployment: Deployment.short_label,
+				deployment: Deployment.label,
 				bootcount: Machine.bootCount
 	       });
 };

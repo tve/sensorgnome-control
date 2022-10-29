@@ -186,8 +186,8 @@ class FlexDash {
             }
 
             data = data.toString()
-                .replace(/title:.*/, `title: '${Acquisition.short_label}',`)
-                .replace(/<title>[^<]+/, `<title>${Acquisition.short_label}`)
+                .replace(/title:.*/, `title: '${Acquisition.label}',`)
+                .replace(/<title>[^<]+/, `<title>${Acquisition.label}`)
             res.end(data)
         })
     }
