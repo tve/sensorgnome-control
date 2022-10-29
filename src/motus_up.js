@@ -56,7 +56,7 @@ function parseCookies(header) {
             return [k, `${k}=${v}`]
         })
     )
-    return { cookie: cookies.JSESSIONID, session_token: cookies.session_token }
+    return [ cookies.JSESSIONID, cookies.session_token ]
 }
 
 // Refresh the session cookie. Makes a request to see whether the current session cookie (JSESSIONID)
@@ -85,7 +85,7 @@ async function refreshSession(cookie, session_token) {
         .header({ cookie: session_token, referer: SERVER+URL_TEST })
         .send()
     if (resp.statusCode == 302 && resp.headers.location == SERVER+URL_TEST) {
-        console.log("Motus session refresh successful", resp.headers['set-cookie'])
+        console.log("Motus session refresh successful")
         return parseCookies(resp.headers['set-cookie'])
     }
     console.log("Motus session refresh failed:", resp.statusCode, resp.headers)
@@ -212,29 +212,29 @@ class MotusUploader {
             .catch(() => { this.timer = null }) // next upload will be triggered by a datafile event
         }, force ? 200 : 5000)
         return
-        // define function to perform upload
-        // This code reschedules in case of failure, commented out for now for simplicity, prob better
-        // to keep it simple and just rely on the next datafile event...
-        const sched = (delay) => setTimeout(() => {
-            this.active = true
-            this.timer = null
-            this.doUploadAll()
-                .then(() => {
-                    this.active = false // next upload will be triggered by a datafile event
-                })
-                .catch(e => {
-                    this.active = false
-                    this.timer = sched(10*1000) // set timer for retry FIXME: make 3700 secs
-                }) // try again in a little over an hour
-            }, delay)
-        // if not forced (via UI) and upload isn't already scheduled or active then schedule it
-        if (!force) {
-            if (!this.timer && !this.active) this.timer = sched(20*1000)
-        // if forced and not already running then schedule it (almost) immediately
-        } else if (!this.active) {
-            if (this.timer) clearTimeout(this.timer)
-            this.timer = sched(200)
-        }
+        // // define function to perform upload
+        // // This code reschedules in case of failure, commented out for now for simplicity, prob better
+        // // to keep it simple and just rely on the next datafile event...
+        // const sched = (delay) => setTimeout(() => {
+        //     this.active = true
+        //     this.timer = null
+        //     this.doUploadAll()
+        //         .then(() => {
+        //             this.active = false // next upload will be triggered by a datafile event
+        //         })
+        //         .catch(e => {
+        //             this.active = false
+        //             this.timer = sched(10*1000) // set timer for retry FIXME: make 3700 secs
+        //         }) // try again in a little over an hour
+        //     }, delay)
+        // // if not forced (via UI) and upload isn't already scheduled or active then schedule it
+        // if (!force) {
+        //     if (!this.timer && !this.active) this.timer = sched(20*1000)
+        // // if forced and not already running then schedule it (almost) immediately
+        // } else if (!this.active) {
+        //     if (this.timer) clearTimeout(this.timer)
+        //     this.timer = sched(200)
+        // }
     }
 
     // helper function to perform uploads until there's nothing left (or an error occurs)
@@ -296,6 +296,7 @@ class MotusUploader {
             const info = `Upload failed while ${phase} with error: ${e.stack}`
             console.log(info)
             this.matron.emit('motusUploadResult', { status: "FAILED", info })
+            if (this.session) this.session = "invalidated" // force token refresh
             throw e
         }
     }
