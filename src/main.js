@@ -37,6 +37,8 @@ Net           = require('net');
 Events        = require('events');
 Zlib          = require('zlib');
 
+console.log(`\n===== sg-control starting at ${new Date().toISOString()} =====\n`)
+
 // information about the system we're running on (machine ID and bootcount)
 Machine       = require('./machine.js')
 // load configuration
