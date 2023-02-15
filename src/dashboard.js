@@ -518,7 +518,7 @@ class Dashboard {
             detections: {
                 series: FlexDash.get('detection_series'),
                 daily: FlexDash.get('detections_daily'),
-                daily: FlexDash.get('detections_hourly'),
+                hourly: FlexDash.get('detections_hourly'),
                 tagdb: FlexDash.get('tagdb'),
             },
             gps: FlexDash.get('gps'),

@@ -590,7 +590,7 @@
         "axes": [
           "data_lines"
         ],
-        "popup_info": "Each data point represents a day, the total chart 100 days. For CTT tag detections are shown, for Lotek radio pulses are shown. (It takes 4 pulses for a tag detection.)"
+        "popup_info": "Each data point represents a day, the total chart 100 days. For CTT, tag detections are shown, for Lotek, radio pulses are shown. (It takes 4 pulses for a tag detection.) Each data point shows the sum of detections during the subsequent 24 hours."
       },
       "dynamic": {
         "data": "detections_daily",
@@ -608,7 +608,7 @@
         "axes": [
           "data_lines"
         ],
-        "popup_info": "Each data point represents one hour, the total chart 100 hours. For CTT tag detections are shown, for Lotek radio pulses are shown. (It takes 4 pulses for a tag detection.)"
+        "popup_info": "Each data point represents one hour, the total chart 100 hours. For CTT, tag detections are shown, for Lotek, radio pulses are shown. (It takes 4 pulses for a tag detection.) Each data point shows the sum of detections during the subsequent 60 minutes."
       },
       "dynamic": {
         "data": "detections_hourly",
