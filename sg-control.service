@@ -1,6 +1,9 @@
 [Unit]
 Description=Sensorgnome main control process.
-After=sg-boot.service sg-gps-init.service chronyd.service sg-usb-init.service
+; Restart=Always has no effect if start fails due to dependency: systemd sucks
+; https://unix.stackexchange.com/questions/213185
+; https://github.com/systemd/systemd/issues/1312
+;After=sg-boot.service sg-gps-init.service chronyd.service sg-usb-init.service
 Requires=sg-boot.service sg-gps-init.service chronyd.service sg-usb-init.service
 
 [Service]
@@ -9,6 +12,10 @@ WorkingDirectory=/opt/sensorgnome/control
 Environment=NODE_ENV=production
 Environment=NODE_PATH=/opt/sensorgnome/control
 Environment=LC_ALL="C.UTF-8"
+; the following ExecStartPre "replace" the After above...
+ExecStartPre=/usr/bin/systemd is-active sg-boot.service
+ExecStartPre=/usr/bin/systemd is-active chronyd.service
+ExecStartPre=/usr/bin/systemd is-active sg-usb-init.service
 ExecStart=/bin/bash -c "nice -n -15 node main"
 ExecStartPost=-/usr/bin/killall -KILL rtl_tcp vamp-alsa-host chronyc
 TimeoutStopSec=5
