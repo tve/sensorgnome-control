@@ -32,6 +32,6 @@ sudo install -m 644 sg-control.rotate $DESTDIR/etc/logrotate.d/sg-control
 cp -r DEBIAN $DESTDIR
 sed -e "/^Version/s/:.*/: $(TZ=PST8PDT date +%Y.%j)/" -i $DESTDIR/DEBIAN/control # set version: YYYY.DDD
 mkdir -p packages
-dpkg-deb --build $DESTDIR packages
+dpkg-deb -Zxz --build $DESTDIR packages
 # dpkg-deb --contents packages
 ls -lh packages
