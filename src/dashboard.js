@@ -36,7 +36,7 @@ class Dashboard {
             'dash_enable_hotspot', 'dash_config_wifi', 'dash_update_portmap', 'dash_creds_update',
             'dash_upload_tagdb', 'dash_df_enable', 'dash_df_tags', 'dash_software_reboot',
             'dash_software_enable', 'dash_software_check', 'dash_software_upgrade',
-            'dash_download_logs', 'dash_lotek_freq_change',
+            'dash_software_shutdown', 'dash_download_logs', 'dash_lotek_freq_change',
         ]) {
             this.matron.on(ev, (...args) => {
                 let fn = 'handle_'+ev
@@ -339,7 +339,8 @@ class Dashboard {
     }
 
     dfLogPush(name, signal) {
-        this.df_log.push(name + " " + signal + "dBm")
+        const ts = new Date().toISOString().replace(/.*T/, '').replace(/\..+/, '')
+        this.df_log.push(ts + " " + name + " " + signal + "dBm")
         let dfl = this.df_log.length
         // keep a fixed number of lines
         if (dfl > 10) this.df_log.splice(0, dfl-10)
@@ -435,6 +436,7 @@ class Dashboard {
     }
 
     handle_dash_software_reboot() { Upgrader.reboot() }
+    handle_dash_software_shutdown() { Upgrader.shutdown() }
     handle_dash_software_check() { Upgrader.check() }
     handle_dash_software_upgrade(what) { Upgrader.upgrade(what) }
 
