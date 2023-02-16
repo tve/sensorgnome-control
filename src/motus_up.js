@@ -79,7 +79,7 @@ async function refreshSession(cookie, session_token) {
     if (!session_token) return [ null, session_token ] // got no basis to refresh
 
     // use session_token to refresh session cookie
-    console.log(`Refreshing Motus session at ${SERVER+URL_LOGIN}, token: ${session_token}`)
+    console.log(`Refreshing Motus session at ${SERVER+URL_LOGIN}`) //, token: ${session_token}`)
     resp = await centra(SERVER + URL_LOGIN, 'GET')
         .timeout(20*1000)
         .header({ cookie: session_token, referer: SERVER+URL_TEST })
