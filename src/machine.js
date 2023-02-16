@@ -139,6 +139,7 @@ class Upgrader {
   }
 
   check() {
+      FlexDash.set("software/available", "checking...")
       this.exec(upgrader_dir + "/check.sh")
       .then(out => {
         let pkgs = []
