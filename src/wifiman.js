@@ -351,24 +351,24 @@ class WifiMan {
 
         // start checking the general internet connectivity
         this.testHttpRequest(URL_CONN, 204)
-        .catch((err) => {
-            this.setInetStatus(err)
-            this.setMotusStatus("--")
-            failure_recheck()
-        })
         .then(() => {
             // got connectivity, now check motus
             this.setInetStatus("OK")
             this.setMotusStatus("checking")
             this.testHttpRequest(URL_MOTUS, 302) // motus should return a redirect to login
-            .catch((err) => {
-                this.setMotusStatus(err)
-                failure_recheck()
-            })
             .then(() => {
                 this.setMotusStatus("OK")
                 success_recheck()
             })
+            .catch((err) => {
+                this.setMotusStatus(err)
+                failure_recheck()
+            })
+        })
+        .catch((err) => {
+            this.setInetStatus(err)
+            this.setMotusStatus("--")
+            failure_recheck()
         })
     }
 
