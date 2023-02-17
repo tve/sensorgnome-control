@@ -452,7 +452,7 @@ class MotusUploader {
         const resp = await centra(SERVER + URL_UPLOAD, 'POST')
             .query({ projectID: this.state.project, filePartName, action: "start" })
             .header({ cookie: this.session, 'Content-Type': 'application/zip' })
-            .timeout(120*1000) // FIXME: may need to calculate based on archive size
+            .timeout(300*1000) // FIXME: may need to calculate based on archive size
             .body(archive)
             .send()
         console.log("Motus upload completed in", Date.now() - t0, "ms")
@@ -470,10 +470,11 @@ class MotusUploader {
     // Perform a GET (sic) request to Motus to "transfer" the uploaded file to "sg processing".
     // Returns the JobID if successful. Throws otherwise.
     async upload_finalize(localFileName, filePartName) {
-        const resp = await centra(SERVER + URL_UPLOAD, 'GET')
-        .query({ projectID: this.state.project, localFileName, filePartName, action: 'transfer' })
-        .header({ cookie: this.session })
-        .send()
+        const resp = await centra(SERVER + URL_UPLOAD, "GET")
+          .query({ projectID: this.state.project, localFileName, filePartName, action: "transfer" })
+          .header({ cookie: this.session })
+          .timeout(300 * 1000)
+          .send()
         const txt = await resp.text()
         if (resp.statusCode == 200) {
             if (txt.startsWith('<')) throw new Error(`Motus upload finalize got non-json response`)
