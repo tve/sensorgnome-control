@@ -93,10 +93,8 @@ class WifiMan {
     // wifi on top of ethernet
     getDefaultRoute() {
         ChildProcess.execFile(IP_CMD, ["route", "get", "1.1.1.1"], (code, stdout, stderr) => {
-            this.default_route = null
             this.readRoute(stdout||"")
             this.getInterfaceStates()
-            setTimeout(() => this.testConnectivity(), 1000)
         })
         Fs.readFile("/etc/resolv.conf", (err, data) => {
             if (err) {
@@ -132,7 +130,10 @@ class WifiMan {
         if (route && route_map[route]) route = route_map[route]
         // publish
         //console.log("Default route:", route)
-        this.default_route = route
+        if (this.default_route != route) {
+            this.default_route = route
+            this.testConnectivitySoon()
+        }
         this.matron.emit("netDefaultRoute", route || (no_dhcp ? "no-DHCP" : "none"))
         this.matron.emit("netDefaultGw", route && gw ? gw : "none")
     }
@@ -146,8 +147,6 @@ class WifiMan {
     getInterfaceStates() {
         this.execFile(IP_CMD, ["link"])
         .then(stdout => {
-            //this.wifi_state = null
-            this.hotspot_state = null
             this.readIfaces(stdout)
         })
         .catch(err => console.log("getInterfaceStates ip link:", err))
@@ -172,6 +171,7 @@ class WifiMan {
             this.matron.emit("netWifiState", this.wifi_state)
             if (old_state != this.wifi_state) {
                 console.log("Wifi state: %s", stdout.replace(/\n/g, " "))
+                this.testConnectivitySoon()
             }
             if (! ["CONNECTED","INACTIVE"].includes(this.wifi_state)) {
                 this.getWifiStatusSoon(2000)
@@ -184,16 +184,20 @@ class WifiMan {
     // Note: disabled changing wifi state 'cause we read it using wpa_cli now..
     readIfaces(lines) {
         //this.wifi_state = null
-        this.hotspot_state = null
+        let hotspot_state = null
         // match: 3: wlan0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP mode DORMANT group default qlen 1000
         let mm = lines.match(/wlan0:.*state\s+(\S+)/)
         //if (mm && mm.length == 2) this.wifi_state = mm[1] == "UP" ? "ON" : "OFF"
         mm = lines.match(/ap0:.*\sstate\s+(\S+)/)
-        if (mm && mm.length == 2) this.hotspot_state = mm[1] == "UP" ? "ON" : "OFF"
-        else this.hotspot_state = "OFF"
-        console.log(`Interface states: wifi:${this.wifi_state} hotspot:${this.hotspot_state}`)
+        if (mm && mm.length == 2) hotspot_state = mm[1] == "UP" ? "ON" : "OFF"
+        else hotspot_state = "OFF"
+        console.log(`Interface states: wifi:${this.wifi_state} hotspot:${hotspot_state}`)
+        if (hotspot_state != this.hotspot_state) {
+            this.hotspot_state = hotspot_state
+            this.testConnectivitySoon()
+        }
         //this.matron.emit("netWifiState", this.wifi_state)
-        this.matron.emit("netHotspotState", this.hotspot_state)
+        this.matron.emit("netHotspotState", hotspot_state)
     }
     
     // ===== wifi and hotspot control
@@ -376,6 +380,12 @@ class WifiMan {
             this.setMotusStatus("--")
             failure_recheck()
         })
+    }
+
+    testConnectivitySoon() {
+        if (this.check_timer) clearTimeout(this.check_timer)
+        this.recheck_time = INET_RECHECK_INIT
+        this.check_timer = setTimeout(() => this.testConnectivity(), 2000)
     }
 
     // test an HTTP GET request, and check the status code
