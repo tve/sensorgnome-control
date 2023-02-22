@@ -287,7 +287,7 @@ class Dashboard {
     handle_gotTag(tag) {
         if (!tag.match(/^[A-Za-z]?[0-9]/)) return
         if (!tag.match(/^[A-Za-z]/)) tag = "L" + tag // "Lotek" prefix, ugh
-        this.detections.ctt[this.detections.ctt.length-1]++
+        if (tag.startsWith("T")) this.detections.ctt[this.detections.ctt.length-1]++
         FlexDash.set('detections_5min', this.detections)
         this.detectionLogPush(tag.trim().replace(/^/gm,"TAG: "))
         // direction finding
@@ -344,7 +344,7 @@ class Dashboard {
         let dfl = this.df_log.length
         // keep a fixed number of lines
         if (dfl > 10) this.df_log.splice(0, dfl-10)
-        console.log("df log: " + this.df_log.join(" | "))
+        //console.log("df log: " + this.df_log.join(" | "))
         FlexDash.set("df_log", this.df_log.join("\n"))
     }
 
