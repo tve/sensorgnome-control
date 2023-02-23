@@ -146,7 +146,7 @@ class Upgrader {
         console.log("Looking at:\n" + out)
         let m
         while((m=check_re.exec(out)) !== null) {
-          pkgs.push([ m[1], m[3], m[2] ])
+          pkgs.push([ m[1], m[2], m[3] ])
         }
         console.log("Upgradable packages: " + pkgs.map(v=>v.join('/')).join(' '))
         const avail = pkgs.length > 0 ? pkgs.map(v => v[0]+": "+v[1]+" ("+v[2]+")").join('\n')
