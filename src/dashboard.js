@@ -17,7 +17,7 @@ const LotekFreqs = [ 166.380, 150.100, 150.500 ]
 // The Dashboard class communicates between the web UI (FlexDash) and the "core" processing,
 // mainly using the "Matron" event system. It consists of a number of handlers divided into two
 // groups: the "handleSomeEvent" handlers that react to Matron events and propagate the data to
-// the dashboard, and the "handle_dash_somet_event" handlers that react to user input events
+// the dashboard, and the "handle_dash_some_event" handlers that react to user input events
 // from the dashboard and cause some changes to occur.
 class Dashboard {
 
@@ -36,7 +36,7 @@ class Dashboard {
             'dash_enable_hotspot', 'dash_config_wifi', 'dash_update_portmap', 'dash_creds_update',
             'dash_upload_tagdb', 'dash_df_enable', 'dash_df_tags', 'dash_software_reboot',
             'dash_software_enable', 'dash_software_check', 'dash_software_upgrade',
-            'dash_software_shutdown', 'dash_download_logs', 'dash_lotek_freq_change',
+            'dash_allow_shutdown', 'dash_software_shutdown', 'dash_software_restart', 'dash_download_logs', 'dash_lotek_freq_change',
         ]) {
             this.matron.on(ev, (...args) => {
                 let fn = 'handle_'+ev
@@ -90,6 +90,11 @@ class Dashboard {
         if (!(uptime > 0)) uptime = 0
         FlexDash.set('boot_time', Date.now() / 1000 - uptime)
         FlexDash.set('software/enable', false)
+        FlexDash.set('software/enable_upgrade', false)
+        FlexDash.set('software/enable_shutdown', false)
+        this.allow_poweroff = false
+        FlexDash.set("software/available", "Not yet checked...")
+        FlexDash.set("software/log", "- empty -")
 
         // direction finding info is not saved between restarts...
         FlexDash.set('df_enable', 'OFF')
@@ -433,10 +438,19 @@ class Dashboard {
     // toggle to enable/disable all the software update functionality
     handle_dash_software_enable(value) {
         FlexDash.set('software/enable', value)
+        if (!value) FlexDash.set('software/enable_upgrade', false)
+    }
+    // toggle to enable/disable all the software update functionality
+    handle_dash_allow_shutdown(value) {
+        FlexDash.set('software/enable_shutdown', value)
+        this.allow_poweroff = value
     }
 
+    handle_dash_software_restart() { Upgrader.restart() }
     handle_dash_software_reboot() { Upgrader.reboot() }
-    handle_dash_software_shutdown() { Upgrader.shutdown() }
+    handle_dash_software_shutdown() {
+        if (this.allow_poweroff) Upgrader.shutdown()
+    }
     handle_dash_software_check() { Upgrader.check() }
     handle_dash_software_upgrade(what) { Upgrader.upgrade(what) }
 

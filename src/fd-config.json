@@ -23,7 +23,11 @@
       "cols": 3,
       "static": {
         "title": "Sensorgnome",
-        "fields": ["machineID", "version", "bootCount"],
+        "fields": [
+          "machineID",
+          "version",
+          "bootCount"
+        ],
         "popup_info": "The version refers to the 'sensorgnome' package's version, which may be newer than the original SD-card image."
       },
       "dynamic": {
@@ -38,7 +42,15 @@
       "cols": 3,
       "static": {
         "title": "GPS",
-        "fields": ["state", "lat", "lon", "alt", "epx", "epy", "device"]
+        "fields": [
+          "state",
+          "lat",
+          "lon",
+          "alt",
+          "epx",
+          "epy",
+          "device"
+        ]
       },
       "dynamic": {
         "data": "gps"
@@ -52,8 +64,18 @@
       "cols": 3,
       "static": {
         "title": "Devices",
-        "columns": ["port", "port_path", "type", "attr"],
-        "labels": ["Port", "Port path", "Type", ""]
+        "columns": [
+          "port",
+          "port_path",
+          "type",
+          "attr"
+        ],
+        "labels": [
+          "Port",
+          "Port path",
+          "Type",
+          ""
+        ]
       },
       "dynamic": {
         "data": "devices"
@@ -177,7 +199,16 @@
       "cols": 3,
       "static": {
         "title": "Manual Download",
-        "widgets": ["w06081", "w01630", "w06543", "w01500", "w05368", "w03367", "w00248", "w06821"],
+        "widgets": [
+          "w06081",
+          "w01630",
+          "w06543",
+          "w01500",
+          "w05368",
+          "w03367",
+          "w00248",
+          "w06821"
+        ],
         "solid": false
       },
       "dynamic": {},
@@ -303,7 +334,7 @@
     },
     "w08190": {
       "kind": "Stat",
-      "rows": 3,
+      "rows": 1,
       "cols": 4,
       "static": {
         "title": "Current version"
@@ -315,11 +346,11 @@
     },
     "w00791": {
       "kind": "Markdown",
-      "rows": 2,
+      "rows": 3,
       "cols": 3,
       "static": {
         "title": "",
-        "text": "# Upgrading the SensorGnome software\n\nTo upgrade the SensorGnome software either check for a new version on the download server or upload a new software ZIP from your computer. Once such as new version is shown as available, use the upgrade button to actually upgrade. Your SensorGnome will not reboot automatically, performing one is recommended but not mandatory."
+        "text": "# Upgrading the SensorGnome software\n\nTo upgrade the SensorGnome software:\n\n- Enable the buttons\n- Use `check` to get a list of upgradable packages, wait for the list to show in the \"available upgrades\" panel.\n- Use `sg upgrade` to upgrade the Sensorgnome software without upgrading the rest of the operating system.\n- Wait for the upgrade log panel to show \"_END_\".\n- Reload the browser (or sometimes just a re-login works) and check that the \"current version\" panel reflects the upgrade (you can also re-run the \"check\").\n- In general, a reboot is recommended at this point.\n\nTo upgrade the full operating system and Sensorgnome software:\n\n- Upgrading the operating system _is not recommended as a routine practice_!\n- Ensure you have physical access to your Sensorgnome and the ability to insert a freshly flashed SD card in case the upgrade fails and you have to start from scratch.\n- Perform the same steps as above, but use `sysupgrade` instead of `sg upgrade`.\n"
       },
       "dynamic": {},
       "id": "w00791"
@@ -327,15 +358,17 @@
     "w01648": {
       "kind": "PushButton",
       "rows": 1,
-      "cols": 2,
+      "cols": 3,
       "static": {
-        "title": "Reboot"
+        "title": "Restart",
+        "popup_info": "Restart the main data acquisition and upload processprocess",
+        "color": "#EEEEEE"
       },
       "dynamic": {
         "enabled": "software/enable"
       },
       "id": "w01648",
-      "output": "software_reboot"
+      "output": "software_restart"
     },
     "w01649": {
       "kind": "PushButton",
@@ -343,10 +376,11 @@
       "cols": 2,
       "static": {
         "color": "#EEEEEE",
-        "title": "Shutdown"
+        "title": "Power OFF",
+        "popup_info": "Shut down the Sensorgnome operating system and power off"
       },
       "dynamic": {
-        "enabled": "software/enable"
+        "enabled": "software/enable_shutdown"
       },
       "id": "w01649",
       "output": "software_shutdown"
@@ -407,7 +441,11 @@
           "Country": "US"
         },
         "editable": true,
-        "fields": ["ssid", "passphrase", "country"],
+        "fields": [
+          "ssid",
+          "passphrase",
+          "country"
+        ],
         "send_all": true
       },
       "dynamic": {
@@ -458,7 +496,15 @@
       "cols": 3,
       "static": {
         "title": "Overview",
-        "widgets": ["w09397", "w00208", "w08305", "w09119", "w04945", "w00138", "w01467"],
+        "widgets": [
+          "w09397",
+          "w00208",
+          "w08305",
+          "w09119",
+          "w04945",
+          "w00138",
+          "w01467"
+        ],
         "solid": false
       },
       "dynamic": {},
@@ -471,7 +517,13 @@
       "cols": 3,
       "static": {
         "title": "",
-        "widgets": ["w06636", "w04031", "w00178", "w05027", "w03451"],
+        "widgets": [
+          "w06636",
+          "w04031",
+          "w00178",
+          "w05027",
+          "w03451"
+        ],
         "solid": false
       },
       "dynamic": {},
@@ -506,7 +558,15 @@
       "cols": 3,
       "static": {
         "title": "",
-        "widgets": ["w02325", "w06813", "w05188", "w04506", "w07260", "w06035", "w01745"],
+        "widgets": [
+          "w02325",
+          "w06813",
+          "w05188",
+          "w04506",
+          "w07260",
+          "w06035",
+          "w01745"
+        ],
         "solid": false
       },
       "dynamic": {},
@@ -518,8 +578,20 @@
       "cols": 3,
       "static": {
         "title": "Mounted Storage",
-        "columns": ["source", "size", "avail", "use%", "target"],
-        "labels": ["Device", "Size", "Avail", "%Full", "Mount"]
+        "columns": [
+          "source",
+          "size",
+          "avail",
+          "use%",
+          "target"
+        ],
+        "labels": [
+          "Device",
+          "Size",
+          "Avail",
+          "%Full",
+          "Mount"
+        ]
       },
       "dynamic": {
         "data": "df"
@@ -532,7 +604,9 @@
       "cols": 3,
       "static": {
         "title": "Detections (daily)",
-        "axes": ["data_lines"],
+        "axes": [
+          "data_lines"
+        ],
         "popup_info": "Each data point represents a day, the total chart 100 days. For CTT, tag detections are shown, for Lotek, radio pulses are shown. (It takes 4 pulses for a tag detection.) Each data point shows the sum of detections during the subsequent 24 hours."
       },
       "dynamic": {
@@ -548,7 +622,9 @@
       "cols": 3,
       "static": {
         "title": "Detections (hourly)",
-        "axes": ["data_lines"],
+        "axes": [
+          "data_lines"
+        ],
         "popup_info": "Each data point represents one hour, the total chart 100 hours. For CTT, tag detections are shown, for Lotek, radio pulses are shown. (It takes 4 pulses for a tag detection.) Each data point shows the sum of detections during the subsequent 60 minutes."
       },
       "dynamic": {
@@ -720,7 +796,11 @@
       "cols": 3,
       "static": {
         "title": "WiFi Client",
-        "widgets": ["w00071", "w00244", "w05477"],
+        "widgets": [
+          "w00071",
+          "w00244",
+          "w05477"
+        ],
         "solid": true
       },
       "dynamic": {},
@@ -751,7 +831,11 @@
       "cols": 3,
       "static": {
         "title": "HotSpot",
-        "widgets": ["w08793", "w01633", "w01270"]
+        "widgets": [
+          "w08793",
+          "w01633",
+          "w01270"
+        ]
       },
       "dynamic": {},
       "id": "w00701"
@@ -776,7 +860,10 @@
       "cols": 3,
       "static": {
         "title": "Port Mapping",
-        "widgets": ["w09855", "w05060"],
+        "widgets": [
+          "w09855",
+          "w05060"
+        ],
         "solid": false
       },
       "dynamic": {},
@@ -833,7 +920,11 @@
         "title": "Sensorgnome Web UI & Hotspot Password",
         "editable": true,
         "send_all": true,
-        "fields": ["current_password", "new_password", "confirm_new_password"]
+        "fields": [
+          "current_password",
+          "new_password",
+          "confirm_new_password"
+        ]
       },
       "dynamic": {
         "data": "system_creds/data",
@@ -890,7 +981,10 @@
       "cols": 3,
       "static": {
         "title": "Local Tag Database",
-        "widgets": ["w03109", "w06470"],
+        "widgets": [
+          "w03109",
+          "w06470"
+        ],
         "solid": false
       },
       "dynamic": {},
@@ -902,7 +996,12 @@
       "cols": 3,
       "static": {
         "title": "Direction Finding",
-        "widgets": ["w04955", "w02073", "w01579", "w02533"]
+        "widgets": [
+          "w04955",
+          "w02073",
+          "w01579",
+          "w02533"
+        ]
       },
       "dynamic": {},
       "id": "w02087"
@@ -917,7 +1016,10 @@
           "tag1": "TestTags#1",
           "tag2": "78664c3304"
         },
-        "fields": ["tag1", "tag2"],
+        "fields": [
+          "tag1",
+          "tag2"
+        ],
         "editable": true,
         "send_all": true,
         "popup_info": "Direction finding is an experimental feature to help track or locate a tag using a hand-held Sensorgnome. The functionality is very simple: up to two tags can be entered and then detections are only shown for those two tags with the RSSI of the detection.\n"
@@ -975,7 +1077,13 @@
       "cols": 3,
       "static": {
         "title": "Overview",
-        "widgets": ["w08190", "w09004", "w01648", "w01649"]
+        "widgets": [
+          "w08190",
+          "w09004",
+          "w01648",
+          "w08043"
+        ],
+        "solid": true
       },
       "dynamic": {},
       "id": "w07215"
@@ -985,7 +1093,7 @@
       "rows": 1,
       "cols": 2,
       "static": {
-        "title": "Enable changes",
+        "title": "Enable buttons",
         "show_value": false
       },
       "dynamic": {
@@ -996,11 +1104,16 @@
     },
     "w07463": {
       "kind": "Panel",
-      "rows": 4,
+      "rows": 5,
       "cols": 3,
       "static": {
         "title": "Software Updates",
-        "widgets": ["w08929", "w02323", "w06392", "w05346", "w04685"]
+        "widgets": [
+          "w02323",
+          "w06392",
+          "w05346",
+          "w08929"
+        ]
       },
       "dynamic": {},
       "id": "w07463"
@@ -1008,9 +1121,9 @@
     "w08929": {
       "kind": "TextView",
       "rows": 4,
-      "cols": 4,
+      "cols": 6,
       "static": {
-        "title": "Available",
+        "title": "Available Packages",
         "text": "  "
       },
       "dynamic": {
@@ -1034,20 +1147,6 @@
       "id": "w02323",
       "output": "software_check"
     },
-    "w04685": {
-      "kind": "PushButton",
-      "rows": 1,
-      "cols": 2,
-      "static": {
-        "title": "upload",
-        "color": "#EEEEEE",
-        "enabled": "",
-        "output_value": "upload"
-      },
-      "dynamic": {},
-      "id": "w04685",
-      "output": "software_upload"
-    },
     "w06392": {
       "kind": "PushButton",
       "rows": 1,
@@ -1058,7 +1157,7 @@
         "popup_info": "Upgrade the Sensorgnome packages shown in the \"available\" widget.\nThis may upgrade some system packages because they are dependencies."
       },
       "dynamic": {
-        "enabled": "software/enable"
+        "enabled": "software/enable_upgrade"
       },
       "id": "w06392",
       "output": "software_upgrade"
@@ -1095,7 +1194,9 @@
       "cols": 3,
       "static": {
         "title": "System Troubleshooting",
-        "widgets": ["w01035"]
+        "widgets": [
+          "w01035"
+        ]
       },
       "dynamic": {},
       "id": "w08129"
@@ -1152,7 +1253,7 @@
         "popup_info": "Upgrade all packages listed in the \"available\" widget, including Sensorgnome and system packages.\nThis is not recommended unless you have a way to recover, i.e., swap out a freshly flashed SDcard.\nAfter the upgrade, a reboot is generally recommended."
       },
       "dynamic": {
-        "enabled": "software/enable"
+        "enabled": "software/enable_upgrade"
       },
       "id": "w05346",
       "output": "software_upgrade"
@@ -1294,7 +1395,11 @@
       "cols": 3,
       "static": {
         "title": "Sixfab UPS HAT",
-        "widgets": ["w09420", "w08882", "w07252"]
+        "widgets": [
+          "w09420",
+          "w08882",
+          "w07252"
+        ]
       },
       "dynamic": {},
       "id": "w07004"
@@ -1305,7 +1410,13 @@
       "cols": 3,
       "static": {
         "title": "Network Connectivity",
-        "widgets": ["w08687", "w06078", "w03153", "w01266", "w06246"]
+        "widgets": [
+          "w08687",
+          "w06078",
+          "w03153",
+          "w01266",
+          "w06246"
+        ]
       },
       "dynamic": {},
       "id": "w07658"
@@ -1346,7 +1457,10 @@
           "user": " ",
           "password": ""
         },
-        "fields": ["user", "password"],
+        "fields": [
+          "user",
+          "password"
+        ],
         "editable": true,
         "send_all": true
       },
@@ -1360,7 +1474,11 @@
       "cols": 3,
       "static": {
         "title": "Motus login",
-        "widgets": ["w04637", "w02700", "w03092"],
+        "widgets": [
+          "w04637",
+          "w02700",
+          "w03092"
+        ],
         "solid": true
       },
       "dynamic": {},
@@ -1419,6 +1537,74 @@
       "dynamic": {},
       "id": "w01745",
       "output": "lotek_freq_change"
+    },
+    "w08043": {
+      "kind": "PushButton",
+      "rows": 1,
+      "cols": 3,
+      "static": {
+        "title": "Reboot",
+        "popup_info": "Reboot the Sensorgnome operating system"
+      },
+      "dynamic": {
+        "enabled": "software/enable"
+      },
+      "id": "w08043",
+      "output": "software_reboot"
+    },
+    "w08547": {
+      "kind": "Panel",
+      "rows": 1,
+      "cols": 3,
+      "static": {
+        "title": "Power off control",
+        "widgets": [
+          "w04884",
+          "w04521",
+          "w08863",
+          "w01649"
+        ],
+        "solid": true
+      },
+      "dynamic": {},
+      "id": "w08547"
+    },
+    "w04521": {
+      "kind": "Toggle",
+      "rows": 1,
+      "cols": 1,
+      "static": {
+        "title": "",
+        "show_value": false
+      },
+      "dynamic": {
+        "value": "software/enable_shutdown"
+      },
+      "id": "w04521",
+      "output": "allow_shutdown"
+    },
+    "w04884": {
+      "kind": "Label",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "",
+        "label": "Enable power-off"
+      },
+      "dynamic": {},
+      "id": "w04884"
+    },
+    "w08863": {
+      "kind": "Label",
+      "rows": 1,
+      "cols": 1,
+      "static": {
+        "title": ""
+      },
+      "dynamic": {
+        "label": "$demo_random"
+      },
+      "id": "w08863"
     }
   },
   "grids": {
@@ -1488,10 +1674,11 @@
       "title": "",
       "widgets": [
         "w07215",
+        "w08129",
         "w07463",
         "w00791",
         "w07827",
-        "w08129"
+        "w08547"
       ],
       "id": "g05782",
       "max_cols": 6
