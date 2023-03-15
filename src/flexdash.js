@@ -27,7 +27,7 @@ const Http = require('http')
 const Morgan = require("morgan")  // request logger middleware
 const Cors = require('cors')  // Cross-origin resource sharing middleware for Expressjs
 const Session = require('express-session')
-const MemoryStore = require('memorystore')(Session)
+const FileStore = require('session-file-store')(Session)
 const { Server } = require("socket.io")
 //const SIOClient = require("socket.io-client")
 const Pam = require('authenticate-pam')
@@ -65,8 +65,10 @@ class FlexDash {
         this.app.use(Cors({credentials: true, origin: true}))
         this.app.set('trust proxy', true)
         this.session = Session({ // used for Express and Socket.io
-            store: new MemoryStore({
-                checkPeriod: 86400000, // prune expired entries every 24h
+            store: new FileStore({
+                path: "/run/sg-sessions",
+                retries: 1,
+                ttl: 6*3600,
             }),
             name: 'sensorgnome',
             secret: 'flexdash@' + machineID,
@@ -76,8 +78,8 @@ class FlexDash {
                 maxAge: 3600000, // 1 hour
                 secure: 'auto',
                 // need sameSite=none to develop using https
-                //sameSite: 'none', // may be a problem with 3rd party cookie blocking
-                sameSite: 'strict', // strict needed for HTTP to work
+                sameSite: 'none', // may be a problem with 3rd party cookie blocking
+                //sameSite: 'strict', // strict needed for HTTP to work
             },
         })
         this.app.use(this.session)

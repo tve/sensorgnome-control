@@ -1605,6 +1605,110 @@
         "label": "$demo_random"
       },
       "id": "w08863"
+    },
+    "w07599": {
+      "kind": "Panel",
+      "rows": 5,
+      "cols": 3,
+      "static": {
+        "title": "Cellular",
+        "widgets": [
+          "w04606",
+          "w07289",
+          "w03595",
+          "w05350"
+        ],
+        "solid": false
+      },
+      "dynamic": {},
+      "id": "w07599"
+    },
+    "w04606": {
+      "kind": "Stat",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "State",
+        "low_color": "#9E9E9E",
+        "low_regexp": "no-modem",
+        "high_color": "#4CAF50",
+        "high_regexp": "connected",
+        "color": "#FF5722",
+        "zoom": 0.9,
+        "popup_info": "Modem states:\n\n- disabled: SG software has not enabled the modem yet\n- enabled: modem is trying to register (\"connect with\") cellular network, this may take time and never change if the SIM does not provide service\n- registering: transient state attempting to register with cellular network\n- registered: connected to the cellular network but no internet access (incorrect APN?)\n- connected: connected to the cellular network and internet access according to the modem"
+      },
+      "dynamic": {
+        "value": "cellular/state"
+      },
+      "id": "w04606"
+    },
+    "w07289": {
+      "kind": "PropsTable",
+      "rows": 5,
+      "cols": 4,
+      "static": {
+        "title": "Info",
+        "data": {
+          "k1": "vv",
+          "kek2y2": "vv"
+        },
+        "fields": [],
+        "editable": false
+      },
+      "dynamic": {
+        "data": "cellular/info",
+        "fields": "cellular/info_labels"
+      },
+      "id": "w07289",
+      "output": null
+    },
+    "w06057": {
+      "kind": "SimpleTable",
+      "rows": 4,
+      "cols": 3,
+      "static": {
+        "title": "Network Usage",
+        "popup_info": "Network usage information collected every 5 minutes and aggregated over time. Uses \"vnstat\".",
+        "columns": [],
+        "labels": null
+      },
+      "dynamic": {
+        "data": "net_usage_data",
+        "columns": "null",
+        "labels": "net_usage_columns"
+      },
+      "id": "w06057"
+    },
+    "w03595": {
+      "kind": "Stat",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "",
+        "zoom": 0.6
+      },
+      "dynamic": {
+        "value": "cellular/reason"
+      },
+      "id": "w03595"
+    },
+    "w05350": {
+      "kind": "PropsTable",
+      "rows": 2,
+      "cols": 2,
+      "static": {
+        "title": "Config",
+        "data": {},
+        "fields": [],
+        "editable": true,
+        "send_all": true
+      },
+      "dynamic": {
+        "data": "cellular/config",
+        "fields": "cellular/config_labels"
+      },
+      "id": "w05350",
+      "output": "config_cell"
     }
   },
   "grids": {
@@ -1652,7 +1756,9 @@
       "widgets": [
         "w07658",
         "w01975",
-        "w00701"
+        "w00701",
+        "w07599",
+        "w06057"
       ],
       "id": "g03307",
       "min_cols": 3,

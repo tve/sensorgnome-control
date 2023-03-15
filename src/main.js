@@ -5,6 +5,7 @@ const CONFDIR     = "/etc/sensorgnome"             // where config files are loc
 const ACQUISITION = CONFDIR+"/acquisition.json"    // Receiver/sensor configuration
 const PORTMAP     = CONFDIR+"/usb-port-map.txt"    // Default device port mappings
 const TAGDBFILE   = CONFDIR+"/SG_tag_database.sqlite"
+const CELLCONFIG  = CONFDIR+"/cellular.json"
 const DEVROOT     = "/dev/sensorgnome"             // Dir where uDev rules add device files
 const VARDIR      = "/var/lib/sensorgnome"         // where runtime state files are located
 const DATAFILE    = VARDIR+"/datafiles.json"       // where database about data files is located
@@ -60,6 +61,7 @@ VAH           = new (require('./vah.js'))(TheMatron, "/usr/bin/vamp-alsa-host", 
 FlexDash      = new (require('./flexdash.js'))(TheMatron);
 Dashboard     = new (require('./dashboard.js'))(TheMatron);
 WifiMan       = new (require('./wifiman.js').WifiMan)(TheMatron);
+CellMan       = new (require('./cellular.js').CellMan)(TheMatron);
 
 Schedule      = require('./schedule.js');
 Sensor        = require('./sensor.js');
@@ -146,3 +148,4 @@ TagFinder.start()
 
 MotusUp.start()
 WifiMan.start()
+CellMan.start(CELLCONFIG)

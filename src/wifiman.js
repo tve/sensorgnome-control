@@ -11,6 +11,12 @@
 // - enabled/disabled
 // - ssid & passphrase
 // - country code
+//
+// Cellular:
+// - state
+// - info
+//
+// Network usage via vnstat
 
 // Wifi client is managed through wpa_cli, the command-line interface to wpa_supplicant.
 // This is also what raspi-config uses internally, so everything should be compatible.
@@ -18,13 +24,14 @@
 // udev rules could be created for other devices so they appear as wlan0...
 // Hotspot (wifi access point) is managed using the hotspot script in sensorgnome-support,
 // which uses hostapd internally.
+// Cellular is managed using ModemManager, i.e. mmcli
 
 const centra = require("./centra.js")
 const Fs = require('fs')
 const Fsp = require("fs").promises
 
 const IP_CMD = "/usr/sbin/ip"
-const route_map = { wlan0: "wifi", eth0: "eth", usb: "cell" }
+const route_map = { wlan0: "wifi", eth0: "eth", usb: "cell", wwan0: "cell", usb0: "cell" }
 
 const URL_CONN = 'http://connectivitycheck.gstatic.com/generate_204' // Android connectivity check
 const URL_MOTUS = 'https://www.motus.org/data' // Motus connectivity check
@@ -65,7 +72,9 @@ class WifiMan {
         let child = ChildProcess.spawn(IP_CMD, ["monitor", "route"], { stdio })
             .on("exit", (code) => this.childDied("Process exited, code=" + code))
             .on("error", (err) => this.childDied(err))
-            .on("spawn", () => this.getDefaultRoute())
+            .on("spawn", () => {
+                this.getDefaultRoute()
+            })
         // ip monitor route prints the change, but that doesn't really help us because deleting
         // a default route doesn't mean there's not a second one that still works (for example)
         // so we neet to ask ip route what it would do now
@@ -94,7 +103,7 @@ class WifiMan {
     getDefaultRoute() {
         ChildProcess.execFile(IP_CMD, ["route", "get", "1.1.1.1"], (code, stdout, stderr) => {
             this.readRoute(stdout||"")
-            this.getInterfaceStates()
+            this.getInterfaceStates() // while we're at it, check all interface states
         })
         Fs.readFile("/etc/resolv.conf", (err, data) => {
             if (err) {
@@ -314,6 +323,7 @@ class WifiMan {
             setTimeout(() => this.getInterfaceStates(), 10000)
         })
     }
+
 
     // ===== connectivity checks
 

@@ -11,6 +11,7 @@ const top100k = Fs.readFileSync("/opt/sensorgnome/web-portal/top-100k-passwords.
 
 const TAGDBFILE   = "/etc/sensorgnome/SG_tag_database.sqlite" // FIXME: needs to come from main.js...
 const SixfabUpsHat = "/opt/sensorgnome/ups-hat/ups_manager.py"
+const vnstat = "/usr/bin/vnstat"
 
 const LotekFreqs = [ 166.380, 150.100, 150.500 ]
 
@@ -30,13 +31,15 @@ class Dashboard {
             'gotGPSFix', 'chrony', 'gotTag', 'setParam', 'setParamError', 'devAdded', 'devRemoved',
             'df', 'sdcardUse', 'vahData', 'netDefaultRoute', 'netInet', 'netMotus', 'netWifiState',
             'netHotspotState', 'netWifiConfig', 'portmapFile', 'tagDBInfo', 'motusRecv',
-            'motusUploadResult', 'netDefaultGw', 'netDNS', 'lotekFreq',
+            'motusUploadResult', 'netDefaultGw', 'netDNS', 'lotekFreq', 'netCellState', 'netCellReason',
+            'netCellInfo', 'netCellConfig',
             // dashboard events triggered by a message from FlexDash
             'dash_download', 'dash_upload', 'dash_deployment_update', 'dash_enable_wifi',
             'dash_enable_hotspot', 'dash_config_wifi', 'dash_update_portmap', 'dash_creds_update',
             'dash_upload_tagdb', 'dash_df_enable', 'dash_df_tags', 'dash_software_reboot',
             'dash_software_enable', 'dash_software_check', 'dash_software_upgrade',
-            'dash_allow_shutdown', 'dash_software_shutdown', 'dash_software_restart', 'dash_download_logs', 'dash_lotek_freq_change',
+            'dash_allow_shutdown', 'dash_software_shutdown', 'dash_software_restart',
+            'dash_download_logs', 'dash_lotek_freq_change', 'dash_config_cell',
         ]) {
             this.matron.on(ev, (...args) => {
                 let fn = 'handle_'+ev
@@ -45,7 +48,7 @@ class Dashboard {
                     else if (args.length <= 1) this[fn](...args)
                     else this[fn](...args)
                 } catch(e) {
-                    console.log(`Handler ${fn} failed: ${e}`)
+                    console.log(`Handler ${fn} failed:`, e)
                 }
             })
         }
@@ -103,7 +106,11 @@ class Dashboard {
 
         FlexDash.monitoring = this.monitoring.bind(this)
 
-        this.startUpsHatUpdater()
+        //this.startUpsHatUpdater()
+
+        setTimeout(() => this.updateNetUsage(), 10*1000)
+        setInterval(() => this.updateNetUsage(), 300*1000)
+
     }
     
     // generate info about a device, called on devAdded
@@ -172,11 +179,22 @@ class Dashboard {
         config.passphrase = "********"
         FlexDash.set('net_wifi_config', config)
     }
+    handle_netCellState(state) { FlexDash.set('cellular/state', state || "??") }
+    handle_netCellReason(reason) { FlexDash.set('cellular/reason', reason || "") }
+    handle_netCellConfig(data) {
+        FlexDash.set('cellular/config', data || {})
+        FlexDash.set('cellular/config_labels', Object.keys(data||{}))
+    }
+    handle_netCellInfo(info) {
+        FlexDash.set('cellular/info', info || {})
+        FlexDash.set('cellular/info_labels', Object.keys(info||{}))
+    }
     
-    // events from the dashboard, change wifi/hotspot state or settings
+    // events from the dashboard, change wifi/hotspot/cell state or settings
     handle_dash_enable_wifi(state) { WifiMan.enableWifi(state == "ON").then(() => {}) }
     handle_dash_enable_hotspot(state) { WifiMan.enableHotspot(state == "ON") }
     handle_dash_config_wifi(config) { WifiMan.setWifiConfig(config).then(() => {}) }
+    handle_dash_config_cell(config) { CellMan.setCellConfig(config) }
 
     // upload info
     handle_motusRecv(info) {
@@ -519,6 +537,51 @@ class Dashboard {
         .catch((e) => {
             console.log("Assuming no Sixfab UPS HAT:", e.message)
             FlexDash.set('ups_hat', {input: {status:"HAT not installed"}, system:{}, battery:{}})
+        })
+    }
+
+    // ===== Network usage collected by vnStat
+
+    updateNetUsage() {
+        ChildProcess.execFile(vnstat, (code, stdout, stderr) => {
+            //console.log(`Exec "${cmd} ${args.join(" ")}" -> code=${code} stdout=${stdout} stderr=${stderr}`)
+            if (code || stderr) {
+                console.log(`${vnstat} failed: ${stderr||code}`)
+                return
+            }
+            try {
+                // rows: [iface, when, rx, tx, total, predicted]
+                const data = []
+                let iface = '??'
+                for (const line of stdout.split('\n')) {
+                    const words = line.split(/  */)
+                    if (words[0] == "") words.shift()
+                    if (words.length == 1 && words[0].endsWith(':')) {
+                        data.push(['','',words[0].slice(0,-1),'',''])
+                    } else if (words.length == 0) {
+                        // ignore
+                    } else if (words[0].endsWith(':')) {
+                        // ignore ("Not enough data available yet")
+                    } else if (words[0] == 'rx') {
+                        // ignore (header)
+                    } else if (words[3] == '/') {
+                        let row = [words.shift()]
+                        while (words.length > 0) {
+                            const w = words.shift()
+                            if (w == '--') row.push('--')
+                            else row.push(`${w} ${words.shift()}`)
+                            if (words.length > 0 && words[0] == '/') words.shift()
+                        }
+                        data.push(row)
+                    }
+                }
+                FlexDash.set('net_usage_data', data)
+                FlexDash.set('net_usage_columns', ['when', 'rx', 'tx', 'total', 'predicted'])
+            } catch (e) {
+                //console.log(`Got : ${stdout}`)
+                FlexDash.set('net_usage_data', {})
+                console.log(`${vnstat} parsing failed:`, e)
+            }
         })
     }
 
