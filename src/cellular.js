@@ -85,7 +85,7 @@ class CellMan {
   }
 
   getCellStatus() {
-    let m, info
+    let m, info, reason
     this.cellStatusTimer = null
     this.execMMCli(null, ["-L"], true)
       .then(modems => {
@@ -107,7 +107,7 @@ class CellMan {
         const modem = data["modem"]
         const old_state = this.cell_state
         this.cell_state = modem.generic.state
-        let reason = modem.generic["state-failed-reason"]
+        reason = modem.generic["state-failed-reason"]
         if (reason == "--") reason = ""
         this.matron.emit("netCellState", this.cell_state)
         this.matron.emit("netCellReason", reason)
@@ -125,8 +125,6 @@ class CellMan {
         info["capabilities"] = modem?.generic?.["current-capabilities"].join(" ")
         info["model"] = modem?.generic?.model
         info["number"] = modem?.generic?.["own-numbers"]?.join(" ")
-        info["default APN"] = modem?.["3gpp"].eps?.["initial-bearer"]?.settings?.apn
-        info["default ip-type"] = modem?.["3gpp"].eps?.["initial-bearer"]?.settings?.["ip-type"]
         // see what to query next
         const bearer = modem?.generic?.bearers?.length > 0 && modem?.generic?.bearers[0]
         if (bearer) return this.execMMCli(m, ["-b", bearer.replace(/.*\//, "")], true)
@@ -144,6 +142,10 @@ class CellMan {
           if (info["bearer conn"] != "yes" && info["bearer error"])
             this.matron.emit("netCellReason", info["bearer error"])
           info.APN = bearer?.properties?.["apn"]
+          if (reason = "" && info.APN == "") {
+            reason = "APN not set"
+            this.matron.emit("netCellReason", reason)
+          }
           info["ip type"] = bearer?.properties?.["ip-type"]
           info.roaming = bearer?.properties?.["roaming"]
           info["ip timeout"] = bearer?.status?.["ip-timeout"]
@@ -159,6 +161,11 @@ class CellMan {
               bearer?.["ipv6-config"]?.address + "/" + bearer?.["ipv6-config"]?.prefix
           else info["ipv6 addr"] = ""
           info["ipv6 gw"] = bearer?.["ipv6-config"]?.gateway
+          if (reason == "") {
+            if (info["ipv4 addr"] == "" || info["ipv4 addr"].startsWith('169.254')) {
+              this.matron.emit("netCellState", "no IP addr")
+            }
+          }
         } else if (data.modem?.["3gpp"]?.["scan-networks"]) {
           const nets = data.modem?.["3gpp"]?.["scan-networks"]
           console.log("nets:", nets)
@@ -168,6 +175,10 @@ class CellMan {
             const tech = nets[i].match(/access-technologies: *([^,]*)/)?.[1]
             const avail = nets[i].match(/availability: *([^,]*)/)?.[1]
             if (op) info[op] = tech + ", " + avail
+          }
+          if (reason == "") {
+            reason = "Searching for carrier"
+            this.matron.emit("netCellReason", reason)
           }
         }
         this.matron.emit("netCellInfo", info)
