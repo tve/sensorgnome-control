@@ -16,7 +16,7 @@ Environment=LC_ALL="C.UTF-8"
 ExecStartPre=/usr/bin/systemctl is-active sg-boot.service
 ExecStartPre=/usr/bin/systemctl is-active chronyd.service
 ExecStartPre=/usr/bin/systemctl is-active sg-usb-init.service
-ExecStart=/bin/bash -c "nice -n -15 node main"
+ExecStart=/bin/bash -c "UV_THREADPOOL_SIZE=20 nice -n -15 node main"
 ExecStartPost=-/usr/bin/killall -KILL rtl_tcp vamp-alsa-host chronyc
 TimeoutStopSec=5
 Restart=always
