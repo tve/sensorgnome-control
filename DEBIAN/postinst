@@ -9,7 +9,7 @@ for f in acquisition.json SG_tag_database.sqlite; do
 done
 
 # need to rebuild binary for authenticate-pam module for current architecture
-(cd $SG/control; TERM=dumb npm rebuild | cat)
+(cd $SG/control; id; TERM=dumb npm rebuild | cat)
 
 # need to disable kernel RTLSDR driver
 echo "blacklist dvb_usb_rtl28xxu" >/etc/modprobe.d/blacklist-rtl28xxu.conf
