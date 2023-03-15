@@ -350,7 +350,7 @@
       "cols": 3,
       "static": {
         "title": "",
-        "text": "# Upgrading the SensorGnome software\n\nTo upgrade the SensorGnome software:\n\n- Enable the buttons\n- Use `check` to get a list of upgradable packages, wait for the list to show in the \"available upgrades\" panel.\n- Use `sg upgrade` to upgrade the Sensorgnome software without upgrading the rest of the operating system.\n- Wait for the upgrade log panel to show \"_END_\".\n- Reload the browser (or sometimes just a re-login works) and check that the \"current version\" panel reflects the upgrade (you can also re-run the \"check\").\n- In general, a reboot is recommended at this point.\n\nTo upgrade the full operating system and Sensorgnome software:\n\n- Upgrading the operating system _is not recommended as a routine practice_!\n- Ensure you have physical access to your Sensorgnome and the ability to insert a freshly flashed SD card in case the upgrade fails and you have to start from scratch.\n- Perform the same steps as above, but use `sysupgrade` instead of `sg upgrade`.\n"
+        "text": "# Upgrading the SensorGnome software\n\nTo upgrade the SensorGnome software:\n\n- Enable the buttons\n- Use `check` to get a list of upgradable packages, wait for the list to show in the \"available upgrades\" panel.\n- Use `sg upgrade` to upgrade the Sensorgnome software without upgrading the rest of the operating system.\n- Wait for the upgrade log panel to show \"_END_\".\n- Reload the browser and check that the \"current version\" panel reflects the upgrade (you can also re-run the \"check\").\n- In general, a reboot is recommended at this point.\n\nTo upgrade the full operating system and Sensorgnome software:\n\n- Upgrading the operating system _is not recommended as a routine practice_!\n- Ensure you have physical access to your Sensorgnome and the ability to insert a freshly flashed SD card in case the upgrade fails and you have to start from scratch.\n- Perform the same steps as above, but use `sysupgrade` instead of `sg upgrade`.\n"
       },
       "dynamic": {},
       "id": "w00791"
@@ -1111,7 +1111,6 @@
         "widgets": [
           "w02323",
           "w06392",
-          "w05346",
           "w08929"
         ]
       },
@@ -1135,7 +1134,7 @@
     "w02323": {
       "kind": "PushButton",
       "rows": 1,
-      "cols": 2,
+      "cols": 3,
       "static": {
         "title": "check",
         "output_value": "check",
@@ -1150,7 +1149,7 @@
     "w06392": {
       "kind": "PushButton",
       "rows": 1,
-      "cols": 2,
+      "cols": 3,
       "static": {
         "title": "sg upgrade",
         "output_value": "sensorgnome",
@@ -1176,7 +1175,7 @@
     },
     "w07827": {
       "kind": "TextView",
-      "rows": 4,
+      "rows": 5,
       "cols": 3,
       "static": {
         "title": "Software Update Log",
@@ -1245,7 +1244,7 @@
     "w05346": {
       "kind": "PushButton",
       "rows": 1,
-      "cols": 2,
+      "cols": 3,
       "static": {
         "title": "sysupgrade",
         "color": "#EEEEEE",
@@ -1554,15 +1553,17 @@
     },
     "w08547": {
       "kind": "Panel",
-      "rows": 1,
+      "rows": 2,
       "cols": 3,
       "static": {
-        "title": "Power off control",
+        "title": "DANGER ZONE",
         "widgets": [
           "w04884",
           "w04521",
           "w08863",
-          "w01649"
+          "w01649",
+          "w05346",
+          "w04824"
         ],
         "solid": true
       },
@@ -1602,7 +1603,7 @@
         "title": ""
       },
       "dynamic": {
-        "label": "$demo_random"
+        "label": " "
       },
       "id": "w08863"
     },
@@ -1709,6 +1710,24 @@
       },
       "id": "w05350",
       "output": "config_cell"
+    },
+    "w04824": {
+      "kind": "Toggle",
+      "rows": 1,
+      "cols": 3,
+      "static": {
+        "title": "Release train",
+        "on_value": "testing",
+        "off_value": "stable",
+        "popup_info": "Sensorgnomes should use the 'stable' release train to ensure reliable operation. For testing purposes, e.g. when trying out new features in the field, this toggle allows the Sensorgnome to be switched to the 'testing' release train. The testing release train always has packages equal or newer than stable. After switching release train, please run a software upgrade CHECK followed by an SG-UPGRADE (if desired). The toggle by itself does not change any software, it only toggles which packages are considered by CHECK and SG-UPGRADE..",
+        "enabled": true
+      },
+      "dynamic": {
+        "value": "software/train",
+        "enabled": "software/enable"
+      },
+      "id": "w04824",
+      "output": "toggle_train"
     }
   },
   "grids": {

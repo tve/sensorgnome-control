@@ -39,7 +39,7 @@ class Dashboard {
             'dash_upload_tagdb', 'dash_df_enable', 'dash_df_tags', 'dash_software_reboot',
             'dash_software_enable', 'dash_software_check', 'dash_software_upgrade',
             'dash_allow_shutdown', 'dash_software_shutdown', 'dash_software_restart',
-            'dash_download_logs', 'dash_lotek_freq_change', 'dash_config_cell',
+            'dash_download_logs', 'dash_lotek_freq_change', 'dash_config_cell', 'dash_toggle_train',
         ]) {
             this.matron.on(ev, (...args) => {
                 let fn = 'handle_'+ev
@@ -98,6 +98,7 @@ class Dashboard {
         this.allow_poweroff = false
         FlexDash.set("software/available", "Not yet checked...")
         FlexDash.set("software/log", "- empty -")
+        this.setDashTrain()
 
         // direction finding info is not saved between restarts...
         FlexDash.set('df_enable', 'OFF')
@@ -462,6 +463,36 @@ class Dashboard {
     handle_dash_allow_shutdown(value) {
         FlexDash.set('software/enable_shutdown', value)
         this.allow_poweroff = value
+    }
+
+    // show and toggle release train
+    handle_dash_toggle_train(value) {
+        FlexDash.set('software/train', value)
+        if (['stable','testing'].includes(value)) {
+            Fs.readFile('/etc/apt/sources.list.d/sensorgnome.list', (err, data) => {
+                if (err) {
+                    console.log("Error reading sensorgnome.list:", err)
+                    return
+                }
+                data = data.toString().replace(/(stable|testing)/, value)
+                Fs.writeFile('/etc/apt/sources.list.d/sensorgnome.list', data, (err) => {
+                    if (err) {
+                        console.log("Error writing sensorgnome.list:", err)
+                        return
+                    }
+                })
+            })
+        }
+    }
+    setDashTrain() {
+        Fs.readFile('/etc/apt/sources.list.d/sensorgnome.list', (err, data) => {
+            if (err) {
+                console.log("Error reading sensorgnome.list:", err)
+                return
+            }
+            let train = data.toString().match(/(stable|testing)/)
+            if (train) FlexDash.set('software/train', train[1])
+        })
     }
 
     handle_dash_software_restart() { Upgrader.restart() }
