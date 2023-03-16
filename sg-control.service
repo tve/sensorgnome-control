@@ -4,7 +4,9 @@ Description=Sensorgnome main control process.
 ; https://unix.stackexchange.com/questions/213185
 ; https://github.com/systemd/systemd/issues/1312
 ;After=sg-boot.service sg-gps-init.service chronyd.service sg-usb-init.service
-Requires=sg-boot.service sg-gps-init.service chronyd.service sg-usb-init.service
+; Wants is weaker than Requires and doesn't prevent start-up
+Requires=sg-boot.service
+Wants=sg-gps-init.service chronyd.service sg-usb-init.service
 
 [Service]
 Type=exec
