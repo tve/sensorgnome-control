@@ -165,7 +165,7 @@ class CellMan {
             if (info["ipv4 addr"] == "" || info["ipv4 addr"].startsWith('169.254')) {
               this.matron.emit("netCellState", "no IP addr")
             } else {
-              this.matron.emit("netCellReason", info["ipv4 addr"])
+              this.matron.emit("netCellReason", info["ipv4 addr"].replace(/\/.*/, ''))
             }
           }
         } else if (data.modem?.["3gpp"]?.["scan-networks"]) {
