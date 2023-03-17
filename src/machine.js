@@ -1,4 +1,4 @@
-// machine.js - keep track of machine-specific information:
+// machine.js - keep track of machine-specific information and upgrade software packages
 //
 // - machineID: unique 12 character code for this machine
 //   (i.e. differs from one unit to another)
@@ -16,7 +16,7 @@ const CP = require('child_process')
 const log_key = 'software/log'  // flexdash key for text log of actions
 const upgrade_log = '/var/log/upgrade.log'
 const upgrader_dir = '/opt/sensorgnome/upgrader'
-const check_re = RegExp('^([-a-zA-Z0-9_]+)/\\S+\\s+(\\S+)\\s+armhf\\s+.upgradable from: ([-a-z0-9_.]+)', 'gm')
+const check_re = RegExp('^([-a-zA-Z0-9_]+)/\\S+\\s+(\\S+)\\s+(armhf|all)\\s+.upgradable from: ([-a-z0-9_.:+]+)', 'gm')
 
 exports.machineID = Fs.readFileSync("/etc/sensorgnome/id").toString().trim()
 exports.machineKey = Fs.readFileSync("/etc/sensorgnome/key").toString().trim()
@@ -96,7 +96,7 @@ class Upgrader {
       proc.on("close", code => {
         console.log("CMD: " + cmd + " --> " + code)
         this.lock = null
-        if (code == 0) resolve(this.out)
+        if (code == 0) setTimeout(() => resolve(this.out), 200)
         else reject(code)
       })
       proc.on("error", err => {
