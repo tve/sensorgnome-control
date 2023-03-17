@@ -53,6 +53,9 @@ CornellTagXCVR.prototype.init = function() {
 
     try {
         this.rs = Fs.createReadStream(this.dev.path);
+        this.rs.on('error', err => {
+            console.log("Error opening/reading " + this.dev.path + ": " + err.message);
+        })
         this.rl = readline.createInterface({
             input: this.rs,
             terminal: false 
