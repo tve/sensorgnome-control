@@ -105,17 +105,17 @@ class HubMan {
             let stat = Fs.statSync(path)
             if (! this.devs[port]) {
                 this.devs[port] = {path, attr, stat}
-                console.log("Added " + path + " and devs[port] is " + JSON.stringify(this.devs[port]))
+                console.log(`Added ${path} port=${port} attr=` + JSON.stringify(this.devs[port]))
                 this.matron.emit("devAdded", this.devs[port])
             }
         } catch (e) {
-            // looks like the device has been removed
+            // looks like the device has been removed?
+            if (e.code !== "ENOENT") console.log(`Error: Removed ${path} due to ${e}`)
             // only emit a message if we already knew about this device
-            //console.log("Removed " + path + " and devs[port] is " + JSON.stringify(this.devs[port]))
             if (this.devs[port]) {
                 this.matron.emit("devRemoved", this.devs[port])
                 delete this.devs[port]
-            }
+            } else console.log("Removed unknown device", path)
             //console.log(`event ${event} for ${path}: ${e.stack}`)
         }
     }
@@ -171,6 +171,9 @@ class HubMan {
     findPort(path) {
         for (let p of this.portMap) {
             if (p.path == path) return p.port
+        }
+        for (let p in this.devs) {
+            if (this.devs[p].attr.port_path == path) return p
         }
         // not found, assign a port number
         for (let i=11; i<100; ++i) {

@@ -49,24 +49,18 @@ CornellTagXCVR.prototype.devRemoved = function(dev) {
 };
 
 CornellTagXCVR.prototype.init = function() {
-    // open the device fd
-
-    try {
-        this.rs = Fs.createReadStream(this.dev.path);
-        this.rs.on('error', err => {
-            console.log("Error opening/reading " + this.dev.path + ": " + err.message);
-        })
-        this.rl = readline.createInterface({
-            input: this.rs,
-            terminal: false 
-        });
-        this.rl.on("line", this.this_gotTag);
-        console.log('Starting read stream at', this.dev.path);
-    } catch (e) {
-        // not sure what to do here
-        console.log("Failed to open CornellTagXCVR at " + this.dev.path + "\n");
-        console.log(e);
-    }
+    // open the device fd, throw error if anything goes south, caught in hubman devChanged
+    this.rs = Fs.createReadStream(this.dev.path)
+    this.rs.on('error', err => {
+        console.log("Error opening/reading " + this.dev.path + ": " + err.message)
+        throw err
+    })
+    this.rl = readline.createInterface({
+        input: this.rs,
+        terminal: false 
+    })
+    this.rl.on("line", this.this_gotTag)
+    console.log('Starting read stream at', this.dev.path)
 };
 
 CornellTagXCVR.prototype.gotTag = function(record) {
