@@ -10,7 +10,7 @@ class CellConfig {
   constructor(path) {
     this.path = path
     // config values
-    this.data = { apn: "", "ip-type": "ipv4v6"}
+    this.data = { apn: "", "ip-type": "ipv4v6", "allow-roaming": "yes"}
     //
     try {
       let text = Fs.readFileSync(path).toString()
@@ -70,8 +70,12 @@ class CellMan {
   }
 
   setCellConfig(config) {
-    if (typeof config == 'object' && typeof config.apn == 'string' && typeof config["ip-type"] == 'string') {
-      this.config.update({apn: config.apn, 'ip-type': config["ip-type"]})
+    if (typeof config == 'object' && typeof config.apn == 'string') {
+      this.config.update({
+        apn: config.apn,
+        'ip-type': config["ip-type"] || "ipv4v6",
+        'allow-roaming': config["allow-roaming"] || "yes",
+      })
       this.matron.emit("netCellConfig", this.config.data)
       ChildProcess.execFile(CHECK_MODEM, ["-r"], (code, stdout, stderr) => {
         console.log(`Check-modem script code=${code} stdout=${stdout} stderr=${stderr}`)
