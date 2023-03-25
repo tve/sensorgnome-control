@@ -29,6 +29,7 @@
 const centra = require("./centra.js")
 const Fs = require('fs')
 const Fsp = require("fs").promises
+const crypto = require("crypto")
 
 const IP_CMD = "/usr/sbin/ip"
 const route_map = { wlan0: "wifi", eth0: "eth", usb: "cell", wwan0: "cell", usb0: "cell" }
@@ -280,9 +281,12 @@ class WifiMan {
             if (config.passphrase === null) {
                 console.log("Skipping WiFi passphrase")
             } else if (config.passphrase) {
-                console.log("Set WiFi passphrase: len ", config.passphrase.length)
-                await this.execWpaCli(["set_network", "wlan0", "key_mgmt", 'WPA-PSK'])
-                await this.execWpaCli(["set_network", "wlan0", "psk", `"${config.passphrase}"`])
+              console.log("Set WiFi passphrase: len ", config.passphrase.length)
+              const psk = crypto.pbkdf2Sync(config.passphrase, config.ssid, 4096, 256/8, 'sha1')
+              // await this.execWpaCli(["set_network", "wlan0", "key_mgmt", 'WPA-PSK'])
+              // await this.execWpaCli(["set_network", "wlan0", "psk", `"${config.passphrase}"`])
+              await this.execWpaCli(["set_network", "wlan0", "key_mgmt", "NONE"])
+              await this.execWpaCli(["set_network", "wlan0", "psk", `${psk.toString('hex')}`])
             } else if (config.passphrase !== undefined) {
                 console.log("Set WiFi no-passphrase")
                 await this.execWpaCli(["set_network", "wlan0", "key_mgmt", 'NONE'])
