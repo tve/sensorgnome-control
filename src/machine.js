@@ -20,6 +20,8 @@ const check_re = RegExp('^([-a-zA-Z0-9_]+)/\\S+\\s+(\\S+)\\s+(armhf|all)\\s+.upg
 
 exports.machineID = Fs.readFileSync("/etc/sensorgnome/id").toString().trim()
 exports.machineKey = Fs.readFileSync("/etc/sensorgnome/key").toString().trim()
+const pwdfile = Fs.readFileSync("/etc/passwd").toString()
+exports.username = (/^([^:]+):[^:]*:1000:/m).exec(pwdfile)?.[1] || "gnome"
 
 var bootCountFile = "/etc/sensorgnome/bootcount"
 exports.bootCount = Fs.existsSync(bootCountFile) ?

@@ -274,13 +274,13 @@ class Dashboard {
             this.setDashCreds(update, "please choose a less common password :-)")
             return
         }
-        Pam.authenticate('gnome', cp, (err) => {
+        Pam.authenticate(Machine.username, cp, (err) => {
             if (err) {
                 update['current password'] = ""
                 this.setDashCreds(update, "incorrect current password")
             } else {
                 try {
-                    CP.execFileSync("/usr/sbin/chpasswd", { input: `gnome:${np}\n` })
+                    CP.execFileSync("/usr/sbin/chpasswd", { input: `${Machine.username}:${np}\n` })
                 } catch(e) {
                     return
                 }

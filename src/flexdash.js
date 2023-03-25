@@ -118,7 +118,7 @@ class FlexDash {
                     err.data = {
                         message: 'unauthorized', realm: 'SensorGnome ' + machineID,
                         url: '/login', strategy: 'user-password',
-                        user: 'gnome', fixed_user: true,
+                        user: Machine.username, fixed_user: true,
                     }
                     next(err)
                 }
