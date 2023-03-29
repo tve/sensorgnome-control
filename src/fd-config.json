@@ -1257,48 +1257,6 @@
       "id": "w05346",
       "output": "software_upgrade"
     },
-    "w09420": {
-      "kind": "PropsTable",
-      "rows": 2,
-      "cols": 3,
-      "static": {
-        "title": "Input",
-        "fields": []
-      },
-      "dynamic": {
-        "data": "ups_hat/input"
-      },
-      "id": "w09420",
-      "output": null
-    },
-    "w08882": {
-      "kind": "PropsTable",
-      "rows": 5,
-      "cols": 3,
-      "static": {
-        "title": "Battery",
-        "fields": []
-      },
-      "dynamic": {
-        "data": "ups_hat/battery"
-      },
-      "id": "w08882",
-      "output": null
-    },
-    "w07252": {
-      "kind": "PropsTable",
-      "rows": 3,
-      "cols": 3,
-      "static": {
-        "title": "System",
-        "fields": []
-      },
-      "dynamic": {
-        "data": "ups_hat/system"
-      },
-      "id": "w07252",
-      "output": null
-    },
     "w03111": {
       "kind": "Stat",
       "rows": 1,
@@ -1390,14 +1348,13 @@
     },
     "w07004": {
       "kind": "Panel",
-      "rows": 4,
+      "rows": 2,
       "cols": 3,
       "static": {
-        "title": "Sixfab UPS HAT",
+        "title": "Remote Management",
         "widgets": [
-          "w09420",
-          "w08882",
-          "w07252"
+          "w01316",
+          "w03100"
         ]
       },
       "dynamic": {},
@@ -1728,6 +1685,39 @@
       },
       "id": "w04824",
       "output": "toggle_train"
+    },
+    "w01316": {
+      "kind": "Toggle",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "Remote commands",
+        "on_value": "enabled",
+        "off_value": "disabled",
+        "popup_info": "Allow commands from SG hub to reboot the system, restart the control process, and start/stop Hot-Spot. Commands can be initiated by any user having access to the Motus project and Motus admins."
+      },
+      "dynamic": {
+        "value": "remote/cmds"
+      },
+      "id": "w01316",
+      "output": "remote_cmds"
+    },
+    "w03100": {
+      "kind": "Toggle",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "Remote Web UI",
+        "on_value": "enabled",
+        "off_value": "disabled",
+        "popup_info": "Allow remote web UI access via SG hub. Requires the Sensorgnome's password like local access.",
+        "enabled": false
+      },
+      "dynamic": {
+        "value": "remote/webui"
+      },
+      "id": "w03100",
+      "output": "remote_webui"
     }
   },
   "grids": {

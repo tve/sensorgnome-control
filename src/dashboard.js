@@ -10,6 +10,8 @@ const Fs = require('fs')
 const top100k = Fs.readFileSync("/opt/sensorgnome/web-portal/top-100k-passwords.txt").toString().split('\n')
 
 const TAGDBFILE   = "/etc/sensorgnome/SG_tag_database.sqlite" // FIXME: needs to come from main.js...
+const wifi_hotspot = "/opt/sensorgnome/wifi-button/wifi-hotspot.sh"
+const remote_access = "/etc/sensorgnome/remote.json"
 const SixfabUpsHat = "/opt/sensorgnome/ups-hat/ups_manager.py"
 const vnstat = "/usr/bin/vnstat"
 
@@ -40,6 +42,7 @@ class Dashboard {
             'dash_software_enable', 'dash_software_check', 'dash_software_upgrade',
             'dash_allow_shutdown', 'dash_software_shutdown', 'dash_software_restart',
             'dash_download_logs', 'dash_lotek_freq_change', 'dash_config_cell', 'dash_toggle_train',
+            'dash_remote_cmds'
         ]) {
             this.matron.on(ev, (...args) => {
                 let fn = 'handle_'+ev
@@ -86,6 +89,7 @@ class Dashboard {
         FlexDash.set('acquisition', JSON.stringify(Acquisition, null, 2))
         FlexDash.set('net_hotspot_ssid', Machine.machineID)
         this.setDashCreds({ current_password: "?????????", new_password: "", confirm_new_password: ""})
+        this.setRemoteManagement()
 
         // some static machine info
         FlexDash.set('machineinfo', Machine)
@@ -281,6 +285,7 @@ class Dashboard {
             } else {
                 try {
                     CP.execFileSync("/usr/sbin/chpasswd", { input: `${Machine.username}:${np}\n` })
+                    CP.execFileSync(wifi_hotspot, ["mode", "WPA_PSK", np])
                 } catch(e) {
                     return
                 }
@@ -528,6 +533,40 @@ class Dashboard {
         archive.pipe(resp)
         files.forEach(f => archive.file(f, { name: Path.basename(f) }))
         archive.finalize()
+    }
+
+    // ===== Remote management
+
+    setRemoteManagement(new_config) {
+        Fs.readFile(remote_access, (err, data) => {
+            if (err) {
+                console.log(`Error reading ${remote_access}: ${err}`)
+                return
+            }
+            try {
+                const config = JSON.parse(data)
+                if (new_config) {
+                    Object.assign(config, new_config)
+                    Fs.writeFile(remote_access, JSON.stringify(config), (err) => {
+                        if (err) console.log(`Error writing ${remote_access}: ${err}`)
+                    })
+                }
+                FlexDash.set('remote/cmds', config.commands ? "enabled" : "disabled")
+                config.webui = false // always show webui as disabled for now
+                FlexDash.set("remote/webui", config.webui ? "enabled" : "disabled")
+            } catch(e) {
+                console.log(`Error parsing ${remote_access}: ${e}`)
+            }
+        })
+    }
+
+    handle_dash_remote_cmds(value) {
+        const v = value === true || value == "enabled"
+        this.setRemoteManagement({ commands: v })
+    }
+    handle_dash_remote_webui(value) {
+        const v = value === true || value == "enabled"
+        this.setRemoteManagement({ webui: v })
     }
 
     // ===== Sixfab UPS HAT information
