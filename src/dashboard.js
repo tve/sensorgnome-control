@@ -6,6 +6,7 @@ const Path = require('path')
 const CP = require('child_process')
 const Pam = require('authenticate-pam')
 const Fs = require('fs')
+const crypto = require('crypto')
 
 const top100k = Fs.readFileSync("/opt/sensorgnome/web-portal/top-100k-passwords.txt").toString().split('\n')
 
@@ -283,10 +284,13 @@ class Dashboard {
                 update['current password'] = ""
                 this.setDashCreds(update, "incorrect current password")
             } else {
+                // hash the pwd for the hotspot, uses the SSID as salt!
+                const hpw = crypto.pbkdf2Sync(np, Machine.machineID, 4096, 256 / 8, "sha1").toString("hex")
                 try {
                     CP.execFileSync("/usr/sbin/chpasswd", { input: `${Machine.username}:${np}\n` })
-                    CP.execFileSync(wifi_hotspot, ["mode", "WPA_PSK", np])
+                    CP.execFileSync(wifi_hotspot, ["mode", "WPA-PSK", hpw])
                 } catch(e) {
+                    console.log("creds_update error", e)
                     return
                 }
                 this.setDashCreds({ current_password: "", new_password: "", confirm_new_password: ""},
