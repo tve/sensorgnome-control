@@ -892,7 +892,7 @@
       "cols": 3,
       "static": {
         "title": "",
-        "zoom": 0.8,
+        "zoom": 0.7,
         "color": "#424242"
       },
       "dynamic": {
@@ -1592,7 +1592,7 @@
         "high_color": "#4CAF50",
         "high_regexp": "connected",
         "color": "#FF5722",
-        "zoom": 0.9,
+        "zoom": 0.8,
         "popup_info": "Modem states:\n\n- disabled: SG software has not enabled the modem yet\n- enabled: modem is trying to register (\"connect with\") cellular network, this may take time and never change if the SIM does not provide service\n- registering: transient state attempting to register with cellular network\n- registered: connected to the cellular network but no internet access (incorrect APN?)\n- connected: connected to the cellular network and internet access according to the modem"
       },
       "dynamic": {

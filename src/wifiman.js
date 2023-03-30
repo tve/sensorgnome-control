@@ -283,9 +283,8 @@ class WifiMan {
             } else if (config.passphrase) {
               console.log("Set WiFi passphrase: len ", config.passphrase.length)
               const psk = crypto.pbkdf2Sync(config.passphrase, config.ssid, 4096, 256/8, 'sha1')
-              // await this.execWpaCli(["set_network", "wlan0", "key_mgmt", 'WPA-PSK'])
+              await this.execWpaCli(["set_network", "wlan0", "key_mgmt", "WPA-PSK"])
               // await this.execWpaCli(["set_network", "wlan0", "psk", `"${config.passphrase}"`])
-              await this.execWpaCli(["set_network", "wlan0", "key_mgmt", "NONE"])
               await this.execWpaCli(["set_network", "wlan0", "psk", `${psk.toString('hex')}`])
             } else if (config.passphrase !== undefined) {
                 console.log("Set WiFi no-passphrase")
