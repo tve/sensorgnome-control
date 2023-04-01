@@ -4,7 +4,7 @@
 const AR = require('archiver')
 const Path = require('path')
 const CP = require('child_process')
-const Pam = require('authenticate-pam')
+//const Pam = require('authenticate-pam')
 const Fs = require('fs')
 const crypto = require('crypto')
 
@@ -279,8 +279,9 @@ class Dashboard {
             this.setDashCreds(update, "please choose a less common password :-)")
             return
         }
-        Pam.authenticate(Machine.username, cp, (err) => {
-            if (err) {
+        //Pam.authenticate(Machine.username, cp, (err) => {
+        FlexDash.py_auth(Machine.username, cp, (err) => {
+                if (err) {
                 update['current password'] = ""
                 this.setDashCreds(update, "incorrect current password")
             } else {
