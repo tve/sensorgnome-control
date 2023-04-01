@@ -15,6 +15,7 @@ curl -L https://s3.amazonaws.com/s3.voneicken.com/flexdash/flexdash-0.3.16.tgz |
 SG=$DESTDIR/opt/sensorgnome
 install -d $SG/control
 cp -r src/* $SG/control
+cp gen-support $SG
 sudo chown -R 1000:1000 $SG/control
 
 # install default acquisition file and tag database into templates dir

@@ -9,7 +9,7 @@ for f in acquisition.json SG_tag_database.sqlite; do
 done
 
 # need to rebuild binary for authenticate-pam module for current architecture
-(cd $SG/control; id; TERM=dumb npm rebuild | cat)
+#(cd $SG/control; id; TERM=dumb npm rebuild | cat)
 
 # need to disable kernel RTLSDR driver
 echo "blacklist dvb_usb_rtl28xxu" >/etc/modprobe.d/blacklist-rtl28xxu.conf
@@ -27,7 +27,7 @@ fi
 mkdir -p /var/lib/sensorgnome
 
 # Upgrade from 2.0-rc4 to 2.0-rc5: folding deployment.txt into acquisition.json
-# Caveat: we're ignoring any modifies acquisition.json...
+# Caveat: we're ignoring any modified acquisition.json...
 DEP=/etc/sensorgnome/deployment.json
 ACQ=/etc/sensorgnome/acquisition.json
 if [[ -f $DEP ]]; then
