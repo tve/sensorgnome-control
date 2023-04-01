@@ -22,6 +22,7 @@
 
 const Fs = require('fs')
 const OS = require('os')
+const Cp = require('child_process')
 const Express = require('express')
 const Http = require('http')
 const Morgan = require("morgan")  // request logger middleware
@@ -30,7 +31,7 @@ const Session = require('express-session')
 const FileStore = require('session-file-store')(Session)
 const { Server } = require("socket.io")
 //const SIOClient = require("socket.io-client")
-const Pam = require('authenticate-pam')
+//const Pam = require('authenticate-pam')
 const { machineID } = require('./machine.js')
 
 const runClient = false
@@ -422,11 +423,43 @@ class FlexDash {
         return node
     }
 
+    // extract the password field from /etc/shadow for the specific user
+    shadow_hash(user, cb) {
+        Fs.readFile("/etc/shadow", (err, data) => {
+            if (err) return cb(err)
+            const lines = data.toString().split('\n')
+            const line = lines.find(l => l.startsWith(`${user}:`))
+            if (!line) return cb(`User '${user}' does not exist`)
+            const fields = line.split(':')
+            if (fields.length < 2) return cb(`User '${user}' has no password`)
+            const hash = fields[1]
+            if (hash == '*') return cb(`User '${user}' has no password`)
+            cb(null, hash)
+        })
+    }
+
+    // use python's crypt function to verify the password,
+    // see https://www.baeldung.com/linux/shadow-passwords
+    py_auth(user, pass, cb) {
+        this.shadow_hash(user, (err, verifier) => {
+            if (err) return cb(err)
+            const method_salt = verifier.replace(/\$[^$]+$/, '$')
+            const args = ["-c", `import crypt; print(crypt.crypt("${pass}", "${method_salt}"))`]
+            Cp.execFile("/usr/bin/python3", args, (err, stdout, stderr) => {
+                if (err) return cb(err)
+                if (stdout.trim() != verifier) return cb(`Wrong password for user '${user}'`)
+                return cb(null)
+            })
+        })
+    }
+
     login(req, res) {
         console.log(`SIO login, user=${req.body?.user} pass-len=${req.body?.password?.length}`)
         if (req.body) {
-            Pam.authenticate(req.body?.user, req.body?.password, (err) => {
+            //Pam.authenticate(req.body?.user, req.body?.password, (err) => {
+            this.py_auth(req.body?.user, req.body?.password, (err) => {
                 if (err) {
+                    console.log("Login failed: ", err)
                     delete req.session.rooms
                     res.status(401).end()
                 } else {
