@@ -1,0 +1,11 @@
+#! /usr/bin/python3
+# Script to generate a password entry to provide remote support
+import crypt
+import getpass
+import sys
+p1 = getpass.getpass()
+p2 = getpass.getpass(("Again: "))
+if p1 != p2:
+    print("No match.")
+else:
+    print(crypt.crypt(p1, crypt.mksalt(crypt.METHOD_SHA512)))
