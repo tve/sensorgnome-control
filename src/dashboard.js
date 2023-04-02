@@ -281,7 +281,7 @@ class Dashboard {
         }
         //Pam.authenticate(Machine.username, cp, (err) => {
         FlexDash.py_auth(Machine.username, cp, (err) => {
-                if (err) {
+            if (err) {
                 update['current password'] = ""
                 this.setDashCreds(update, "incorrect current password")
             } else {
@@ -683,6 +683,12 @@ class Dashboard {
             },
             files: {
                 summary: FlexDash.get('data_file_summary'),
+            },
+            network: {
+                wifi: FlexDash.get('net_wifi_state'),
+                hotspot: FlexDash.get('net_hotspot_state'),
+                cell: FlexDash.get('cellular/state'),
+                inet: FlexDash.get('net_default_route'),
             },
         }
     }

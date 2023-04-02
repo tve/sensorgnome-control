@@ -30,7 +30,6 @@ const Cors = require('cors')  // Cross-origin resource sharing middleware for Ex
 const Session = require('express-session')
 const FileStore = require('session-file-store')(Session)
 const { Server } = require("socket.io")
-//const SIOClient = require("socket.io-client")
 //const Pam = require('authenticate-pam')
 const { machineID } = require('./machine.js')
 
