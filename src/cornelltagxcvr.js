@@ -17,6 +17,8 @@
 //   The <version> field is the CTT tag version: 1 has no checksum and 2 has a checksum.
 
 
+// avoiding serialport module 'cause it requires native code install which is a PITA given
+// the way we build packages (on x86) and deploy them on ARM
 // const {SerialPort} = require('serialport')
 // const {ReadlineParser} = require('@serialport/parser-readline')
 const readline = require("readline")
@@ -72,7 +74,7 @@ class CornellTagXCVR {
     console.log("Starting read stream at", this.dev.path)
   }
 
-  init() {
+  init(no_write=false) {
     Fs.open(this.dev.path, "r+", (err, fd) => {
       if (err) {
         console.log("Error opening " + this.dev.path + ": " + err.message)
@@ -90,10 +92,14 @@ class CornellTagXCVR {
       console.log("Starting read stream at", this.dev.path)
       // write a version command to see whether the radio supports that
       // apparently the firmware needs some time before it responds...
-      setTimeout(() => this.askVersion(), 2000)
+      if (!no_write) {
+        setTimeout(() => this.askVersion(), 2000)
+        setTimeout(() => this.checkVersion(), 6000)
+      }
     })
   }
 
+  // ask the dongle to tell us its version as a health-check
   askVersion() {
     if (this.sp) {
       this.sp.write("version\r\n", (err, n) => {
@@ -101,8 +107,25 @@ class CornellTagXCVR {
       })
     } else if (this.fd != null) {
       Fs.write(this.fd, "version\r\n", (err, n) => {
-        if (err) console.log(`Error writing to ${this.dev.path}: ${err}`)
+        if (err?.code == "EBADF") {
+          console.log(`Cannot write to ${this.dev.path}, assuming old firmware`)
+          // reopen the device and ensure we don't write again: it gets hung due to the write
+          this.devRemoved(this.dev.path)
+          this.init(true)
+        } else if (err) {
+          console.log(`Error writing to ${this.dev.path}: (${err.code}) ${err}`)
+        }
       })
+    }
+  }
+
+  // if we don't get the version after opening the device assume it's the old firmware and
+  // reopen the device 'cause it gets stuck due to the attempted 'version\r\n' write
+  checkVersion() {
+    if (this.gotVersion == 0) {
+      console.log(`No version response from ${this.dev.path}, assuming old firmware`)
+      this.devRemoved(this.dev.path)
+      this.init(true)
     }
   }
 
@@ -150,7 +173,7 @@ class CornellTagXCVR {
   gotTag(record) {
     record = record.trim()
     if (record == "") return // happens due to CRLF
-    //console.log(`Got CTT line on p${this.dev.attr.port}: ${record}`)
+    console.log(`Got CTT line on p${this.dev.attr.port}: ${record}`)
     if (record.startsWith("{")) {
       // newer CTT receiver that emits a JSON record
       this.jsonTag(record)
