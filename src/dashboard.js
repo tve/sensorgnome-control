@@ -225,7 +225,8 @@ class Dashboard {
         // delete data['module options']
         // let fields = ['short label', 'memo', 'upload username', 'upload password']
         FlexDash.set('deployment', {
-            fields: ["label","memo"],
+            fields: ["memo"],
+            // fields: ["label","memo"],
             data: { label: Acquisition.label, memo: Acquisition.memo },
          })
     }

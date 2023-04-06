@@ -188,8 +188,8 @@ class FlexDash {
             }
 
             data = data.toString()
-                .replace(/title:.*/, `title: '${Acquisition.label}',`)
-                .replace(/<title>[^<]+/, `<title>${Acquisition.label}`)
+                .replace(/title:.*/, `title: '${Machine.machineID}',`)
+                .replace(/<title>[^<]+/, `<title>${Machine.machineID}`)
             res.end(data)
         })
     }
