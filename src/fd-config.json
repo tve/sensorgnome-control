@@ -554,7 +554,7 @@
     },
     "w01814": {
       "kind": "Panel",
-      "rows": 3,
+      "rows": 2,
       "cols": 3,
       "static": {
         "title": "",
@@ -562,10 +562,7 @@
           "w02325",
           "w06813",
           "w05188",
-          "w04506",
-          "w07260",
-          "w06035",
-          "w01745"
+          "w07260"
         ],
         "solid": false
       },
@@ -621,15 +618,17 @@
       "rows": 3,
       "cols": 3,
       "static": {
-        "title": "Detections (hourly)",
+        "title": "Lotek Tag Detections",
         "axes": [
-          "data_lines"
+          "left"
         ],
-        "popup_info": "Each data point represents one hour, the total chart 100 hours. For CTT, tag detections are shown, for Lotek, radio pulses are shown. (It takes 4 pulses for a tag detection.) Each data point shows the sum of detections during the subsequent 60 minutes."
+        "popup_info": "Each data point represents one hour, the total chart 100 hours. For CTT, tag detections are shown, for Lotek, radio pulses are shown. (It takes 4 pulses for a tag detection.) Each data point shows the sum of detections during the subsequent 60 minutes.",
+        "left_unit": "/hr",
+        "left_min": 0
       },
       "dynamic": {
-        "data": "detections_hourly",
-        "labels": "detection_series"
+        "data": "detections/lotek-tags/data",
+        "labels": "detections/lotek-tags/labels"
       },
       "id": "w09712",
       "output": null
@@ -952,7 +951,7 @@
       "rows": 3,
       "cols": 3,
       "static": {
-        "title": "Detection log",
+        "title": "Lotek tag detection log",
         "autoscroll": true,
         "popup_info": "The detection log shows raw detections coming from the radios. Its primary purpose is to verify correct operation of the radios. For CTT tags the format is as follows:\n\nTAG: T6,1665900910.226,78664C33,-95\n\nThe T6 refers to CTT radio on port 6, 1665900910.226 is the timestamp (seconds since 1970-1-1) 78664C33 is the CTT tag ID and -95 is the RSSI (dBm).\n\nFor Lotek tag first the raw radio pulses are shown as follows:\n\nPLS: p5,1665900923.5965,3.96,-48.31,-60.86\nPLS: p5,1665900923.6185,3.948,-48.76,-60.92\nPLS: p5,1665900923.6380,3.986,-47.99,-60.94\nPLS: p5,1665900923.6625,3.989,-47.62,-61.01\n\nPLS stands for pulse, p5 refers to \"pulse on port 5\", this is followed by the time-stamp, the frequency offset in kHz from the nominal frequency, the RSSI (dBm) and the noise (dBm). It takes 2 bursts of 4 pulses to detect a tag if the tag is found in the local tag database. A tag detection is hown as follows:\n\nTAG: L5,1665900923.5965,TestTags#1.1@166.38:25.1,3.971,0.02,-48.1,11.1,-60.9,3223,95,1.97e-07,-4.96e-05,166.38\n\nThe L5 refers to a Lotek tag detected by the radio on port 5. This is followed by the tag name and ID, the nominal frequency, the pulse interval (25.1s in this case), the freq offset in kHz, and further details about the pulse burst."
       },
@@ -964,31 +963,16 @@
     },
     "w03109": {
       "kind": "TextView",
-      "rows": 3,
+      "rows": 2,
       "cols": 6,
       "static": {
-        "title": "Content: projects and tag count"
+        "title": "Tag database content"
       },
       "dynamic": {
         "text": "tagdb/info"
       },
       "id": "w03109",
       "output": null
-    },
-    "w09941": {
-      "kind": "Panel",
-      "rows": 3,
-      "cols": 3,
-      "static": {
-        "title": "Local Tag Database",
-        "widgets": [
-          "w03109",
-          "w06470"
-        ],
-        "solid": false
-      },
-      "dynamic": {},
-      "id": "w09941"
     },
     "w02087": {
       "kind": "Panel",
@@ -1163,7 +1147,7 @@
     },
     "w06470": {
       "kind": "UploadButton",
-      "rows": 2,
+      "rows": 1,
       "cols": 6,
       "static": {
         "title": "Upload new tag database",
@@ -1233,7 +1217,7 @@
       "rows": 1,
       "cols": 4,
       "static": {
-        "title": "Port Mapping Info",
+        "title": "Port Mapping Help",
         "color": "#90CAF9",
         "icon": "information",
         "text": "Important: all radios (Lotek & CTT) must show up in the \"port mapping\" widget and all must have a distinct port number between 0 and 9. Further, the detection log should show any test tags in the vicinity.\n\nPort Mapping info\n\nWhen a device is plugged into USB its port is represented by a path, such as 1.2.3.\nThe Sensorgnome must report tag/pulse detections to Motus using a \"port number\" in the range 0..9\n(0 really being 10) and the port numbers configured here must correspond to the port/antenna numbers in the \"receiver deployment\" on the Motus site.\n\nThe Sensorgnome image is pre-configured to support up to 4 radios plugged into the rPi ports, or 3 radios directly plugged in a 4 more on a 4-port hub, or 3 + 7 using a 7-port hub. The pre-configured port mapping makes assumptions that may not match the specific hub you may be using, for this reason you may want to alter the mapping.\n\nThe port mapping allows explicit port mappings to be enforced, such that ports on the rPi and\non a hub can be labeled 1..10 in a reasonable order.\nThe mapping simply assigns a port number to a path using a notation like\n`path -> port`, for example, `1.2.3 -> 3` to map path `1.2.3` to port `3`.\nTo alter the port mapping use the pencil edit button on the port mapping widget.\n\nOn a __rPi 4B__ the built-in USB ports have paths 1.1 through 1.4 (1.1 is on the bottom closest\nto the Ethernet, 1.4 is at the top outside corner). The default mapping assigns port 1 to path 1.3 (lower outside), port 2 to path 1.4 (top outside), port 3 to path 1.1, and port 4 to path 1.2 (top next to ethernet).\nThis may be a bit confusing, the reason is so a hub can be plugged into the top blue USB3 port.\nThis results in ports 4 through 10 being on the hub.\n\nOn a __rPi 3B__ the built-in USB ports have paths 1.2 through 1.5 (1.2 is on the top closest\nto the Ethernet, 1.5 is at the bottom outside corner). A 4-port hub plugged into the bottom outside\nport will result in paths 1.5.1 through 1.5.4.\n\nIn terms of ordering of mappings: the first line with a matching path wins!\n"
@@ -1718,6 +1702,218 @@
       },
       "id": "w03100",
       "output": "remote_webui"
+    },
+    "w09883": {
+      "kind": "TextView",
+      "rows": 3,
+      "cols": 3,
+      "static": {
+        "title": "Lotek radio pulses",
+        "autoscroll": true,
+        "popup_info": "The detection log shows raw detections coming from the radios. Its primary purpose is to verify correct operation of the radios. For CTT tags the format is as follows:\n\nTAG: T6,1665900910.226,78664C33,-95\n\nThe T6 refers to CTT radio on port 6, 1665900910.226 is the timestamp (seconds since 1970-1-1) 78664C33 is the CTT tag ID and -95 is the RSSI (dBm).\n\nFor Lotek tag first the raw radio pulses are shown as follows:\n\nPLS: p5,1665900923.5965,3.96,-48.31,-60.86\nPLS: p5,1665900923.6185,3.948,-48.76,-60.92\nPLS: p5,1665900923.6380,3.986,-47.99,-60.94\nPLS: p5,1665900923.6625,3.989,-47.62,-61.01\n\nPLS stands for pulse, p5 refers to \"pulse on port 5\", this is followed by the time-stamp, the frequency offset in kHz from the nominal frequency, the RSSI (dBm) and the noise (dBm). It takes 2 bursts of 4 pulses to detect a tag if the tag is found in the local tag database. A tag detection is hown as follows:\n\nTAG: L5,1665900923.5965,TestTags#1.1@166.38:25.1,3.971,0.02,-48.1,11.1,-60.9,3223,95,1.97e-07,-4.96e-05,166.38\n\nThe L5 refers to a Lotek tag detected by the radio on port 5. This is followed by the tag name and ID, the nominal frequency, the pulse interval (25.1s in this case), the freq offset in kHz, and further details about the pulse burst."
+      },
+      "dynamic": {
+        "text": "detection_log"
+      },
+      "id": "w09883",
+      "output": null
+    },
+    "w07258": {
+      "kind": "TimePlot",
+      "rows": 3,
+      "cols": 3,
+      "static": {
+        "title": "CTT Tag Detections",
+        "axes": [
+          "left"
+        ],
+        "popup_info": "Each data point represents one hour, the total chart 100 hours. For CTT, tag detections are shown, for Lotek, radio pulses are shown. (It takes 4 pulses for a tag detection.) Each data point shows the sum of detections during the subsequent 60 minutes.",
+        "left_unit": "/hr",
+        "left_min": 0,
+        "left_decimals": 0
+      },
+      "dynamic": {
+        "data": "detections/ctt-tags/data",
+        "labels": "detections/ctt-tags/labels"
+      },
+      "id": "w07258",
+      "output": null
+    },
+    "w00699": {
+      "kind": "Panel",
+      "rows": 4,
+      "cols": 3,
+      "static": {
+        "title": "Lotek Settings",
+        "widgets": [
+          "w06035",
+          "w01745",
+          "w04506",
+          "w03109",
+          "w06470"
+        ]
+      },
+      "dynamic": {},
+      "id": "w00699"
+    },
+    "w08642": {
+      "kind": "PushButton",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "5 mins",
+        "output_value": "5mins"
+      },
+      "dynamic": {},
+      "id": "w08642",
+      "output": "detection_range"
+    },
+    "w08212": {
+      "kind": "Panel",
+      "rows": 3,
+      "cols": 3,
+      "static": {
+        "title": "",
+        "widgets": [
+          "w08642",
+          "w06030",
+          "w02885",
+          "w06290",
+          "w08177",
+          "w05490",
+          "w06493"
+        ],
+        "solid": true
+      },
+      "dynamic": {},
+      "id": "w08212"
+    },
+    "w06030": {
+      "kind": "PushButton",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "4 hours",
+        "output_value": "4hours"
+      },
+      "dynamic": {},
+      "id": "w06030",
+      "output": "detection_range"
+    },
+    "w02885": {
+      "kind": "PushButton",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "day",
+        "output_value": "day"
+      },
+      "dynamic": {},
+      "id": "w02885",
+      "output": "detection_range"
+    },
+    "w06290": {
+      "kind": "PushButton",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "month",
+        "output_value": "month"
+      },
+      "dynamic": {},
+      "id": "w06290",
+      "output": "detection_range"
+    },
+    "w08177": {
+      "kind": "PushButton",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "year",
+        "output_value": "year"
+      },
+      "dynamic": {},
+      "id": "w08177",
+      "output": "detection_range"
+    },
+    "w06493": {
+      "kind": "PopupButton",
+      "rows": 1,
+      "cols": 6,
+      "static": {
+        "title": "Chart info",
+        "icon": "information-outline",
+        "color": "#03A9F4"
+      },
+      "dynamic": {},
+      "id": "w06493"
+    },
+    "w09240": {
+      "kind": "TimePlot",
+      "rows": 3,
+      "cols": 3,
+      "static": {
+        "title": "Lotek Pulses",
+        "axes": [
+          "left"
+        ],
+        "popup_info": "Each data point represents one hour, the total chart 100 hours. For CTT, tag detections are shown, for Lotek, radio pulses are shown. (It takes 4 pulses for a tag detection.) Each data point shows the sum of detections during the subsequent 60 minutes.",
+        "left_unit": "/hr",
+        "left_min": 0
+      },
+      "dynamic": {
+        "data": "detections/lotek-pulses/data",
+        "labels": "detections/lotek-pulses/labels"
+      },
+      "id": "w09240",
+      "output": null
+    },
+    "w07135": {
+      "kind": "TimePlot",
+      "rows": 3,
+      "cols": 3,
+      "static": {
+        "title": "Lotek Background Noise",
+        "axes": [
+          "left"
+        ],
+        "popup_info": "Each data point represents one hour, the total chart 100 hours. For CTT, tag detections are shown, for Lotek, radio pulses are shown. (It takes 4 pulses for a tag detection.) Each data point shows the sum of detections during the subsequent 60 minutes.",
+        "left_unit": "dBm",
+        "left_min": null,
+        "span_gaps": []
+      },
+      "dynamic": {
+        "data": "detections/lotek-noise/data",
+        "labels": "detections/lotek-noise/labels",
+        "span_gaps": "detections/lotek-noise/labels"
+      },
+      "id": "w07135",
+      "output": null
+    },
+    "w05490": {
+      "kind": "Stat",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "interval per point"
+      },
+      "dynamic": {
+        "value": "detections/interval"
+      },
+      "id": "w05490"
+    },
+    "w04943": {
+      "kind": "TextView",
+      "rows": 4,
+      "cols": 3,
+      "static": {
+        "title": "Tags and Pulses"
+      },
+      "dynamic": {
+        "text": "detection_log"
+      },
+      "id": "w04943",
+      "output": null
     }
   },
   "grids": {
@@ -1726,9 +1922,7 @@
       "kind": "FixedGrid",
       "widgets": [
         "w06965",
-        "w06221",
-        "w00917",
-        "w09712"
+        "w06221"
       ],
       "min_cols": 3,
       "max_cols": 6
@@ -1751,10 +1945,10 @@
       "title": "",
       "widgets": [
         "w01814",
-        "w02040",
+        "w04943",
         "w06015",
-        "w09941",
-        "w02087"
+        "w02087",
+        "w00699"
       ],
       "id": "g03145",
       "max_cols": 6
@@ -1797,6 +1991,19 @@
       ],
       "id": "g05782",
       "max_cols": 6
+    },
+    "g08970": {
+      "kind": "FixedGrid",
+      "title": "",
+      "widgets": [
+        "w08212",
+        "w09712",
+        "w09240",
+        "w07135",
+        "w07258"
+      ],
+      "id": "g08970",
+      "max_cols": 6
     }
   },
   "dash": {
@@ -1831,7 +2038,8 @@
       "title": "radios",
       "id": "t06560",
       "grids": [
-        "g03145"
+        "g03145",
+        "g08970"
       ]
     },
     "t06959": {

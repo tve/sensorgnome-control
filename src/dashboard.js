@@ -7,6 +7,8 @@ const CP = require('child_process')
 //const Pam = require('authenticate-pam')
 const Fs = require('fs')
 const crypto = require('crypto')
+const TimeSeries = require('./timeseries.js')
+
 
 const top100k = Fs.readFileSync("/opt/sensorgnome/web-portal/top-100k-passwords.txt").toString().split('\n')
 
@@ -15,6 +17,7 @@ const wifi_hotspot = "/opt/sensorgnome/wifi-button/wifi-hotspot.sh"
 const remote_access = "/etc/sensorgnome/remote.json"
 const SixfabUpsHat = "/opt/sensorgnome/ups-hat/ups_manager.py"
 const vnstat = "/usr/bin/vnstat"
+const ts_dir = "/data/ts"
 
 const LotekFreqs = [ 166.380, 150.100, 150.500 ]
 
@@ -43,7 +46,7 @@ class Dashboard {
             'dash_software_enable', 'dash_software_check', 'dash_software_upgrade',
             'dash_allow_shutdown', 'dash_software_shutdown', 'dash_software_restart',
             'dash_download_logs', 'dash_lotek_freq_change', 'dash_config_cell', 'dash_toggle_train',
-            'dash_remote_cmds'
+            'dash_remote_cmds', 'dash_detection_range'
         ]) {
             this.matron.on(ev, (...args) => {
                 let fn = 'handle_'+ev
@@ -73,6 +76,13 @@ class Dashboard {
         this.df_tags = {tag1: "1.1", tag2: '78664c3304'}
         this.df_log = []
 
+        // time-series
+        this.ts = {}
+        this.tsRefreshInterval = null
+        Fs.mkdirSync(ts_dir, {recursive: true})
+        this.handle_dash_detection_range(TimeSeries.ranges[0])
+        setInterval(() => this.tsSave(), 60000)
+
         this.handle_motusRecv({})
 
         console.log("Dashboard handlers registered")
@@ -84,6 +94,8 @@ class Dashboard {
         FlexDash.registerGetHandler("/logs-download/:what", (req, res) => this.logs_download(req, res))
 
         setInterval(() => this.detectionShifter(), 10000)
+
+        //setInterval(() => this.tsGenRandom(), 8300)
 
         // set (relatively) static data
         this.setDeployment()
@@ -156,10 +168,12 @@ class Dashboard {
     handle_devAdded(info) {
         FlexDash.set(`devices/${info.attr.port}`, this.genDevInfo(info))
         FlexDash.set(`radios`, this.updateNumRadios())
+        this.tsAddDevice(info)
     }
     handle_devRemoved(info){
         FlexDash.unset(`devices/${info.attr.port}`)
         FlexDash.set(`radios`, this.updateNumRadios())
+        this.tsRemoveDevice(info)
     }
     handle_portmapFile(txt) { FlexDash.set('portmap_file', txt) }
     handle_dash_update_portmap(portmap) { HubMan.setPortmap(portmap) }
@@ -212,6 +226,163 @@ class Dashboard {
             status_color: info.status == "active" ? "green" : "red",
         }
         FlexDash.set('motus_recv', dash)
+    }
+
+    // ===== Pulses and tag time-series
+
+    tsFilename(dev) {
+        let prefix
+        switch (dev.attr.type) {
+        case "CTT/CornellRcvr": prefix = "ctt"; break
+        case "funcubeProPlus": prefix = "lotek"; break
+        case "funcubePro": prefix = "lotek"; break
+        case "rtlsdr": prefix = "lotek"; break
+        default: return null
+        }
+        return `${prefix}-${dev.attr.port}`
+    }
+
+    tsAddDevice(dev) {
+        const port = dev.attr.port
+        if (dev.attr.type == "CTT/CornellRcvr") {
+            // CTT devices only produce tag detections
+            this.ts[port] = {
+                tags: new TimeSeries(ts_dir, "ctt-tags-"+dev.attr.port),
+            }
+        } else if (dev.attr.type == "funcubeProPlus" || dev.attr.type == "funcubePro" || dev.attr.type == "rtlsdr") {
+            // Lotek devices produce tag detections, pulses and noise figures
+            this.ts[port] = {
+                tags: new TimeSeries(ts_dir, "lotek-tags-"+dev.attr.port),
+                pulses: new TimeSeries(ts_dir, "lotek-pulses-"+dev.attr.port),
+                noise: new TimeSeries(ts_dir, "lotek-noise-"+dev.attr.port),
+            }
+        }
+        console.log("tsAddDevice", dev.attr.port, port)
+    }
+
+    tsRemoveDevice(dev) {
+        if (!this.ts[dev.attr.port]) return
+        for (const ts in Object.values(this.ts[dev.attr.port])) ts.close()
+        delete this.ts[dev.attr.port]
+    }
+
+    tsGotTag(tag) {
+        // T3,1681004846.412,0FE36400,-96,v2
+        // L6,1681004878.702,TestTags#1.1@166.38:25.1,3.809,0.011,-25.5,1.18,-54.4,1,3,0.0005,4.96e-05,166.38
+        const f = tag.split(',')
+        if (f.length < 2) return
+        const mm = f[0].match(/^([A-Z])(\d+)/)
+        if (!mm) return
+        const port = mm[2]
+        const time = Math.round(parseFloat(f[1])*1000)
+        if (this.ts[port]?.tags) this.ts[port].tags.add(time, 1)
+        if (this.ts[port]?.noise && f.length >= 8) {
+            const noise = parseFloat(f[7])
+            this.ts[port].noise.avg(time, noise)
+        }
+    }
+
+    tsGotPulse(info) {
+        // p6,1681004979.0929,3.785,-29.66,-54.81
+        const f = info.split(',')
+        if (f.length < 5) return
+        const mm = f[0].match(/^p(\d+)/)
+        if (!mm) return
+        const port = mm[1]
+        const time = Math.round(parseFloat(f[1])*1000)
+        const noise = parseFloat(f[4])
+        if (this.ts[port]?.pulses) this.ts[port].pulses.add(time, 1)
+        if (this.ts[port]?.noise) this.ts[port].noise.avg(time, noise)
+    }
+
+    // update a graph, what: lotek-tags, lotek-pulses, lotek-noise, ctt-tags
+    tsShow(what) {
+        const [prefix, series] = what.split('-')
+        // assemble the set of time-series to show
+        const tsSet = []
+        const labels = []
+        for (const port in this.ts) {
+            if (series in this.ts[port] && this.ts[port][series].name.startsWith(prefix)) {
+                tsSet.push(this.ts[port][series])
+                labels.push(`port ${port}`)
+            }
+        }
+        //console.log(`tsShow: ${what} ${tsSet.length} devices:`, tsSet.length)
+        // get the data together
+        if (tsSet.length == 0) {
+            FlexDash.set(`detections/${series}`, { data: [], labels })
+            return
+        }
+        const now = Date.now()
+        const range = TimeSeries.ranges[this.ts_ix]
+        const [times, values] = tsSet[0].get(range, now)
+        //console.log("Got:", values)
+        const interval = TimeSeries.intervals[this.ts_ix]
+        const fct = series == 'noise'
+            ? v => v
+            : v => v == null ? null : v * 3600*1000 / interval
+        const data = times.map((t, i) => [Math.floor(t/1000), fct(values[i])])
+        for (let i = 1; i < tsSet.length; i++) {
+            const [times, values] = tsSet[i].get(range, now)
+            if (times.length != data.length) throw new Error("tsShow: times length mismatch")
+            if (times[0] != data[0][0]) throw new Error("tsShow: data start mismatch")
+            for (let j=0; j<data.length; j++) data[j].push(fct(values[j]))
+        }
+        const title = what.replace('-',' ') + " (" + range + ")" // can't set dynamic title :-(
+        FlexDash.set(`detections/${what}`, { data, labels, title })
+        //console.log(`tsShow: ${what} ${now} ${data.length} points, labels=${labels}`)
+        //onsole.log(data)
+    }
+
+    tsGenRandom() {
+        const now = Date.now()
+        console.log("tsGenRandom", Object.keys(this.ts))
+        for (const port in this.ts) {
+            const ts = this.ts[port]
+            if (ts.pulses) {
+                this.tsGotTag(`L${port},${now/1000},tag,0,0,0,0,${-50-Math.random()*10},0,0,0,0,166.38`)
+                this.tsShow('lotek-tags')
+                this.tsGotPulse(`p${port},${now/1000},0,0,${-50-Math.random()*10}`)
+                this.tsShow('lotek-pulses')
+                this.tsShow('lotek-noise')
+            } else {
+                this.tsGotTag(`T${port},${now/1000},12345678,0`)
+                this.tsShow('ctt-tags')
+            }
+        }
+    }
+
+    tsRefresh() {
+        for (const what of ['lotek-tags', 'lotek-pulses', 'lotek-noise', 'ctt-tags']) {
+            this.tsShow(what)
+        }
+    }
+
+    tsSave() {
+        for (const port in this.ts) {
+            const ts = this.ts[port]
+            for (const series in ts) {
+                ts[series].save() // only does something if it's dirty
+            }
+        }
+    }
+
+    handle_dash_detection_range(range) {
+        const ix = TimeSeries.ranges.indexOf(range)
+        if (ix < 0) { console.log("handle_dash_detection_range: bad range", range); return }
+
+        let intv = TimeSeries.intervals[ix]/1000 // in seconds
+        if (intv < 120) intv += "s"
+        else if (intv < 7200) intv = Math.round(intv/60) + "m"
+        else if (intv < 2*86400) intv = Math.round(intv/3600) + "h"
+        else intv = Math.round(intv/86400) + "d"
+        FlexDash.set("detections/interval", intv)
+
+        this.ts_ix = ix
+        this.tsRefresh()
+
+        if (this.tsRefreshInterval) clearInterval(this.tsRefreshInterval)
+        this.tsRefreshInterval = setInterval(() => this.tsRefresh(), TimeSeries.intervals[ix])
     }
 
     // ===== Deployment configuration
@@ -325,6 +496,7 @@ class Dashboard {
         if (tag.startsWith("T")) this.detections.ctt[this.detections.ctt.length-1]++
         FlexDash.set('detections_5min', this.detections)
         this.detectionLogPush(tag.trim().replace(/^/gm,"TAG: "))
+        this.tsGotTag(tag.trim())
         // direction finding
         if (this.df_enable && this.df_tags) {
             let tt = tag.trim().split(",")
@@ -342,6 +514,7 @@ class Dashboard {
             if (line.startsWith("p")) {
                 this.detections.lotek[this.detections.lotek.length-1]++
                 this.detectionLogPush("PLS: " + line.trim())
+                this.tsGotPulse(line.trim())
             }
         }
         FlexDash.set('detections_5min', this.detections)
