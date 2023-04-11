@@ -10,6 +10,7 @@ class GPS {
         this.replyBuf = ""
         this.gpsdCon = null
         this.conTimeOut = null
+        this.retryTime = 5000
 
         // self-bound closures for callbacks
         this.this_gpsdReply = this.gpsdReply.bind(this) 
@@ -23,6 +24,7 @@ class GPS {
         // gpsd continues to pretend there's a 3d fix 'cause the GPS' RTC sends the time... We have
         // to look at the number of satellites used in the fix to see whether it's really a fix or not.
         try {
+            this.retryTime = 5000
             this.replyBuf += r.toString()
             for(;;) {
                 var eol = this.replyBuf.indexOf("\n")
@@ -67,7 +69,8 @@ class GPS {
         this.gpsdCon.destroy()
         this.gpsdCon = null
         this.matron.emit("gotGPSFix", { state: "no-dev"})
-        this.conTimeOut = setTimeout(this.this_connect, 5000)
+        this.conTimeOut = setTimeout(this.this_connect, this.retryTime)
+        this.retryTime = Math.min(600000, this.retryTime * 2)
     }
 
     getFix() {
