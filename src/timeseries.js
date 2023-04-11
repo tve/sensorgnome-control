@@ -80,9 +80,9 @@ class TimeSeries {
         // add null samples to catch up
         this.data[r] = this.data[r].slice(offset).concat(Array(offset).fill(fill))
         this.t0[r] += offset*interval
-        this.dirty = true
         this.sum[r] = 0
         this.cnt[r] = 0
+        //this.dirty = true
       }
     })
   }
@@ -118,16 +118,17 @@ class TimeSeries {
     const t0 = this.t0[range]
     const interval = TimeSeries.intervals[ix]
     const limit = TimeSeries.limits[ix]
-    const start = (Math.trunc(at/interval) - limit + 1)*interval
-    // return a time series ending with a point/interval covering `at`
+    const start = (Math.trunc(at/interval) - limit + 1)*interval // start of time-series to return
     const times = Array(limit).fill(0).map((_,i)=>start+i*interval)
     let values
     const offset = (start-t0)/interval
     if (offset >= 0) {
       values = this.data[range].slice(offset, offset+limit)
       if (values.length < limit) values = values.concat(Array(limit-values.length).fill(null))
-    } else {
+    } else if (-offset < limit) {
       values = Array(-offset).fill(null).concat(this.data[range].slice(0, limit+offset))
+    } else {
+      values = Array(limit).fill(null)
     }
     if (values.length != limit) throw(`EventSeries: bad length (got ${values.length}, expected ${limit}, range ${range})`)
     return [times, values]

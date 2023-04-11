@@ -230,6 +230,7 @@ class Dashboard {
 
     // ===== Pulses and tag time-series
 
+    // generate a filename for a device's time-series
     tsFilename(dev) {
         let prefix
         switch (dev.attr.type) {
@@ -242,6 +243,7 @@ class Dashboard {
         return `${prefix}-${dev.attr.port}`
     }
 
+    // device got added, init the time-series for it
     tsAddDevice(dev) {
         const port = dev.attr.port
         if (dev.attr.type == "CTT/CornellRcvr") {
@@ -266,33 +268,43 @@ class Dashboard {
         delete this.ts[dev.attr.port]
     }
 
+    // process a tag detection from a device
     tsGotTag(tag) {
         // T3,1681004846.412,0FE36400,-96,v2
         // L6,1681004878.702,TestTags#1.1@166.38:25.1,3.809,0.011,-25.5,1.18,-54.4,1,3,0.0005,4.96e-05,166.38
-        const f = tag.split(',')
-        if (f.length < 2) return
-        const mm = f[0].match(/^([A-Z])(\d+)/)
-        if (!mm) return
-        const port = mm[2]
-        const time = Math.round(parseFloat(f[1])*1000)
-        if (this.ts[port]?.tags) this.ts[port].tags.add(time, 1)
-        if (this.ts[port]?.noise && f.length >= 8) {
-            const noise = parseFloat(f[7])
-            this.ts[port].noise.avg(time, noise)
+        try {
+            const f = tag.split(',')
+            if (f.length < 2) return
+            const mm = f[0].match(/^([A-Z])(\d+)/)
+            if (!mm) return
+            const port = mm[2]
+            const time = Math.round(parseFloat(f[1])*1000)
+            if (this.ts[port]?.tags) this.ts[port].tags.add(time, 1)
+            if (this.ts[port]?.noise && f.length >= 8) {
+                const noise = parseFloat(f[7])
+                this.ts[port].noise.avg(time, noise)
+            }
+        } catch (e) {
+            console.warn("tsGotTag", e)
         }
     }
 
+    // process a pulse from a lotek radio
     tsGotPulse(info) {
         // p6,1681004979.0929,3.785,-29.66,-54.81
-        const f = info.split(',')
-        if (f.length < 5) return
-        const mm = f[0].match(/^p(\d+)/)
-        if (!mm) return
-        const port = mm[1]
-        const time = Math.round(parseFloat(f[1])*1000)
-        const noise = parseFloat(f[4])
-        if (this.ts[port]?.pulses) this.ts[port].pulses.add(time, 1)
-        if (this.ts[port]?.noise) this.ts[port].noise.avg(time, noise)
+        try {
+            const f = info.split(',')
+            if (f.length < 5) return
+            const mm = f[0].match(/^p(\d+)/)
+            if (!mm) return
+            const port = mm[1]
+            const time = Math.round(parseFloat(f[1])*1000)
+            const noise = parseFloat(f[4])
+            if (this.ts[port]?.pulses) this.ts[port].pulses.add(time, 1)
+            if (this.ts[port]?.noise) this.ts[port].noise.avg(time, noise)
+        } catch (e) {
+            console.warn("tsGotPulse", e)
+        }
     }
 
     // update a graph, what: lotek-tags, lotek-pulses, lotek-noise, ctt-tags
@@ -334,6 +346,7 @@ class Dashboard {
         //onsole.log(data)
     }
 
+    // generate some random data, useful for testing only
     tsGenRandom() {
         const now = Date.now()
         console.log("tsGenRandom", Object.keys(this.ts))
@@ -352,37 +365,62 @@ class Dashboard {
         }
     }
 
+    // refresh the currently shown graphs
     tsRefresh() {
-        for (const what of ['lotek-tags', 'lotek-pulses', 'lotek-noise', 'ctt-tags']) {
-            this.tsShow(what)
-        }
-    }
-
-    tsSave() {
-        for (const port in this.ts) {
-            const ts = this.ts[port]
-            for (const series in ts) {
-                ts[series].save() // only does something if it's dirty
+        try {
+            // catch up all the graphs
+            const now = Date.now()
+            for (const port in this.ts) {
+                const ts = this.ts[port]
+                for (const series in ts) {
+                    const fill = series == 'noise' ? null : 0
+                    ts[series].catch_up(now, fill)
+                }
             }
+            // display
+            for (const what of ['lotek-tags', 'lotek-pulses', 'lotek-noise', 'ctt-tags']) {
+                this.tsShow(what)
+            }
+        } catch (e) {
+            console.warn("tsRefresh", e)
         }
     }
 
+    // save all the time-series to file
+    tsSave() {
+        try {
+            for (const port in this.ts) {
+                const ts = this.ts[port]
+                for (const series in ts) {
+                    ts[series].save() // only does something if it's dirty
+                }
+            }
+        } catch (e) {
+            console.warn("tsRefresh", e)
+        }
+    }
+
+    // the user clicked a range button, switch the range for the charts
     handle_dash_detection_range(range) {
-        const ix = TimeSeries.ranges.indexOf(range)
-        if (ix < 0) { console.log("handle_dash_detection_range: bad range", range); return }
+        try {
+            const ix = TimeSeries.ranges.indexOf(range)
+            if (ix < 0) { console.log("handle_dash_detection_range: bad range", range); return }
 
-        let intv = TimeSeries.intervals[ix]/1000 // in seconds
-        if (intv < 120) intv += "s"
-        else if (intv < 7200) intv = Math.round(intv/60) + "m"
-        else if (intv < 2*86400) intv = Math.round(intv/3600) + "h"
-        else intv = Math.round(intv/86400) + "d"
-        FlexDash.set("detections/interval", intv)
+            let intv = TimeSeries.intervals[ix]/1000 // in seconds
+            if (intv < 120) intv += "s"
+            else if (intv < 7200) intv = Math.round(intv/60) + "m"
+            else if (intv < 2*86400) intv = Math.round(intv/3600) + "h"
+            else intv = Math.round(intv/86400) + "d"
+            FlexDash.set("detections/interval", intv)
 
-        this.ts_ix = ix
-        this.tsRefresh()
+            this.ts_ix = ix
+            this.tsRefresh()
 
-        if (this.tsRefreshInterval) clearInterval(this.tsRefreshInterval)
-        this.tsRefreshInterval = setInterval(() => this.tsRefresh(), TimeSeries.intervals[ix])
+            if (this.tsRefreshInterval) clearInterval(this.tsRefreshInterval)
+            this.tsRefreshInterval = setInterval(() => this.tsRefresh(), TimeSeries.intervals[ix])
+        } catch (e) {
+            console.warn("tsRefresh", e)
+        }
     }
 
     // ===== Deployment configuration
