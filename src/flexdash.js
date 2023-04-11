@@ -61,7 +61,9 @@ class FlexDash {
 
     start() {
         this.app = Express()
-        this.app.use(Morgan('tiny'))
+        this.app.use(Morgan('tiny', {
+            skip: (req, res) => req.url.startsWith("/flexdash/assets"),
+        }))
         this.app.use(Cors({credentials: true, origin: true}))
         this.app.set('trust proxy', true)
         this.session = Session({ // used for Express and Socket.io
@@ -109,7 +111,7 @@ class FlexDash {
             this.io.use((socket, next) => this.session(socket.request, {}, next))
             this.io.use((socket, next) => {
                 let session = socket.request.session
-                console.log("SIO auth, session ID: ", session?.id)
+                console.log("SIO auth, session ID: ", session?.id?.substr(0, 8))
                 if (session?.rooms) {
                     next() // FIXME: join appropriate rooms
                 } else {
@@ -259,7 +261,7 @@ class FlexDash {
     handleConnection(socket) {
         const hs = socket.handshake
         const ss = socket.request.session
-        console.log(`SIO connection ${socket.id} session=${ss.id} url=${hs.url} x-domain:${hs.xdomain}`)
+        console.log(`SIO connection ${socket.id} session=${ss.id.substring(0,8)} x-domain:${hs.xdomain}`)
         this.sendData(socket)
 
         // handle incoming messages
