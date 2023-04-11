@@ -20,6 +20,15 @@ const check_re = RegExp('^([-a-zA-Z0-9_]+)/\\S+\\s+(\\S+)\\s+(armhf|all)\\s+.upg
 
 exports.machineID = Fs.readFileSync("/etc/sensorgnome/id").toString().trim()
 exports.machineKey = Fs.readFileSync("/etc/sensorgnome/key").toString().trim()
+
+let mt = exports.machineID.replace(/.*-[0-9A-Z]{4}([0-9A-Z]{4})[0-9A-Z]{4}/, "$1")
+if (mt.startsWith('RPI')) mt = `Raspberry Pi ${mt.slice(3)}`
+else if (mt.startsWith('BBB')) mt = `BeagleBone ${mt.slice(3)}`
+else if (mt.startsWith('RPZ')) mt = `Raspberry Pi Zero ${mt.slice(3)}`
+else if (mt.startsWith('RPS')) mt = `SensorStation V${mt.slice(3)}`
+else if (mt.startsWith('RPC')) mt = `Compute Module ${mt.slice(3)}`
+exports.machineType = mt
+
 const pwdfile = Fs.readFileSync("/etc/passwd").toString()
 exports.username = (/^([^:]+):[^:]*:1000:/m).exec(pwdfile)?.[1] || "gnome"
 
@@ -30,6 +39,7 @@ exports.bootCount = Fs.existsSync(bootCountFile) ?
 var versionFile = "/etc/sensorgnome/version";
 
 exports.version = Fs.existsSync(versionFile) ? Fs.readFileSync(versionFile).toString() : "UNKNOWN"
+exports.sdDataSize = '?'
 
 function getDiskUsage() {
   CP.exec("findmnt --df --json --real", (err, stdout) => {
@@ -45,6 +55,8 @@ function getDiskUsage() {
       const df_data = df.filter(d=>d.target=="/data")
       if (df_data) {
         TheMatron.emit("sdcardUse", parseInt(df_data[0]['use%'], 10))
+        TheMatron.emit("sdDataSize", df_data[0]['size'])
+        exports.sdDataSize = df_data[0]['size']
       }
     } catch(err) {
       console.log("Error parsing df output:", err)
@@ -52,8 +64,18 @@ function getDiskUsage() {
   })
 }
 
-setTimeout(getDiskUsage, 10000)        // get disk usage info very soon
+setTimeout(getDiskUsage, 10000)      // get disk usage info very soon
 setInterval(getDiskUsage, 600*1000)  // every now and then get disk usage info
+
+// get the amount of memory on this machine
+exports.memorySize = '?'
+Fs.readFileSync("/proc/meminfo").toString().split("\n").forEach(line => {
+  if (line.startsWith("MemTotal:")) {
+    let sz = parseInt(line.split(/\s+/)[1], 10) // kB
+    sz = (sz/1024/1024).toFixed(1) + " GB"
+    exports.memorySize = sz
+  }
+})
 
 class Upgrader {
   constructor() {

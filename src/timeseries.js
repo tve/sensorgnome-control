@@ -48,11 +48,10 @@ class TimeSeries {
   // ensure the last lement in the time series covers time `at`
   catch_up(at, fill) {
     if (!'data' in this) {
-      console.log("EventSeries: not initialized", this.name) // 
-      return
+      throw new Error("EventSeries: not initialized " + this.name)
     }
     if (at > Date.now()+60000)
-      console.log("EventSeries: can't insert data into the future", this.name, at, Date.now())
+      throw new Error(`EventSeries: can't insert data into the future, ${this.name}, ${at}, ${Date.now()}`)
     if (fill === undefined) fill = 0
 
     TimeSeries.ranges.forEach((r, i) => {
@@ -72,8 +71,8 @@ class TimeSeries {
 
       if (offset < 0) {
         // can't insert data into the past
-        console.log("EventSeries: can't insert data into the past", this.name, r)
-        return
+        throw new Error(`EventSeries: can't insert data into the past: ` +
+          `${this.name} ${r} at=${at} last=${tLast} offset=${offset} ival=${interval} now=${Date.now()}`)
       }
 
       if (offset > 0) {

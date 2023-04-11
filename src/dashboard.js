@@ -106,6 +106,7 @@ class Dashboard {
 
         // some static machine info
         FlexDash.set('machineinfo', Machine)
+        setTimeout(()=>FlexDash.set('machineinfo', Machine), 15000) // sdCardSize comes delayed
         let uptime = parseInt(Fs.readFileSync("/proc/uptime").toString(), 10)
         if (!(uptime > 0)) uptime = 0
         FlexDash.set('boot_time', Date.now() / 1000 - uptime)

@@ -17,28 +17,9 @@
       },
       "id": "w09397"
     },
-    "w06636": {
-      "kind": "PropsTable",
-      "rows": 2,
-      "cols": 3,
-      "static": {
-        "title": "Sensorgnome",
-        "fields": [
-          "machineID",
-          "version",
-          "bootCount"
-        ],
-        "popup_info": "The version refers to the 'sensorgnome' package's version, which may be newer than the original SD-card image."
-      },
-      "dynamic": {
-        "data": "machineinfo"
-      },
-      "id": "w06636",
-      "output": null
-    },
     "w00178": {
       "kind": "PropsTable",
-      "rows": 4,
+      "rows": 3,
       "cols": 3,
       "static": {
         "title": "GPS",
@@ -518,11 +499,11 @@
       "static": {
         "title": "",
         "widgets": [
-          "w06636",
+          "w01770",
           "w04031",
+          "w03451",
           "w00178",
-          "w05027",
-          "w03451"
+          "w05027"
         ],
         "solid": false
       },
@@ -1915,6 +1896,39 @@
       },
       "id": "w04943",
       "output": null
+    },
+    "w01770": {
+      "kind": "Stat",
+      "rows": 1,
+      "cols": 3,
+      "static": {
+        "title": "ID",
+        "zoom": 0.75
+      },
+      "dynamic": {
+        "value": "machineinfo/machineID"
+      },
+      "id": "w01770"
+    },
+    "w03697": {
+      "kind": "PropsTable",
+      "rows": 3,
+      "cols": 3,
+      "static": {
+        "title": "Machine Info",
+        "fields": [
+          "version",
+          "machineType",
+          "bootCount",
+          "sdCardSize",
+          "memorySize"
+        ]
+      },
+      "dynamic": {
+        "data": "machineinfo"
+      },
+      "id": "w03697",
+      "output": null
     }
   },
   "grids": {
@@ -1923,7 +1937,8 @@
       "kind": "FixedGrid",
       "widgets": [
         "w06965",
-        "w06221"
+        "w06221",
+        "w03697"
       ],
       "min_cols": 3,
       "max_cols": 6
