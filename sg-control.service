@@ -16,6 +16,7 @@ WorkingDirectory=/opt/sensorgnome/control
 Environment=NODE_ENV=production
 Environment=NODE_PATH=/opt/sensorgnome/control
 Environment=LC_ALL="C.UTF-8"
+ExecStartPre=/opt/sensorgnome/install-node-18.sh
 ; the following ExecStartPre "replace" the After above...
 ExecStartPre=/usr/bin/systemctl is-active sg-boot.service
 ExecStartPre=bash -c "/usr/bin/systemctl is-active chronyd.service||sleep 2"

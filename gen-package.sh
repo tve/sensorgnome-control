@@ -16,6 +16,7 @@ SG=$DESTDIR/opt/sensorgnome
 install -d $SG/control
 cp -r src/* $SG/control
 cp gen-support $SG
+cp install-node-18.sh $SG
 sudo chown -R 1000:1000 $SG/control
 
 # install default acquisition file and tag database into templates dir

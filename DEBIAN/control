@@ -4,7 +4,7 @@ Architecture: armhf
 Section: misc
 Priority: standard
 Essential: no
-Depends: nodejs (>= 18.0), sqlite3, libpam0g-dev
+Depends: sqlite3, libpam0g-dev, nodejs
 Homepage: https://github.com/sensorgnome/sensorgnome-control
 Maintainer: TvE (tve-sensorgnome@voneicken.com)
 Description: Sensorgnome main control process
