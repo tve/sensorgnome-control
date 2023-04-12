@@ -80,7 +80,8 @@ Fs.readFileSync("/proc/meminfo").toString().split("\n").forEach(line => {
 class Upgrader {
   constructor() {
     this.lock = null
-    this.watchLog()
+    this.watcherAbort = null
+    this.watchLog() // runs async
     this.out = "" // output of current/last command
   }
 
@@ -105,6 +106,8 @@ class Upgrader {
     )
   }
 
+  // exec the command and send stdout/stderr to the upgrade log. The latter is done by using
+  // direct file descriptors so the logging continues even if
   // exec returns a promise!
   exec(cmd, args, opts) {
     const uplog = Fs.openSync(upgrade_log, "a")
@@ -142,9 +145,12 @@ class Upgrader {
     async function read() {
       try {
         while (true) {
-          let { bytesRead, buffer } = await fd.read({ position: pos, length: 24 })
+          let { bytesRead, buffer } = await fd.read({ position: pos, length: 4096 })
           //console.log("watchLog @"+pos+" -> "+bytesRead)
-          if (bytesRead == 0) break
+          if (bytesRead == 0) {
+            FlexDash.set(log_key, txt.join("\n"))
+            break
+          }
           buffer = buffer.toString("utf8", 0, bytesRead)
           pos += bytesRead
           self.out += buffer
@@ -152,7 +158,6 @@ class Upgrader {
           let n = buffer.split("\n")
           txt = txt.concat(n)
           if (txt.length > 100) txt = txt.slice(txt.length - 100)
-          FlexDash.set(log_key, txt.join("\n"))
         }
       } catch (err) {
         console.log("Error reading upgrade log: " + err)
@@ -160,26 +165,29 @@ class Upgrader {
       }
     }
 
-    setTimeout(() => {
-      fd.write("\n")
-    }, 100) // trigger watcher
+    if (this.watcherAbort) this.watcherAbort.abort()
+    this.watcherAbort = new AbortController()
     try {
-      const watcher = Fsp.watch(upgrade_log, { persistent: false })
+      await read()
+      const watcher = Fsp.watch(upgrade_log, { persistent: false, signal: this.watcherAbort.signal })
       for await (const ev of watcher) {
         await read()
       }
     } catch (err) {
-      if (err.name === "AbortError") return
+      if (err.name !== "AbortError") console.warn("Error watching upgrade log: " + err)
     }
+    fd.close()
   }
 
   check() {
     FlexDash.set("software/available", "checking...")
     FlexDash.set("software/enable", false)
-    this.exec(upgrader_dir + "/check.sh")
+    this.watchLog() // restart log watcher in case log got rotated
+    setTimeout(() => this.exec(upgrader_dir + "/check.sh")
       .then(out => {
         let pkgs = []
-        console.log("Looking at:\n" + out)
+        //console.log("Looking at:\n" + out)
+        check_re.lastIndex = 0
         let m
         while ((m = check_re.exec(out)) !== null) {
           pkgs.push([m[1], m[2], m[3]])
@@ -207,6 +215,7 @@ class Upgrader {
         console.log(err)
         FlexDash.set("software/enable", true)
       })
+    , 500)
   }
 
   // perform an upgrade, runs apt-get upgrade in a script that deals with systemd
@@ -214,6 +223,7 @@ class Upgrader {
   upgrade(what) {
     const opt = what == "system" ? ["-s"] : [what]
     FlexDash.set("software/enable", false)
+    this.watchLog() // restart log watcher in case log got rotated
     this.exec(upgrader_dir + "/upgrade.sh", opt, { detached: true, timeout: 180 * 1000 })
       .then(out => {
         // let pkgs = []
