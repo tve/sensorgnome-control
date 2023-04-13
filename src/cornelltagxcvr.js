@@ -33,7 +33,7 @@ class CornellTagXCVR {
     this.wd = null // watchdog interval timer
     this.gotVersion = 0 // timestamp of last version response
 
-    this.matron.on("devRemoved", () => this.devRemoved())
+    this.matron.on("devRemoved", (dev) => this.devRemoved(dev))
 
     this.init()
   }

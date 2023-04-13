@@ -265,7 +265,7 @@ class Dashboard {
 
     tsRemoveDevice(dev) {
         if (!this.ts[dev.attr.port]) return
-        for (const ts in Object.values(this.ts[dev.attr.port])) ts.close()
+        for (const ts of Object.values(this.ts[dev.attr.port])) ts.close()
         delete this.ts[dev.attr.port]
     }
 
