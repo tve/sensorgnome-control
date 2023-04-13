@@ -1920,7 +1920,7 @@
           "version",
           "machineType",
           "bootCount",
-          "sdCardSize",
+          "sdDataSize",
           "memorySize"
         ]
       },
