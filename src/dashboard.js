@@ -107,9 +107,6 @@ class Dashboard {
         // some static machine info
         FlexDash.set('machineinfo', Machine)
         setTimeout(()=>FlexDash.set('machineinfo', Machine), 15000) // sdCardSize comes delayed
-        let uptime = parseInt(Fs.readFileSync("/proc/uptime").toString(), 10)
-        if (!(uptime > 0)) uptime = 0
-        FlexDash.set('boot_time', Date.now() / 1000 - uptime)
         FlexDash.set('software/enable', false)
         FlexDash.set('software/enable_upgrade', false)
         FlexDash.set('software/enable_shutdown', false)
@@ -117,6 +114,8 @@ class Dashboard {
         FlexDash.set("software/available", "Not yet checked...")
         FlexDash.set("software/log", "- empty -")
         this.setDashTrain()
+        this.getUptime()
+        this.matron.on("gpsSetClock", () => this.getUptime())
 
         // direction finding info is not saved between restarts...
         FlexDash.set('df_enable', 'OFF')
@@ -129,7 +128,13 @@ class Dashboard {
 
         setTimeout(() => this.updateNetUsage(), 10*1000)
         setInterval(() => this.updateNetUsage(), 300*1000)
-
+        
+    }
+    
+    getUptime() {
+        let uptime = parseInt(Fs.readFileSync("/proc/uptime").toString(), 10)
+        if (!(uptime > 0)) uptime = 0
+        FlexDash.set('boot_time', Date.now() / 1000 - uptime)
     }
     
     // generate info about a device, called on devAdded
