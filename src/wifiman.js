@@ -40,6 +40,7 @@ const INET_RECHECK_INIT = 10 * 1000
 const INET_RECHECK_MAX = 3600 * 1000
 
 const HOTSPOT_SCRIPT = "/opt/sensorgnome/wifi-button/wifi-hotspot.sh"
+const HOTSPOT_CONFIG = "/etc/hostapd/hostapd.conf"
 const WPA_CLI = "/usr/sbin/wpa_cli"
 const RFKILL = "/usr/sbin/rfkill"
 
@@ -57,12 +58,14 @@ class WifiMan {
         this.motus_status = null
         this.recheck_time = INET_RECHECK_INIT
         this.check_timer = null
+        this.hotspot_has_pass = false
     }
 
     start() {
         this.launchRouteMonitor()
         //setTimeout(() => this.getDefaultRoute(), 3000) // for debugging
         this.getWifiConfig()
+        this.matron.on('dash_login', (user, pass) => this.checkHotspotPassword(user,pass))
     }
 
     // ===== monitoring default route
@@ -327,6 +330,28 @@ class WifiMan {
         })
     }
 
+    // ensure the hotspot password is set - this is a hack that deals with the fact that when using
+    // raspi-imager to flash the SD card, the hotspot password is not set.
+    checkHotspotPassword(user, password) {
+        if (this.hotspot_has_pass) return
+        Fs.readFile(HOTSPOT_CONFIG, (err, data) => {
+            if (err) {
+                console.log("Error reading hotspot config:", err)
+                return
+            }
+            if (!data.toString().match(/wpa=2/)) {
+                console.log("Hotspot password not set, setting it with delay")
+                const hpw = crypto.pbkdf2Sync(password, Machine.machineID, 4096, 256 / 8, "sha1").toString("hex")
+                setTimeout(() => {
+                    ChildProcess.execFile(HOTSPOT_SCRIPT, ["mode", "WPA-PSK", hpw], (code, stdout, stderr) => {
+                        if (code || stderr) console.log(`Hotspot control script: code=${code} stdout=${stdout} stderr=${stderr}`)
+                    })
+                }, 5000)
+            }
+            this.hotspot_has_pass = true // only try once
+            return
+        })
+    }
 
     // ===== connectivity checks
 

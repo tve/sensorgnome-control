@@ -466,6 +466,7 @@ class FlexDash {
                 } else {
                     req.session.rooms = "*"
                     res.status(200).end()
+                    this.matron.emit("dash_login", req.body?.user, req.body?.password)
                 }
             }, {serviceName: 'login', remoteHost: 'localhost'})
         } else {
