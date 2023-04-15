@@ -41,6 +41,7 @@ const INET_RECHECK_MAX = 3600 * 1000
 
 const HOTSPOT_SCRIPT = "/opt/sensorgnome/wifi-button/wifi-hotspot.sh"
 const HOTSPOT_CONFIG = "/etc/hostapd/hostapd.conf"
+const LED_SCRIPT = "/opt/sensorgnome/wifi-button/sysled.sh"
 const WPA_CLI = "/usr/sbin/wpa_cli"
 const RFKILL = "/usr/sbin/rfkill"
 
@@ -62,6 +63,7 @@ class WifiMan {
     }
 
     start() {
+        this.setStatusLED("off", "off")
         this.launchRouteMonitor()
         //setTimeout(() => this.getDefaultRoute(), 3000) // for debugging
         this.getWifiConfig()
@@ -208,6 +210,7 @@ class WifiMan {
         if (hotspot_state != this.hotspot_state) {
             this.hotspot_state = hotspot_state
             this.testConnectivitySoon()
+            this.setStatusLED(hotspot_state, this.inet_status)
         }
         //this.matron.emit("netWifiState", this.wifi_state)
         this.matron.emit("netHotspotState", hotspot_state)
@@ -355,10 +358,21 @@ class WifiMan {
 
     // ===== connectivity checks
 
+    // update physical status LED
+    setStatusLED(hotspot, inet) {
+        hotspot = hotspot == "ON" ? "on" : "off"
+        inet = inet == "OK" ? "on" : "off"
+        console.log(`Setting status LED hotspot=${hotspot} inet=${inet}`)
+        this.execFile(LED_SCRIPT, [hotspot, inet])
+            .catch(e => console.log("setStatusLED:", e))
+    }
+
     setInetStatus(status) {
+        if (status != this.inet_status) this.setStatusLED(this.hotspot_status, status)
         this.inet_status = status
         this.matron.emit("netInet", status)
     }
+
     setMotusStatus(status) {
         if (status !== this.motus_status) {
             // only send update if status changes 'cause it triggers upload in MotusUp
