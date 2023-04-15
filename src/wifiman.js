@@ -360,6 +360,7 @@ class WifiMan {
 
     // update physical status LED
     setStatusLED(hotspot, inet) {
+        console.log(`setStatusLED: called with ${hotspot} ${inet}`)
         hotspot = hotspot == "ON" ? "on" : "off"
         inet = inet == "OK" ? "on" : "off"
         console.log(`Setting status LED hotspot=${hotspot} inet=${inet}`)
@@ -368,7 +369,7 @@ class WifiMan {
     }
 
     setInetStatus(status) {
-        if (status != this.inet_status) this.setStatusLED(this.hotspot_status, status)
+        if (status != this.inet_status) this.setStatusLED(this.hotspot_state, status)
         this.inet_status = status
         this.matron.emit("netInet", status)
     }
