@@ -5,10 +5,10 @@ Description=Sensorgnome main control process.
 ; https://github.com/systemd/systemd/issues/1312
 ; chrony takes time to start, we use a hack with a sleep to delay if it's slow
 ; maybe should ignore chrony...
-;After=sg-boot.service sg-gps-init.service chronyd.service sg-usb-init.service
-; Wants is weaker than Requires and doesn't prevent start-up
 Requires=sg-boot.service
-Wants=sg-ada-gps-init.service gpsd.service chronyd.service sg-usb-init.service
+After=sg-boot.service chronyd.service sg-usb-init.service gpsd.socket
+; Wants is weaker than Requires and doesn't prevent start-up
+Wants=chronyd.service
 
 [Service]
 Type=exec
@@ -18,10 +18,8 @@ Environment=NODE_PATH=/opt/sensorgnome/control
 Environment=LC_ALL="C.UTF-8"
 ExecStartPre=/opt/sensorgnome/install-node-18.sh
 ; the following ExecStartPre "replace" the After above...
-ExecStartPre=/usr/bin/systemctl is-active sg-boot.service
 ExecStartPre=bash -c "/usr/bin/systemctl is-active chronyd.service||sleep 2"
 ExecStartPre=/usr/bin/systemctl is-active chronyd.service
-ExecStartPre=/usr/bin/systemctl is-active sg-usb-init.service
 ; the threadpool size bump is needed 'cause reading TTYs (CTT xcvr) blocks in there
 ExecStart=/bin/bash -c "UV_THREADPOOL_SIZE=20 nice -n -15 node main"
 ExecStartPost=-/usr/bin/killall -KILL rtl_tcp vamp-alsa-host chronyc
