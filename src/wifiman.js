@@ -84,13 +84,7 @@ class WifiMan {
         // ip monitor route prints the change, but that doesn't really help us because deleting
         // a default route doesn't mean there's not a second one that still works (for example)
         // so we neet to ask ip route what it would do now
-        let last_at = 0
-        child.stdout.on("data", (chunk) => {
-            if (Date.now() - last_at > 10000) {
-                this.getDefaultRoute()
-                last_at = Date.now()
-            }
-        })
+        child.stdout.on("data", (chunk) => this.getDefaultRoute())
         this.child = child
         this.relaunching = false
     }
