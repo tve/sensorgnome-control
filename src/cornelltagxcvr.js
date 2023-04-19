@@ -173,7 +173,7 @@ class CornellTagXCVR {
   gotTag(record) {
     record = record.trim()
     if (record == "") return // happens due to CRLF
-    console.log(`Got CTT line on p${this.dev.attr.port}: ${record}`)
+    //console.log(`Got CTT line on p${this.dev.attr.port}: ${record}`)
     if (record.startsWith("{")) {
       // newer CTT receiver that emits a JSON record
       this.jsonTag(record)
