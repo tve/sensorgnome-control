@@ -65,7 +65,7 @@ class GPS {
     }
 
     conError(e) {
-        console.log("GPSD connect error", e.message)
+        console.log("GPSD connect error", e?.message)
         this.gpsdCon.destroy()
         this.gpsdCon = null
         this.matron.emit("gotGPSFix", { state: "no-dev"})
