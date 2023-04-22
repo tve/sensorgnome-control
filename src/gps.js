@@ -11,6 +11,7 @@ class GPS {
         this.gpsdCon = null
         this.conTimeOut = null
         this.retryTime = 5000
+        this.oldState = "uninit"
 
         // self-bound closures for callbacks
         this.this_gpsdReply = this.gpsdReply.bind(this) 
@@ -27,11 +28,12 @@ class GPS {
             this.retryTime = 5000
             this.replyBuf += r.toString()
             for(;;) {
-                var eol = this.replyBuf.indexOf("\n")
+                const eol = this.replyBuf.indexOf("\n")
                 if (eol < 0)
                     break
-                var reply = JSON.parse(this.replyBuf.substring(0, eol))
+                const replyLine = this.replyBuf.substring(0, eol)
                 this.replyBuf = this.replyBuf.substring(eol + 1)
+                var reply = JSON.parse(replyLine)
                 if (reply["class"] == "POLL") {
                     var mode = 0 // GPS mode: unknown/no-fix/2d-fix/3d-fix
                     var sats = 0 // number of satellites used in fix
@@ -48,6 +50,12 @@ class GPS {
                     fix.state = ["no-dev", "no-sat", "2D-fix", "3D-fix"][mode]
                     if (fix.time) fix.time = (new Date(fix.time)).getTime()/1000
                     this.matron.emit("gotGPSFix", fix)
+                    if (fix.state != this.oldState) {
+                        console.log(`GPS mode ${this.oldState}->${fix.state}: ${replyLine}`)
+                        this.oldState = fix.state
+                    }
+                } else if (reply["class"] == "DEVICES") {
+                    console.log("GPSD devices:", replyLine)
                 }
             }
         } catch (e) {
