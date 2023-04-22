@@ -1774,8 +1774,8 @@
       "rows": 1,
       "cols": 2,
       "static": {
-        "title": "4 hours",
-        "output_value": "4hours"
+        "title": "hour",
+        "output_value": "hour"
       },
       "dynamic": {},
       "id": "w06030",

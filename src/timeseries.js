@@ -5,9 +5,9 @@ const path = require('path')
 const fs = require('fs')
 
 class TimeSeries {
-  static ranges = ['5mins', '4hours', 'day', 'month', 'year']
-  static intervals = [10000, 10*60*1000, 3600*1000, 24*3600*1000, 7*24*3600*1000] // 10min, 1h, 1d, 1w
-  static limits = [5*6, 4*6, 25, 32, 53] // number of samples to keep
+  static ranges = ['5mins', 'hour', 'day', 'month', 'year']
+  static intervals = [10000, 60*1000, 3600*1000, 24*3600*1000, 7*24*3600*1000] // 10min, 1h, 1d, 1w
+  static limits = [5*6, 60, 25, 32, 53] // number of samples to keep
   
   constructor(dir, name) {
     this.name = name
