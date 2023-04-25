@@ -114,34 +114,6 @@
       },
       "id": "w00208"
     },
-    "w01467": {
-      "kind": "SparkLine",
-      "rows": 1,
-      "cols": 3,
-      "static": {
-        "title": "Lotek pulses (10s/pt)",
-        "show_value": false,
-        "popup_info": "Each data point represents a 10 second interval, the total chart 5 minutes."
-      },
-      "dynamic": {
-        "value": "detections_5min/lotek"
-      },
-      "id": "w01467"
-    },
-    "w00138": {
-      "kind": "SparkLine",
-      "rows": 1,
-      "cols": 3,
-      "static": {
-        "title": "CTT tags (10s/pt)",
-        "show_value": false,
-        "popup_info": "Each data point represents a 10 second interval, the total chart 5 minutes."
-      },
-      "dynamic": {
-        "value": "detections_5min/ctt"
-      },
-      "id": "w00138"
-    },
     "w02180": {
       "kind": "DateTime",
       "rows": 1,
@@ -476,15 +448,15 @@
       "rows": 4,
       "cols": 3,
       "static": {
-        "title": "Overview",
+        "title": "",
         "widgets": [
+          "w01770",
           "w09397",
           "w00208",
           "w08305",
+          "w03451",
           "w09119",
-          "w04945",
-          "w00138",
-          "w01467"
+          "w04945"
         ],
         "solid": false
       },
@@ -494,14 +466,12 @@
     },
     "w06221": {
       "kind": "Panel",
-      "rows": 4,
+      "rows": 3,
       "cols": 3,
       "static": {
         "title": "",
         "widgets": [
-          "w01770",
           "w04031",
-          "w03451",
           "w00178",
           "w05027"
         ],
@@ -1240,13 +1210,13 @@
     "w06423": {
       "kind": "Stat",
       "rows": 1,
-      "cols": 4,
+      "cols": 6,
       "static": {
-        "title": "Deployment name",
+        "title": "Station name",
         "zoom": 0.8
       },
       "dynamic": {
-        "value": "motus_recv/deployment_name"
+        "value": "motus_recv/station_name"
       },
       "id": "w06423"
     },
@@ -1900,13 +1870,13 @@
     "w01770": {
       "kind": "Stat",
       "rows": 1,
-      "cols": 3,
+      "cols": 6,
       "static": {
-        "title": "ID",
+        "title": "Station",
         "zoom": 0.75
       },
       "dynamic": {
-        "value": "machineinfo/machineID"
+        "value": "motus_recv/station_name"
       },
       "id": "w01770"
     },
@@ -1917,6 +1887,7 @@
       "static": {
         "title": "Machine Info",
         "fields": [
+          "machineID",
           "version",
           "machineType",
           "bootCount",

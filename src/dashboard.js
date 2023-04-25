@@ -227,7 +227,7 @@ class Dashboard {
         const dash = {
             project_id: info.project || "UNSET",
             deployment_status: info.status || "UNKNOWN",
-            deployment_name: info.deployment,
+            station_name: info.deployment,
             project_color: info.project ? "green" : "red",
             status_color: info.status == "active" ? "green" : "red",
         }
