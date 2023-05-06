@@ -8,7 +8,7 @@ mkdir $DESTDIR
 
 # install FlexDash in there
 mkdir src/public/flexdash
-curl -L https://s3.amazonaws.com/s3.voneicken.com/flexdash/flexdash-0.3.16.tgz | \
+curl -L https://s3.amazonaws.com/s3.voneicken.com/flexdash/flexdash-0.3.17.tgz | \
     tar xzf - -C src/public/flexdash
 
 # install the control application files as user gnome=1000
