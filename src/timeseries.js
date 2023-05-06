@@ -4,16 +4,25 @@
 const path = require('path')
 const fs = require('fs')
 
+// allTS holds all in-memory time-series; this is used to avoid a race condition when closing
+// a time-series and immediately reopening it. The final save is async while the opening load
+// is sync and the latter occurs when the former is still writing the file...
+const allTS = {}
+
 class TimeSeries {
   static ranges = ['5mins', 'hour', 'day', 'month', 'year']
   static intervals = [10000, 60*1000, 3600*1000, 24*3600*1000, 7*24*3600*1000] // 10min, 1h, 1d, 1w
   static limits = [5*6, 60, 25, 32, 53] // number of samples to keep
   
   constructor(dir, name) {
+    const p = path.join(dir, name+'.json')
+    if (allTS[p]) return allTS[p]
+
     this.name = name
+    this.path = p
     this.dirty = false
-    this.dir = dir
-    this.load(dir)
+    this.load()
+    allTS[p] = this
     // this.data[range][limit] = array of event counts (ints) for each range
     // this.t0[range] = time of first sample
     // this.sum[range] = for avg: sum of values going into last last
@@ -21,7 +30,7 @@ class TimeSeries {
   }
 
   close() {
-    if (this.dirty) this.save(this.dir)
+    if (this.dirty) this.save(() => { delete allTS[this.path] })
   }
 
   // clear the time series such that the last point covers time `at`
@@ -48,17 +57,17 @@ class TimeSeries {
   // ensure the last lement in the time series covers time `at`
   catch_up(at, fill) {
     if (!'data' in this) {
-      throw new Error("EventSeries: not initialized " + this.name)
+      throw new Error("TimeSeries: not initialized " + this.name)
     }
     if (at > Date.now()+60000)
-      throw new Error(`EventSeries: can't insert data into the future, ${this.name}, ${at}, ${Date.now()}`)
+      throw new Error(`TimeSeries: can't insert data into the future, ${this.name}, ${at}, ${Date.now()}`)
     if (fill === undefined) fill = 0
 
     TimeSeries.ranges.forEach((r, i) => {
       const interval = TimeSeries.intervals[i]
       const limit = TimeSeries.limits[i]
       if (this.data[r].length != limit)
-        throw new Error(`EventSeries: ${this.name} ${r} length mismatch ${this.data[r].length} != ${limit}`)
+        throw new Error(`TimeSeries: ${this.name} ${r} length mismatch ${this.data[r].length} != ${limit}`)
 
       let tLast = this.t0[r] + (limit-1)*interval
       let offset = Math.floor((at-tLast)/interval)
@@ -71,7 +80,7 @@ class TimeSeries {
 
       if (offset < 0) {
         // can't insert data into the past
-        throw new Error(`EventSeries: can't insert data into the past: ` +
+        throw new Error(`TimeSeries: can't insert data into the past: ` +
           `${this.name} ${r} at=${at} last=${tLast} offset=${offset} ival=${interval} now=${Date.now()}`)
       }
 
@@ -110,7 +119,7 @@ class TimeSeries {
   }
 
   // return the time series for a specific range in the form of [[time], [value]]
-  // returns a time series such that the lat point covers `at`
+  // returns a time series such that the last point covers `at`
   get(range, at=Date.now()) {
     const ix = TimeSeries.ranges.indexOf(range)
     if (ix < 0) return []
@@ -129,34 +138,34 @@ class TimeSeries {
     } else {
       values = Array(limit).fill(null)
     }
-    if (values.length != limit) throw(`EventSeries: bad length (got ${values.length}, expected ${limit}, range ${range})`)
+    if (values.length != limit) throw(`TimeSeries: bad length (got ${values.length}, expected ${limit}, range ${range})`)
     return [times, values]
   }
 
   // save the time series to the filesystem
-  save() {
+  save(cb) {
     if (!this.dirty) return
 
-    const file = path.join(this.dir, this.name+'.json')
     this.dirty = false // assume it will work, avoid race conditions
     const data = {data: this.data, t0: this.t0, sum: this.sum, cnt: this.cnt}
-    fs.writeFile(file, JSON.stringify(data), err => {
+    //console.log("TimeSeries: saving", this.path)
+    fs.writeFile(this.path, JSON.stringify(data), err => {
       if (err) {
         this.dirty = true // "oops"... try again later
-        console.log("EventSeries: error writing", file, err)
-      }
+        console.log("TimeSeries: error writing", this.path, err)
+      } //else console.log("TimeSeries: saved", this.path)
+      if (cb) cb(err)
     })
   }
 
   // load the time series from the filesystem
-  load(dir) {
-    const file = path.join(dir, this.name+'.json')
+  load() {
     try {
-      var raw = fs.readFileSync(file)
+      var raw = fs.readFileSync(this.path).toString()
     } catch (err) {
       if (err.code != 'ENOENT') {
-        console.log("EventSeries: error reading", file, err)
-      } else console.log("Empty time series", file)
+        console.log("TimeSeries: error reading", this.path, err)
+      } else console.log("Empty time series", this.path)
       // no file: create empty time series
       this.clear(Date.now())
       return
@@ -169,7 +178,8 @@ class TimeSeries {
       this.sum = sum
       this.cnt = cnt
     } catch (err) {
-      console.log("EventSeries: error parsing", file, err)
+      console.log("TimeSeries: error parsing", this.path, err)
+      console.log("<<<", raw, ">>>")
     }
   }
 }

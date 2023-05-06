@@ -343,7 +343,7 @@ class Dashboard {
         for (let i = 1; i < tsSet.length; i++) {
             const [times, values] = tsSet[i].get(range, now)
             if (times.length != data.length) throw new Error("tsShow: times length mismatch")
-            if (times[0] != data[0][0]) throw new Error("tsShow: data start mismatch")
+            if (Math.floor(times[0]/1000) != data[0][0]) throw new Error("tsShow: data start mismatch")
             for (let j=0; j<data.length; j++) data[j].push(fct(values[j]))
         }
         const title = what.replace('-',' ') + " (" + range + ")" // can't set dynamic title :-(

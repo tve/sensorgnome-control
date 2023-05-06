@@ -6,78 +6,6 @@ var Fsp = require("fs").promises
 // fields that can be updated
 const UPDATABLE = [ 'label', 'memo', 'lotek_freq']
 
-// const defaults = {
-//     label: "changeMe",
-//     memo: "memo for you about this SensorGnome",
-//     lotek_freq: 166.38,
-//     module_options: {
-//         find_tags: { params: [ /*"--default-freq", 166.38,*/ "--pulse-slop", 1.5 ], enabled: true },
-//     },
-// }
-
-// SensorGnome deployment info
-// class Deployment {
-//     constructor(path) {
-//         this.path = path
-//         try {
-//             this.data = { ...defaults, ...JSON.parse(Fs.readFileSync(path).toString()) }
-//         } catch (e) {
-//             console.log("Error loading deployment info:", e.message, "\n...using defaults.")
-//             this.data = { ...defaults }
-//         }
-//         for (let j in this.data) this[j] = this.data[j] // a bit yucky...
-//     }
-
-//     update(new_values) {
-//         // update deployment object
-//         let changed = false
-//         for (let k in this.data) {
-//             if (k in new_values) {
-//                 // if (k.endsWith("_password_confirm")) {
-//                 //     // we ignore the confirmation and handle it specially below
-//                 //     continue
-//                 // } else if (k.includes("password")) {
-//                 //     const kconf = k + "_confirm"
-//                 //     if (kconf in this.data) {
-//                 //         if (new_values[k] == "") {
-//                 //             console.log("Password cannot be empty")
-//                 //             return
-//                 //         }
-//                 //         if (new_values[k].includes("******")) { // probably editing error
-//                 //             console.log("Password cannot contain ******")
-//                 //             return
-//                 //         }
-//                 //         if (new_values[k] != new_values[kconf]) {
-//                 //             console.log("Password mismatch for", k)
-//                 //             return
-//                 //         }
-//                 //         this.data[kconf] = "" // we don't need a value here
-//                 //     }
-//                 // }
-//                 changed = changed || this.data[k] != new_values[k]
-//                 this.data[k] = new_values[k]
-//                 this[k] = this.data[k]
-//             }
-//         }
-//         // save to file
-//         if (changed) {
-//             (async () => {
-//                 try {
-//                     await Fsp.writeFile(this.path + "~", JSON.stringify(this.data, null, 2))
-//                     try {
-//                         await Fsp.rename(this.path, this.path + ".bak")
-//                     } catch (e) {
-//                         if (e.code != "ENOENT") throw e
-//                     }
-//                     await Fsp.rename(this.path + "~", this.path)
-//                 } catch (e) {
-//                     console.log("ERROR: failed to save deployment config: ", e)
-//                 }
-//             })().then(()=>{})
-//         }
-//     }
-// }
-
 // Acquisition settings for receivers and other sensors, including operating plans
 class Acquisition {
     constructor(path) {
@@ -144,26 +72,25 @@ class Acquisition {
                 console.log("Acquisition: updating", k, "to", new_values[k])
             }
         }
-        if (changed && 'lotek_freq' in new_values) this.fix_freq(new_values.lotek_freq)
         // save to file
         if (changed) {
-            (async () => {
+            console.log("Saving ", this.path)
+            const data = {}
+            for (let k of ['label','memo','lotek_freq','gps','plans','module_options'])
+                data[k] = this[k]
+            try {
+                Fs.writeFileSync(this.path + "~", JSON.stringify(data, null, 2))
                 try {
-                    console.log("Saving ", this.path)
-                    const data = {}
-                    for (let k of ['label','memo','lotek_freq','gps','plans','module_options'])
-                        data[k] = this[k]
-                    await Fsp.writeFile(this.path + "~", JSON.stringify(data, null, 2))
-                    try {
-                        await Fsp.rename(this.path, this.path + ".bak")
-                    } catch (e) {
-                        if (e.code != "ENOENT") throw e
-                    }
-                    await Fsp.rename(this.path + "~", this.path)
+                    Fs.renameSync(this.path, this.path + ".bak")
                 } catch (e) {
-                    console.log("ERROR: failed to save acquisition config: ", e)
+                    if (e.code != "ENOENT") throw e
                 }
-            })().then(()=>{})
+                Fs.renameSync(this.path + "~", this.path)
+            } catch (e) {
+                console.log("ERROR: failed to save acquisition config: ", e)
+            }
+            // update (restart) radios
+            if ('lotek_freq' in new_values) this.fix_freq(new_values.lotek_freq)
         }
     }
 
