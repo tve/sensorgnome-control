@@ -149,11 +149,12 @@ class CornellTagXCVR {
       } else if (record.key) {
         // response to a command (dunno what that corresponds to...)
         this.matron.emit("cttRadioResponse", { port, response: record })
-      } else if (record.data?.tag) {
+      } else if (record.data?.tag || record.data?.id) {
         // tag detection
-        var tag = record.data.tag
+        var tag = record.data?.tag || record.data?.id
+        var rssi = record.data?.rssi || record.rssi
         if (tag.error_bits == 0) {
-          var lifetag_record = ["T" + port, now_secs, tag.id, record.rssi, "v" + tag.version].join(
+          var lifetag_record = ["T" + port, now_secs, tag.id, rssi, "v" + tag.version].join(
             ","
           ) // build the values to generate a CSV row
           this.matron.emit("gotTag", lifetag_record + "\n")
