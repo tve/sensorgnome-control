@@ -179,7 +179,9 @@ class TimeSeries {
       this.cnt = cnt
     } catch (err) {
       console.log("TimeSeries: error parsing", this.path, err)
-      console.log("<<<", raw, ">>>")
+      console.log("Raw: <<<", raw, ">>>")
+      // create empty time series so we can move on
+      this.clear(Date.now())
     }
   }
 }
