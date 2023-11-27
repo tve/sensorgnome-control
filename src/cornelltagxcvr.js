@@ -19,12 +19,16 @@
 
 // avoiding serialport module 'cause it requires native code install which is a PITA given
 // the way we build packages (on x86) and deploy them on ARM
-// const {SerialPort} = require('serialport')
+const {SerialPort} = require('serialport')
 // const {ReadlineParser} = require('@serialport/parser-readline')
 const readline = require("readline")
 
+let didEnum = false
+
 class CornellTagXCVR {
   constructor(matron, dev) {
+    if (!didEnum) this.enum()
+
     this.matron = matron
     this.dev = dev
     this.sp = null // opened serial device
@@ -32,17 +36,29 @@ class CornellTagXCVR {
     this.rl = null // readline interface for readstream
     this.wd = null // watchdog interval timer
     this.gotVersion = 0 // timestamp of last version response
+    this.retries = 0 // number of retries opening the device
 
     this.matron.on("devRemoved", (dev) => this.devRemoved(dev))
 
-    this.init()
+    this.init_sp()
+  }
+
+  // enumerate serial ports for debugging purposes
+  enum() {
+    didEnum = true
+    SerialPort.list().then((list) => {
+      list.forEach((port) => {
+        console.log("SerialPort: " + JSON.stringify(port) + "\n")
+      })
+    })
   }
 
   devRemoved(dev) {
-    if (dev.path != this.dev.path) return
+    if (!this.dev || dev.path != this.dev.path) return
     if (this.sp) {
       this.sp.close()
       this.sp = null
+      console.log("Removed " + this.dev.path)
     }
     if (this.fd != null) {
       Fs.close(this.fd)
@@ -52,29 +68,56 @@ class CornellTagXCVR {
       clearInterval(this.wd)
       this.wd = null
     }
+    this.dev = null
   }
 
   init_sp() {
-    this.sp = new SerialPort({ path: this.dev.path, baudRate: 115200 }) // baud rate irrelevant with USB
+    if (!this.dev) return // device removed
+    this.sp = new SerialPort({ path: this.dev.path, baudRate: 9600 }) // baud rate irrelevant with USB
     this.sp.on("open", () => {
+      console.log("Opened SerialPort " + this.dev.path)
       // write a version command to see whether the radio supports that
       // apparently the firmware needs some time before it responds...
       setTimeout(() => this.askVersion(), 2000)
+      setTimeout(() => this.checkVersion(), 6000)
     })
     this.sp.on("close", () => {
-      console.log("Closed " + this.dev.path)
+      console.log("Closed SerialPort " + this.dev.path)
     })
     this.sp.on("error", err => {
-      console.log("Error opening/reading " + this.dev.path + ": " + err.message)
+      console.log("Error on SerialPort " + this.dev?.path + ": " + err.message)
+      if (this.sp?.port) this.sp.close()
+      if (this.retries++ < 3) {
+        setTimeout(() => {
+            this.init_sp()
+        }, this.retries < 3 ? 10000 : 60000)
+      }
     })
     // hook up the parser to read incoming data
-    const parser = new ReadlineParser({ delimiter: "\r\n" })
-    parser.on("data", this.this_gotTag)
-    this.sp.pipe(parser)
-    console.log("Starting read stream at", this.dev.path)
+    if (0) {
+      const parser = new ReadlineParser({ delimiter: "\r\n" })
+      parser.on("data", this.this_gotTag)
+      this.sp.pipe(parser)
+    } else {
+      this.buffer = ""
+      this.sp.on("data", data => {
+        //console.log(`CTT got: <${data.toString().trim()}>`)
+        this.buffer += data.toString()
+        while (true) {
+          const i = this.buffer.indexOf("\r\n")
+          if (i < 0) break
+          const l = this.buffer.slice(0, i)
+          this.buffer = this.buffer.slice(i+1)
+          this.gotTag(l)
+        }
+      })
+    }
+    console.log("Starting read stream using SerialPort at", this.dev.path)
   }
 
+  // Not used! (see constructor)
   init(no_write=false) {
+    if (!this.dev) return // device removed
     Fs.open(this.dev.path, "r+", (err, fd) => {
       if (err) {
         console.log("Error opening " + this.dev.path + ": " + err.message)
@@ -84,12 +127,28 @@ class CornellTagXCVR {
       // create read stream
       const rs = Fs.createReadStream(null, { fd: fd })
       rs.on("error", err => console.log(`Error reading ${this.dev.path}: ${err.message}`))
-      const rl = readline.createInterface({
-        input: rs,
-        terminal: false,
-      })
-      rl.on("line", l => this.gotTag(l))
-      console.log("Starting read stream at", this.dev.path)
+      rs.on("end", () => { console.log(`EOF reading ${this.dev.path}`); this.init_sp() })
+      if (0) {
+        const rl = readline.createInterface({
+          input: rs,
+          terminal: false,
+        })
+        rl.on("line", l => this.gotTag(l))
+      } else {
+        this.buffer = ""
+        rs.on("data", data => {
+          this.buffer += data.toString()
+          console.log(`CTT got: <${data.toString()}>`)
+          while (true) {
+            const i = this.buffer.indexOf("\r\n")
+            if (i < 0) break
+            const l = this.buffer.slice(0, i)
+            this.buffer = this.buffer.slice(i+1)
+            this.gotTag(l)
+          }
+        })
+      }
+      console.log("Starting read stream using FSOpen at", this.dev.path)
       // write a version command to see whether the radio supports that
       // apparently the firmware needs some time before it responds...
       if (!no_write) {
@@ -103,7 +162,12 @@ class CornellTagXCVR {
   askVersion() {
     if (this.sp) {
       this.sp.write("version\r\n", (err, n) => {
-        if (err) console.log(`Error writing to ${this.dev.path}: ${err}`)
+        if (err) {
+          console.log(`Error writing to ${this.dev.path}: ${err}`)
+          // reopen device
+          if (this.sp?.port) this.sp.close()
+          this.init_sp()
+        }
       })
     } else if (this.fd != null) {
       Fs.write(this.fd, "version\r\n", (err, n) => {
@@ -124,8 +188,10 @@ class CornellTagXCVR {
   checkVersion() {
     if (this.gotVersion == 0) {
       console.log(`No version response from ${this.dev.path}, assuming old firmware`)
-      this.devRemoved(this.dev.path)
-      this.init(true)
+      if (this.fd) {
+        this.devRemoved(this.dev.path)
+        this.init(true)
+      }
     }
   }
 
@@ -135,6 +201,7 @@ class CornellTagXCVR {
       var now_secs = Date.now() / 1000
       var record = JSON.parse(json)
       if (record.firmware) {
+        if (this.attr?.attr) this.attr.attr.type = "CTTv3"
         // response to a 'version' command with firmware version
         this.matron.emit("cttRadioVersion", { port, version: record.firmware })
         this.gotVersion = now_secs
@@ -142,7 +209,7 @@ class CornellTagXCVR {
           console.log(`CTT radio on port ${port} has firmware ${record.firmware}`)
           this.wd = setInterval(() => {
             if (now_secs - this.gotVersion > 60)
-              console.log(`CTT radio on port ${port} is not respond`)
+              console.log(`CTT radio on port ${port} is not responding`)
             this.askVersion()
           }, 60000)
         }
@@ -151,14 +218,15 @@ class CornellTagXCVR {
         this.matron.emit("cttRadioResponse", { port, response: record })
       } else if (record.data?.tag || record.data?.id) {
         // tag detection
-        var tag = record.data?.tag || record.data?.id
-        var rssi = record.data?.rssi || record.rssi
-        if (tag.error_bits == 0) {
-          var lifetag_record = ["T" + port, now_secs, tag.id, rssi, "v" + tag.version].join(
+        var tag = record.data?.tag || record.data
+        var rssi = record.data?.rssi || record.meta?.rssi
+        if (!('error_bits' in tag) || tag.error_bits == 0) {
+          var lifetag_record = ["T" + port, now_secs, tag.id, rssi].join(
             ","
           ) // build the values to generate a CSV row
           this.matron.emit("gotTag", lifetag_record + "\n")
           LifetagOut.write(lifetag_record + "\n")
+          console.log(`CTT json tag: ${lifetag_record}`)
         } else {
           console.log(`CTT tag with errors(?) on port ${port}: ${record}`)
         }
@@ -175,12 +243,13 @@ class CornellTagXCVR {
     record = record.trim()
     if (record == "") return // happens due to CRLF
     if (record.match(/[0-9a-fA-F]{10},/)) {
-      console.log(`Got CTT tag w/CRC on p${this.dev.attr.port}: ${record}`)
+      //console.log(`Got CTT tag w/CRC on p${this.dev.attr.port}: ${record}`)
     }
     if (record.startsWith("{")) {
       // newer CTT receiver that emits a JSON record
+      //console.log("JSON from CTT on p" + this.dev.attr.port)
       this.jsonTag(record)
-    } else {
+    } else if (record.match(/[0-9a-fA-F]{8,10},/)) {
       // older CTT receiver that emits a bare tag ID
       // format: id,rssi
       var vals = record.split(",")
@@ -193,7 +262,10 @@ class CornellTagXCVR {
         // an event can be emitted here for vahdata if interested in streaming to 'all' files
         // this.matron.emit('vahData', lifetag_record+'\n')
         LifetagOut.write(lifetag_record + "\n")
+        console.log(`CTT tag: ${lifetag_record}`)
       }
+    } else {
+      console.log(`Unknown CTT record on p${this.dev.attr.port}: ${record}`)
     }
   }
 }

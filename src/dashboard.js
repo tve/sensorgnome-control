@@ -38,7 +38,7 @@ class Dashboard {
             'df', 'sdcardUse', 'vahData', 'netDefaultRoute', 'netInet', 'netMotus', 'netWifiState',
             'netHotspotState', 'netWifiConfig', 'portmapFile', 'tagDBInfo', 'motusRecv',
             'motusUploadResult', 'netDefaultGw', 'netDNS', 'lotekFreq', 'netCellState', 'netCellReason',
-            'netCellInfo', 'netCellConfig',
+            'netCellInfo', 'netCellConfig', 'cttRadioVersion',
             // dashboard events triggered by a message from FlexDash
             'dash_download', 'dash_upload', 'dash_deployment_update', 'dash_enable_wifi',
             'dash_enable_hotspot', 'dash_config_wifi', 'dash_update_portmap', 'dash_creds_update',
@@ -157,7 +157,7 @@ class Dashboard {
     // update the number of radios connected on devAdded/Removed
     updateNumRadios() {
         return {
-            ctt: Object.values(HubMan.devs).filter(d => d.attr?.radio == "CTT/Cornell").length,
+            ctt: Object.values(HubMan.devs).filter(d => d.attr?.radio.startsWith("CTT")).length,
             vah: Object.values(HubMan.devs).filter(d => d.attr?.radio == "VAH").length,
             all: Object.values(HubMan.devs).filter(d => d.attr?.radio).length,
             // bad: radios with invalid port
@@ -180,6 +180,10 @@ class Dashboard {
         FlexDash.unset(`devices/${info.attr.port}`)
         FlexDash.set(`radios`, this.updateNumRadios())
         this.tsRemoveDevice(info)
+    }
+    handle_cttRadioVersion(info) {
+        const v = info.version.replace(/\..*/, '')
+        FlexDash.set(`devices/${info.port}/type`, 'CTTv' + v)
     }
     handle_portmapFile(txt) { FlexDash.set('portmap_file', txt) }
     handle_dash_update_portmap(portmap) { HubMan.setPortmap(portmap) }
