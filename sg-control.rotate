@@ -1,6 +1,6 @@
 /var/log/sg-control.log {
     daily
-    rotate 7
+    rotate 120
     copytruncate
     dateext
     dateyesterday
