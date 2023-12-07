@@ -912,6 +912,7 @@ class Dashboard {
                 cell: FlexDash.get('cellular/state'),
                 inet: FlexDash.get('net_default_route'),
             },
+            cell_info: FlexDash.get('cellular/info'),
         }
     }
 
