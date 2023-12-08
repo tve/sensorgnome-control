@@ -174,7 +174,7 @@ class CellMan {
           }
         } else if (data.modem?.["3gpp"]?.["scan-networks"]) {
           const nets = data.modem?.["3gpp"]?.["scan-networks"]
-          console.log("nets:", nets)
+          //console.log("nets:", nets)
           info["scan"] = nets.length + " networks"
           for (let i = 0; i < nets.length && i < 10; i++) {
             const op = nets[i].match(/operator-name: *([^,]*)/)?.[1]
