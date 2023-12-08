@@ -71,15 +71,17 @@ class CornellTagXCVR {
     this.dev = null
   }
 
-  init_sp() {
+  init_sp(no_write=false) {
     if (!this.dev) return // device removed
     this.sp = new SerialPort({ path: this.dev.path, baudRate: 9600 }) // baud rate irrelevant with USB
     this.sp.on("open", () => {
       console.log("Opened SerialPort " + this.dev.path)
       // write a version command to see whether the radio supports that
       // apparently the firmware needs some time before it responds...
-      setTimeout(() => this.askVersion(), 2000)
-      setTimeout(() => this.checkVersion(), 6000)
+      if (!no_write) {
+        setTimeout(() => this.askVersion(), 2000)
+        setTimeout(() => this.checkVersion(), 6000)
+      }
     })
     this.sp.on("close", () => {
       console.log("Closed SerialPort " + this.dev.path)
@@ -166,7 +168,7 @@ class CornellTagXCVR {
           console.log(`Error writing to ${this.dev.path}: ${err}`)
           // reopen device
           if (this.sp?.port) this.sp.close()
-          this.init_sp()
+          this.init_sp(true)
         }
       })
     } else if (this.fd != null) {
@@ -188,9 +190,11 @@ class CornellTagXCVR {
   checkVersion() {
     if (this.gotVersion == 0) {
       console.log(`No version response from ${this.dev.path}, assuming old firmware`)
+      this.devRemoved(this.dev.path)
       if (this.fd) {
-        this.devRemoved(this.dev.path)
         this.init(true)
+      } else {
+        this.init_sp(true)
       }
     }
   }
