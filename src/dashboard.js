@@ -745,8 +745,10 @@ class Dashboard {
     logs_download(req, resp) {
         console.log("log_download:", req.params.what)
         let files = Fs.readdirSync("/var/log", 'utf8')
-        files = files.filter(f => f.startsWith("sg-control")).map(f=>'/var/log/'+f)
-        files.push("/var/log/syslog")
+        files = files.
+            filter(f => f.startsWith("sg-control")||f.startsWith("syslog")).
+            map(f=>'/var/log/'+f)
+        //files.push("/var/log/syslog")
         let now = new Date()
         let filename = Machine.machineID + "-" + now.toISOString() + "-logs.zip"
         // tell the browser that we're sending a zip file
