@@ -161,7 +161,7 @@ VAH.prototype.connectData = function() {
 }
 
 VAH.prototype.cmdSockProblem = function(e) {
-//    console.log("Got command socket problem " + e.toString() + "\n");
+    console.log("VAH: command socket problem " + e.toString());
     if (this.cmdSock) {
         this.cmdSock.destroy();
         this.cmdSock = null;
@@ -172,7 +172,7 @@ VAH.prototype.cmdSockProblem = function(e) {
 };
 
 VAH.prototype.dataSockProblem = function(e) {
-//    console.log("Got data socket problem " + e.toString() + "\n");
+    console.log("VAH: data socket problem " + e.toString());
     if (this.dataSock) {
         this.dataSock.destroy();
         this.dataSock = null;
