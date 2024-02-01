@@ -38,7 +38,7 @@ class Dashboard {
             'df', 'sdcardUse', 'vahData', 'netDefaultRoute', 'netInet', 'netMotus', 'netWifiState',
             'netHotspotState', 'netWifiConfig', 'portmapFile', 'tagDBInfo', 'motusRecv',
             'motusUploadResult', 'netDefaultGw', 'netDNS', 'lotekFreq', 'netCellState', 'netCellReason',
-            'netCellInfo', 'netCellConfig', 'cttRadioVersion',
+            'netCellInfo', 'netCellConfig', 'cttRadioVersion', 'vahRate',
             // dashboard events triggered by a message from FlexDash
             'dash_download', 'dash_upload', 'dash_deployment_update', 'dash_enable_wifi',
             'dash_enable_hotspot', 'dash_config_wifi', 'dash_update_portmap', 'dash_creds_update',
@@ -267,6 +267,7 @@ class Dashboard {
                 tags: new TimeSeries(ts_dir, "lotek-tags-"+dev.attr.port),
                 pulses: new TimeSeries(ts_dir, "lotek-pulses-"+dev.attr.port),
                 noise: new TimeSeries(ts_dir, "lotek-noise-"+dev.attr.port),
+                rate: new TimeSeries(ts_dir, "lotek-rate-"+dev.attr.port),
             }
         }
         console.log("tsAddDevice", dev.attr.port, port)
@@ -317,6 +318,21 @@ class Dashboard {
         }
     }
 
+    tsGotRate(port, now, rate) {
+        try {
+            const time = Math.round(now)
+            port = port.replace(/^[a-z]/, '');
+            // console.log(`tsGotRate: ${port} ${time} ${rate} ${Object.keys(this.ts).join(",")}`)
+            if (this.ts[port]?.rate) this.ts[port].rate.avg(time, rate)
+            if (this.ts[port]?.rate) {
+                const foo = this.ts[port].rate
+                // console.log("tsGotRate", foo)
+            }
+        } catch (e) {
+            console.warn("tsGotRate", e)
+        }
+    }
+
     // update a graph, what: lotek-tags, lotek-pulses, lotek-noise, ctt-tags
     tsShow(what) {
         const [prefix, series] = what.split('-')
@@ -340,7 +356,7 @@ class Dashboard {
         const [times, values] = tsSet[0].get(range, now)
         //console.log("Got:", values)
         const interval = TimeSeries.intervals[this.ts_ix]
-        const fct = series == 'noise'
+        const fct = ['noise','rate'].includes(series)
             ? v => v
             : v => v == null ? null : v * 3600*1000 / interval
         const data = times.map((t, i) => [Math.floor(t/1000), fct(values[i])])
@@ -368,6 +384,7 @@ class Dashboard {
                 this.tsGotPulse(`p${port},${now/1000},0,0,${-50-Math.random()*10}`)
                 this.tsShow('lotek-pulses')
                 this.tsShow('lotek-noise')
+                this.tsShow('lotek-rate')
             } else {
                 this.tsGotTag(`T${port},${now/1000},12345678,0`)
                 this.tsShow('ctt-tags')
@@ -383,12 +400,12 @@ class Dashboard {
             for (const port in this.ts) {
                 const ts = this.ts[port]
                 for (const series in ts) {
-                    const fill = series == 'noise' ? null : 0
+                    const fill = ['noise','rate'].includes(series) ? null : 0
                     ts[series].catch_up(now, fill)
                 }
             }
             // display
-            for (const what of ['lotek-tags', 'lotek-pulses', 'lotek-noise', 'ctt-tags']) {
+            for (const what of ['lotek-tags', 'lotek-pulses', 'lotek-noise', 'lotek-rate', 'ctt-tags']) {
                 this.tsShow(what)
             }
         } catch (e) {
@@ -567,6 +584,8 @@ class Dashboard {
         }
         FlexDash.set('detections_5min', this.detections)
     }
+
+    handle_vahRate(port, now, rate) { this.tsGotRate(port, now, rate)}
 
     // handle tag database upload
     handle_dash_upload_tagdb(phase, info, resp) {

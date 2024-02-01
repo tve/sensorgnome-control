@@ -1901,6 +1901,23 @@
       },
       "id": "w03697",
       "output": null
+    },
+    "w06943": {
+      "kind": "TimePlot",
+      "rows": 3,
+      "cols": 3,
+      "static": {
+        "title": "Lotek Sample Rate",
+        "left_unit": "/s",
+        "left_decimals": 0
+      },
+      "dynamic": {
+        "data": "detections/lotek-rate/data",
+        "labels": "detections/lotek-rate/labels",
+        "span_gaps": "detections/lotek-rate/labels"
+      },
+      "id": "w06943",
+      "output": null
     }
   },
   "grids": {
@@ -1988,6 +2005,7 @@
         "w09712",
         "w09240",
         "w07135",
+        "w06943",
         "w07258"
       ],
       "id": "g08970",

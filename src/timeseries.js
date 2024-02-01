@@ -80,7 +80,8 @@ class TimeSeries {
 
       if (offset < 0) {
         // can't insert data into the past
-        throw new Error(`TimeSeries: can't insert data into the past: ` +
+        if (offset > -5) console.log("TimeSeries: dropping data in the past for", this.name, r)
+        else throw new Error(`TimeSeries: can't insert data into the past: ` +
           `${this.name} ${r} at=${at} last=${tLast} offset=${offset} ival=${interval} now=${Date.now()}`)
       }
 
@@ -111,9 +112,7 @@ class TimeSeries {
     TimeSeries.ranges.forEach((r, i) => {
       this.sum[r] += v
       this.cnt[r] += 1
-      const d = this.data[r]
-      const limit = TimeSeries.limits[i]
-      d[limit-1] = this.sum[r]/this.cnt[r]
+      this.data[r][TimeSeries.limits[i]-1] = this.sum[r]/this.cnt[r]
     })
     this.dirty = true
   }

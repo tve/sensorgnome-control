@@ -101,7 +101,7 @@ USBAudio.prototype.hw_startStop = function(on) {
 USBAudio.prototype.hw_stalled = function() {
     // reset this device
     if (this.command) {
-	console.log("got to hw_stalled\n");
+        console.log(`USBAudio: ${this.dev.attr.usbPath}: resetting`);
         ChildProcess.execFile(this.command, this.baseArgs.concat("-R"));
     }
     var dev = JSON.parse(JSON.stringify(this.dev));

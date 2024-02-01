@@ -30,6 +30,8 @@ VAH = function(matron, prog, sockName) {
     this.inDieHandler = false;
     this.connectCmdTimeout = null;
     this.connectDataTimeout = null;
+    this.checkRateTimer = null;
+    this.frames = {}; // last frame count&time for each plugin
 
     // callback closures
     this.this_childDied        = this.childDied.bind(this);
@@ -47,6 +49,7 @@ VAH = function(matron, prog, sockName) {
     this.this_spawnChild       = this.spawnChild.bind(this);
     this.this_vahAccept        = this.vahAccept.bind(this);
     this.this_vahSubmit        = this.vahSubmit.bind(this);
+    this.this_checkRatesReply  = this.checkRatesReply.bind(this);
 
     matron.on("quit", this.this_quit);
     matron.on("vahSubmit", this.this_vahSubmit);
@@ -85,6 +88,8 @@ VAH.prototype.childDied = function(code, signal) {
 
 VAH.prototype.reapOldVAHandSpawn = function() {
     ChildProcess.execFile("/usr/bin/killall", ["-KILL", "vamp-alsa-host"], null, this.this_doneReaping);
+    if (this.checkRateTimer)
+        clearInterval(this.checkRateTimer);
 };
 
 VAH.prototype.doneReaping = function() {
@@ -102,6 +107,7 @@ VAH.prototype.spawnChild = function() {
     child.stdout.on("data", this.this_serverReady);
     child.stderr.on("data", this.this_logChildError);
     this.child = child;
+    this.frames = {};
 };
 
 VAH.prototype.cmdSockConnected = function() {
@@ -110,6 +116,11 @@ VAH.prototype.cmdSockConnected = function() {
         console.log("VAH command (queued): ", JSON.stringify(this.commandQueue[0]));
         this.cmdSock.write(this.commandQueue.shift());
     }
+    // start monitoring sample rates
+    // need to wait a long time for VAH to respond to the first list command (prob has to 
+    // start all plugin processes and get some OK from them)
+    this.checkRates();
+    this.checkRateTimer = setInterval(() => this.checkRates(), 60_000);
 };
 
 VAH.prototype.serverReady = function(data) {
@@ -184,9 +195,10 @@ VAH.prototype.vahSubmit = function (cmd, callback, callbackPars) {
     if (callback)
         this.replyHandlerQueue.push({callback: callback, par: callbackPars});
     if (this.cmdSock) {
-        console.log("VAH command: ", JSON.stringify(cmd));
-        for (var i in cmd)
-            this.cmdSock.write(cmd[i] + '\n');
+        for (const c of cmd) {
+            if (c != 'list') console.log("VAH command: ", c);
+            this.cmdSock.write(c + '\n');
+        }
     } else {
 //        console.log("VAH about to queue: " + cmd + "\n");
         for (var i in cmd)
@@ -202,18 +214,17 @@ VAH.prototype.gotCmdReply = function (data) {
     // Otherwise, the reply is sent bare (i.e. not in an array of 1 element).
 
     this.replyBuf += data.toString();
-// DEBUG: console.log("VAH replied: " + data.toString() + "\n");
+    // console.log("VAH replied: " + data.toString());
     for(;;) {
-	var eol = this.replyBuf.indexOf("\n");
-	if (eol < 0)
-	    break;
+        var eol = this.replyBuf.indexOf("\n");
+        if (eol < 0) break;
         var replyString = this.replyBuf.substring(0, eol);
-	this.replyBuf = this.replyBuf.substring(eol + 1);
+	    this.replyBuf = this.replyBuf.substring(eol + 1);
 
         if (replyString.length == 0)
             continue;
 
-	var reply = JSON.parse(replyString);
+	    var reply = JSON.parse(replyString);
 
         if (reply.async) {
             // if async field is present, this is not a reply to a command
@@ -234,8 +245,9 @@ VAH.prototype.gotCmdReply = function (data) {
 VAH.prototype.vahAccept = function(pluginLabel) {
     // indicate that VAH should accept data from the specified plugin
     if (this.dataSock) {
-//        console.log("VAH about to do receive " + pluginLabel + "\n");
+        console.log("VAH asking to receive " + pluginLabel);
         this.dataSock.write("receive " + pluginLabel + "\n");
+        delete this.frames[pluginLabel] 
     }
 };
 
@@ -256,6 +268,35 @@ VAH.prototype.getRawStream = function(devLabel, rate, doFM) {
 
     rawSock.start = function() {rawSock.write("rawStream " + devLabel + " " + rate + " " + doFM + "\n")};
     return rawSock;
+};
+
+VAH.prototype.checkRates = function() {
+    this.vahSubmit("list", this.this_checkRatesReply);
+};
+
+VAH.prototype.checkRatesReply = function(reply) {
+    // check that all the plugins are producing data at the correct rate
+    const now = Date.now()
+    //console.log("VAH rates: ", JSON.stringify(reply, null, 2));
+    for (const p in reply) {
+        var info = reply[p];
+        if (info.type != 'PluginRunner' || !info.totalFrames) continue;
+        if ('p' in this.frames) {
+            const dt = now - this.frames.p.at;
+            if (dt < 10_000) continue; // too soon to calculate stable rate
+            const df = info.totalFrames - this.frames.p.frames;
+            if (df > 0) {
+                const rate = df / dt * 1000;
+                this.matron.emit("vahRate", p, now, rate);
+                console.log(`VAH rate for ${p}: nominal ${info.rate}, actual ${rate.toFixed(0)} frames/sec`);
+                if (!(rate > info.rate*0.80 && rate < info.rate*1.20)) {
+                    console.log(`VAH rate for ${p} is out of range`);
+                    this.matron.emit("devStalled", p);
+                }
+            }
+        }
+        this.frames.p = {at: now, frames: info.totalFrames};
+    }
 };
 
 module.exports = VAH;
