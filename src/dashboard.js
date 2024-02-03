@@ -38,7 +38,7 @@ class Dashboard {
             'df', 'sdcardUse', 'vahData', 'netDefaultRoute', 'netInet', 'netMotus', 'netWifiState',
             'netHotspotState', 'netWifiConfig', 'portmapFile', 'tagDBInfo', 'motusRecv',
             'motusUploadResult', 'netDefaultGw', 'netDNS', 'lotekFreq', 'netCellState', 'netCellReason',
-            'netCellInfo', 'netCellConfig', 'cttRadioVersion', 'vahRate',
+            'netCellInfo', 'netCellConfig', 'cttRadioVersion', 'vahRate', 'vahFrames',
             // dashboard events triggered by a message from FlexDash
             'dash_download', 'dash_upload', 'dash_deployment_update', 'dash_enable_wifi',
             'dash_enable_hotspot', 'dash_config_wifi', 'dash_update_portmap', 'dash_creds_update',
@@ -587,6 +587,13 @@ class Dashboard {
 
     handle_vahRate(port, now, rate) { this.tsGotRate(port, now, rate)}
 
+    // capture VAH number of frames (samples) received for reporting via this.monitoring
+    handle_vahFrames(port, now, frames) {
+        port = port.replace(/^[a-z]/, '');
+        FlexDash.set(`samples/${port}/frames`, frames)
+        FlexDash.set(`samples/${port}/at`, now)
+    }
+
     // handle tag database upload
     handle_dash_upload_tagdb(phase, info, resp) {
         if (phase === 'begin' && resp) {
@@ -911,6 +918,7 @@ class Dashboard {
             radios: {
                 counts: FlexDash.get('radios'),
                 devices: FlexDash.get('devices'),
+                samples: FlexDash.get('samples'),
             },
             detections: {
                 series: FlexDash.get('detection_series'),

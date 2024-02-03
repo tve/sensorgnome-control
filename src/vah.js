@@ -282,6 +282,7 @@ VAH.prototype.checkRatesReply = function(reply) {
         var info = reply[p];
         if (info.type != 'PluginRunner' || !info.totalFrames) continue;
         if ('p' in this.frames) {
+            this.matron.emit("vahFrames", p, now, this.frames.p.frames);
             const dt = now - this.frames.p.at;
             if (dt < 10_000) continue; // too soon to calculate stable rate
             const df = info.totalFrames - this.frames.p.frames;
