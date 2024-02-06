@@ -34,7 +34,7 @@ exports.username = (/^([^:]+):[^:]*:1000:/m).exec(pwdfile)?.[1] || "gnome"
 
 var bootCountFile = "/etc/sensorgnome/bootcount"
 exports.bootCount = Fs.existsSync(bootCountFile) ?
-    Number(Fs.readFileSync(bootCountFile).toString()) % 1000000 : 99990
+    Number(Fs.readFileSync(bootCountFile).toString()) % 100000 : 99990
 
 var versionFile = "/etc/sensorgnome/version";
 

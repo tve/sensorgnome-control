@@ -737,6 +737,8 @@ class Dashboard {
                     if (err) {
                         console.log("Error writing sensorgnome.list:", err)
                         return
+                    } else {
+                        console.log("Changed release train to", value)
                     }
                 })
             })
