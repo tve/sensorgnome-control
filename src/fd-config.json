@@ -1446,7 +1446,7 @@
     },
     "w08547": {
       "kind": "Panel",
-      "rows": 2,
+      "rows": 3,
       "cols": 3,
       "static": {
         "title": "DANGER ZONE",
@@ -1456,7 +1456,8 @@
           "w08863",
           "w01649",
           "w05346",
-          "w04824"
+          "w04824",
+          "w02046"
         ],
         "solid": true
       },
@@ -1918,6 +1919,27 @@
       },
       "id": "w06943",
       "output": null
+    },
+    "w02046": {
+      "kind": "PropsTable",
+      "rows": 1,
+      "cols": 3,
+      "static": {
+        "title": "Alter bootCount",
+        "editable": true,
+        "data": {
+          "bootCount": 12
+        },
+        "fields": [
+          "bootCount"
+        ],
+        "popup_info": "Change the boot count to avoid overlap when re-initializing a Sensorgnome using a fresh SDcard"
+      },
+      "dynamic": {
+        "data": "machineinfo"
+      },
+      "id": "w02046",
+      "output": "alter_bootCount"
     }
   },
   "grids": {

@@ -46,7 +46,7 @@ class Dashboard {
             'dash_software_enable', 'dash_software_check', 'dash_software_upgrade',
             'dash_allow_shutdown', 'dash_software_shutdown', 'dash_software_restart',
             'dash_download_logs', 'dash_lotek_freq_change', 'dash_config_cell', 'dash_toggle_train',
-            'dash_remote_cmds', 'dash_detection_range'
+            'dash_remote_cmds', 'dash_detection_range', 'dash_alter_bootCount'
         ]) {
             this.matron.on(ev, (...args) => {
                 let fn = 'handle_'+ev
@@ -152,6 +152,16 @@ class Dashboard {
         // case "rtlsdr": info.type = dev.attr.prod; info.attr = "?Mhz"; break
         // }
         return info
+    }
+
+    handle_dash_alter_bootCount(obj) {
+        if (!obj?.bootCount) return
+        const bc = parseInt(obj.bootCount)
+        if (bc < 1 || bc > 1000) return
+        console.log("Setting bootCount to", bc)
+        Machine.bootCount = bc
+        FlexDash.set('machineinfo', Machine)
+        Fs.writeFileSync("/etc/sensorgnome/bootcount", bc.toString() + '\n')
     }
 
     // update the number of radios connected on devAdded/Removed
