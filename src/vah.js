@@ -289,7 +289,7 @@ VAH.prototype.checkRatesReply = function(reply) {
             if (df > 0) {
                 const rate = df / dt * 1000;
                 this.matron.emit("vahRate", p, now, rate);
-                console.log(`VAH rate for ${p}: nominal ${info.rate}, actual ${rate.toFixed(0)} frames/sec`);
+                //console.log(`VAH rate for ${p}: nominal ${info.rate}, actual ${rate.toFixed(0)} frames/sec`);
                 if (!(rate > info.rate*0.80 && rate < info.rate*1.20)) {
                     console.log(`VAH rate for ${p} is out of range`);
                     this.matron.emit("devStalled", p);

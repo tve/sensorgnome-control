@@ -31,6 +31,10 @@ const URL_CONN = 'http://connectivitycheck.gstatic.com/generate_204' // Android 
 const MAX_SIZE = 10*1024*1024 // 10MB max archive size (well, actually a little more)
 const AUTH = 'cookie' // switch between cookie from sensorgnome.net and login into motus.org
 
+// Using curl for manual testing:
+// curl -v "https://motus.org/api/receivers/deployments?json=\{\"date\":\"$(date -u +%Y%m%d%H%M%S)\"\}"
+//  | jq '.data[] | select(.receiverID == "SG-68B4RPI33F06")'
+
 // https://stackoverflow.com/a/67729663/3807231
 function stream2buffer(stream) {
     return new Promise((resolve, reject) => {
@@ -301,7 +305,7 @@ class MotusUploader {
         }
     }
 
-    // perform an upload of the given files. Assumes we're already logged (this.session has cookie).
+    // perform an upload of the given files. Assumes we're already logged in (this.session has cookie).
     // Returns upload info if successful, null if duplicate, throws otherwise.
     async performFilesUpload(files) {
         let filename

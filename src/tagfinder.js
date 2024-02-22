@@ -75,7 +75,9 @@ class TagFinder {
             .on("error", ()=>this.childDied())
     
         this.child.stdout.on("data", x => {
-            this.matron.emit("gotTag", x.toString().replace(/^[0-9]/gm, "L$&"))
+            const info = x.toString().replace(/^[0-9]/gm, "L$&")
+            this.matron.emit("gotTag", info)
+            console.log(`Lotek tag: ${info}`)
         })
     }
 

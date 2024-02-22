@@ -1,6 +1,6 @@
 {
         "gps": {
-            "secondsBetweenFixes": 20
+            "secondsBetweenFixes": 60
         },
         "label": "changeMe",
         "memo": "memo for you about this SensorGnome",
