@@ -19,11 +19,14 @@
 
 // avoiding serialport module 'cause it requires native code install which is a PITA given
 // the way we build packages (on x86) and deploy them on ARM
+// (PITA is worth it 'cause just opening the device as a file isn't reliable)
 const {SerialPort} = require('serialport')
 // const {ReadlineParser} = require('@serialport/parser-readline')
 const readline = require("readline")
 
 let didEnum = false
+
+let debugId = 1
 
 class CornellTagXCVR {
   constructor(matron, dev) {
@@ -53,10 +56,9 @@ class CornellTagXCVR {
     })
   }
 
-  devRemoved(dev) {
-    if (!this.dev || dev.path != this.dev.path) return
+  close() {
     if (this.sp) {
-      this.sp.close()
+      if (this.sp.isOpen) this.sp.close()
       this.sp = null
       console.log("Removed " + this.dev.path)
     }
@@ -68,14 +70,22 @@ class CornellTagXCVR {
       clearInterval(this.wd)
       this.wd = null
     }
+  }
+
+  devRemoved(dev) {
+    if (!this.dev || dev.path != this.dev.path) return
+    this.close()
     this.dev = null
   }
 
   init_sp(no_write=false) {
     if (!this.dev) return // device removed
-    this.sp = new SerialPort({ path: this.dev.path, baudRate: 9600 }) // baud rate irrelevant with USB
-    this.sp.on("open", () => {
-      console.log("Opened SerialPort " + this.dev.path)
+    this.dev.state = "init"
+    const path = this.dev.path
+    const sp = new SerialPort({ path: path, baudRate: 9600 }) // baud rate irrelevant with USB
+    const did = debugId++
+    sp.on("open", () => {
+      console.log(`Opened SerialPort #${did} ${path}`)
       // write a version command to see whether the radio supports that
       // apparently the firmware needs some time before it responds...
       if (!no_write) {
@@ -83,26 +93,29 @@ class CornellTagXCVR {
         setTimeout(() => this.checkVersion(), 6000)
       }
     })
-    this.sp.on("close", () => {
-      console.log("Closed SerialPort " + this.dev.path)
+    sp.on("close", () => {
+      console.log(`SerialPort #${did} ${path} was closed`)
+      if (this.dev && !this.dev.state.startsWith("err")) this.dev.state = "err-closed"
     })
-    this.sp.on("error", err => {
-      console.log("Error on SerialPort " + this.dev?.path + ": " + err.message)
-      if (this.sp?.port) this.sp.close()
+    sp.on("error", err => {
+      console.log(`Error on SerialPort #${did} ${path}: ${err.message}\nStack: ${err.stack}`)
+      if (this.dev && !this.dev.state.startsWith("err")) this.dev.state = "err-serialerror"
+      if (sp.isOpen) sp.close()
       if (this.retries++ < 3) {
         setTimeout(() => {
             this.init_sp()
         }, this.retries < 3 ? 10000 : 60000)
       }
+      // note, could issue `usbreset ${this.dev.usbPath.replace(':','/')}` if retries >3
     })
     // hook up the parser to read incoming data
     if (0) {
       const parser = new ReadlineParser({ delimiter: "\r\n" })
       parser.on("data", this.this_gotTag)
-      this.sp.pipe(parser)
+      sp.pipe(parser)
     } else {
       this.buffer = ""
-      this.sp.on("data", data => {
+      sp.on("data", data => {
         //console.log(`CTT got: <${data.toString().trim()}>`)
         this.buffer += data.toString()
         while (true) {
@@ -114,12 +127,14 @@ class CornellTagXCVR {
         }
       })
     }
-    console.log("Starting read stream using SerialPort at", this.dev.path)
+    this.sp = sp
+    console.log("Starting read stream using SerialPort at", path)
   }
 
   // Not used! (see constructor)
   init(no_write=false) {
     if (!this.dev) return // device removed
+    this.dev.state = "init"
     Fs.open(this.dev.path, "r+", (err, fd) => {
       if (err) {
         console.log("Error opening " + this.dev.path + ": " + err.message)
@@ -165,18 +180,19 @@ class CornellTagXCVR {
     if (this.sp) {
       this.sp.write("version\r\n", (err, n) => {
         if (err) {
-          console.log(`Error writing to ${this.dev.path}: ${err}`)
+          console.log(`Error writing to ${this.dev.path}: ${err} (retrying)`)
           // reopen device
-          if (this.sp?.port) this.sp.close()
+          this.close()
           this.init_sp(true)
         }
       })
     } else if (this.fd != null) {
+      // code section if not using SerialPort
       Fs.write(this.fd, "version\r\n", (err, n) => {
         if (err?.code == "EBADF") {
           console.log(`Cannot write to ${this.dev.path}, assuming old firmware`)
           // reopen the device and ensure we don't write again: it gets hung due to the write
-          this.devRemoved(this.dev.path)
+          this.close()
           this.init(true)
         } else if (err) {
           console.log(`Error writing to ${this.dev.path}: (${err.code}) ${err}`)
@@ -190,12 +206,16 @@ class CornellTagXCVR {
   checkVersion() {
     if (this.gotVersion == 0) {
       console.log(`No version response from ${this.dev.path}, assuming old firmware`)
-      this.devRemoved(this.dev.path)
-      if (this.fd) {
-        this.init(true)
-      } else {
-        this.init_sp(true)
-      }
+      this.close()
+      // give removal/close/... time to propagate before reopening
+      setTimeout(() => {
+        console.log("Reopening " + this.dev.path)
+        if (this.fd) {
+          this.init(true)
+        } else {
+          this.init_sp(true)
+        }
+      }, 1000)
     }
   }
 
@@ -209,19 +229,24 @@ class CornellTagXCVR {
         // response to a 'version' command with firmware version
         this.matron.emit("cttRadioVersion", { port, version: record.firmware })
         this.gotVersion = now_secs
+        this.dev.state = "running"
         if (this.wd == null) {
           console.log(`CTT radio on port ${port} has firmware ${record.firmware}`)
           this.wd = setInterval(() => {
-            if (now_secs - this.gotVersion > 60)
+            if (now_secs - this.gotVersion > 60) {
               console.log(`CTT radio on port ${port} is not responding`)
+              this.dev.state = "err-notresponding"
+            }
             this.askVersion()
           }, 60000)
         }
       } else if (record.key) {
         // response to a command (dunno what that corresponds to...)
         this.matron.emit("cttRadioResponse", { port, response: record })
+        this.dev.state = "running"
       } else if (record.data?.tag || record.data?.id) {
         // tag detection
+        this.dev.state = "running"
         var tag = record.data?.tag || record.data
         var rssi = record.data?.rssi || record.meta?.rssi
         if (!('error_bits' in tag) || tag.error_bits == 0) {
@@ -259,6 +284,7 @@ class CornellTagXCVR {
       var vals = record.split(",")
       var tag = vals.shift() // Tag ID should be the first field
       if (tag) {
+        this.dev.state = "running"
         var now_secs = Date.now() / 1000
         var rssi = vals.shift() // RSSI should be the second field
         var lifetag_record = ["T" + this.dev.attr.port, now_secs, tag, rssi].join(",") // build the values to generate a CSV row
