@@ -274,6 +274,8 @@ VAH.prototype.checkRates = function() {
     this.vahSubmit("list", this.this_checkRatesReply);
 };
 
+var logRateCnt = 0;
+
 VAH.prototype.checkRatesReply = function(reply) {
     // check that all the plugins are producing data at the correct rate
     const now = Date.now()
@@ -289,9 +291,10 @@ VAH.prototype.checkRatesReply = function(reply) {
             if (df > 0) {
                 const rate = df / dt * 1000;
                 this.matron.emit("vahRate", p, now, rate);
-                //console.log(`VAH rate for ${p}: nominal ${info.rate}, actual ${rate.toFixed(0)} frames/sec`);
+		if (logRateCnt++ < 100)
+                    console.log(`VAH rate for ${p}: nominal ${info.rate}, actual ${rate.toFixed(0)} frames/sec`);
                 if (!(rate > info.rate*0.80 && rate < info.rate*1.20)) {
-                    console.log(`VAH rate for ${p} is out of range`);
+                    console.log(`VAH rate for ${p} is out of range: nominal ${info.rate}, actual ${rate.toFixed(0)} frames/sec`);
                     this.matron.emit("devStalled", p);
                 }
             }
