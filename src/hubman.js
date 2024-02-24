@@ -30,6 +30,7 @@
      attr: list of attribute settings.  Following the example above,
            this would be {type:"funcubePro", port:3, alsaDev:2, usbPath:"1:22"}
      stat: filesystem stat object
+     state: "stopped" typ transitions to: "stopped|init|running|err-xxx"
    }
 
   "devRemoved" : a device has been removed from a USB port, arg is:
@@ -104,7 +105,7 @@ class HubMan {
         try {
             let stat = Fs.statSync(path)
             if (! this.devs[port]) {
-                this.devs[port] = {path, attr, stat}
+                this.devs[port] = {path, attr, stat, state: "init"}
                 console.log(`Added ${path} port=${port} attr=` + JSON.stringify(this.devs[port]))
                 this.matron.emit("devAdded", this.devs[port])
             }
@@ -113,6 +114,7 @@ class HubMan {
             if (e.code !== "ENOENT") console.log(`Error: Removed ${path} due to ${e}`)
             // only emit a message if we already knew about this device
             if (this.devs[port]) {
+                this.devs[port].state = "err-removed"
                 this.matron.emit("devRemoved", this.devs[port])
                 delete this.devs[port]
             } else console.log("Removed unknown device", path)
