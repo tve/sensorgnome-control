@@ -51,6 +51,9 @@ class HubMan {
         this.root = root
         this.portmapfile = portmapfile
         this.devs = {} // port-number-indexed map of devices and their properties
+
+        matron.on("VAHstarted", () => this.VAHstarted())
+        matron.on("VAHdied", () => this.VAHdied())
     }
 
     // return a list of attached devices
@@ -184,46 +187,21 @@ class HubMan {
         }
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/* TvE: is this really needed???
-    this.VAHstarted =  function() {
+    VAHstarted() {
         // if device server restarted, re-start all devices as appropriate
         this.enumeratePreExistingDevices()
     }
 
-    this.VAHdied =  function() {
+    VAHdied() {
         // if VAH died, forget usbaudio and funcube devices when VAH
         // restarts, we'll re-enumerate
-        for (var i in devs) {
-            if (devs[i] && devs[i].attr.type.match(/funcube|usbAudio|rtlsdr/)) {
-                matron.emit("devRemoved", Util._extend({}, devs[i]))
-                delete devs[i]
+        for (var i in this.devs) {
+            if (this.devs[i] && ('alsaDev' in this.devs[i].attr)) {
+                this.matron.emit("devRemoved", {...this.devs[i]})
+                delete this.devs[i]
             }
         }
     }
-
-
-    // callbacks
-    this.this_start = this.start.bind(this)
-    this.this_VAHstarted = this.VAHstarted.bind(this)
-    this.this_VAHdied = this.VAHdied.bind(this)
-
-    matron.on("VAHstarted", this.this_VAHstarted)
-    matron.on("VAHdied", this.this_VAHdied)
-*/
 
 }
 

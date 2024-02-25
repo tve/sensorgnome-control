@@ -131,7 +131,7 @@ class CornellTagXCVR {
     console.log("Starting read stream using SerialPort at", path)
   }
 
-  // Not used! (see constructor)
+  // Not used! (determined in constructor)
   init(no_write=false) {
     if (!this.dev) return // device removed
     this.dev.state = "init"

@@ -117,12 +117,14 @@ Sensor.prototype.initDone = function() {
 
 Sensor.prototype.vahOpenReply = function (reply, self) {
     if (reply.error) {
-        // console.log("sensor vahopenreply got " + JSON.stringify(reply) + "\n");
+        console.log(`sensor vahopenreply port ${self.dev.attr?.port} got ${JSON.stringify(reply)}\n`);
         // schedule a retry on this device (every 10 seconds up to 10 times)
-        if (++self.numOpenRetries < 10) {
+        if (++self.numOpenRetries < 3) {
             setTimeout (self.this_init, 10000);
         } else {
             self.matron.emit("bad", "Unable to open VAH device: " + JSON.stringify(self.dev));
+            self.dev.state = "err-cannotopen";
+            this.hw_stalled();
         }
         return;
     }
@@ -151,8 +153,7 @@ Sensor.prototype.vahOpenReply = function (reply, self) {
         for (var p in plugin.params)
 	    pluginParams += " " + plugin.params[p].name + " " + plugin.params[p].value;
 
-	// create a command for vamp-alsa-host to attach this plugin to the device
-
+	    // create a command for vamp-alsa-host to attach this plugin to the device
         self.matron.emit("vahSubmit", Util.format("attach %d %s %s %s %s%s", self.dev.attr.port, self.getPluginLabel(plugin.letter), plugin.library, plugin.name, plugin.outputID, pluginParams), self.vahAttachReply, {self:self, i:i});
     }
 };
@@ -167,14 +168,13 @@ Sensor.prototype.getPluginLabel = function(letter) {
 };
 
 Sensor.prototype.vahAttachReply = function (reply, pars) {
-
     var self = pars.self, pno=pars.i, plugin = self.plan.plugins[pno];
     if (reply.error) {
         self.matron.emit("bad", "Error: " + reply.error + "\n so I'm unable to attach plugin " + plugin.library + ":" + plugin.name + ":" + plugin.outputID + " to " + JSON.stringify(self.dev));
+        self.dev.state = "err-cannotattach";
     } else {
         self.matron.emit("vahAccept", self.getPluginLabel(plugin.letter));
     }
-
 };
 
 Sensor.prototype.setupDevSchedule = function(self) {
@@ -225,10 +225,12 @@ Sensor.prototype.startStop = function(newState, oldState, self) {
         clearTimeout(self.restartTimeout);
         self.restartTimeout = null;
     }
-    var cmd = (self.on ? "start " : "stop ") + self.dev.attr.port;
     self.startStopRawFiler(self.on);
     self.hw_startStop(self.on);
-    self.matron.emit("vahSubmit", cmd, self.startStopReply, self);
+    var cmd = self.on ? "start" : "stop";
+    self.matron.emit("vahStartStop", cmd, self.dev.attr.port, self.startStopReply, self);
+    // self.matron.emit("vahSubmit", cmd, self.startStopReply, self);
+    if (this.dev) this.dev.state = (self.on ? "running" : "stopped");
 };
 
 Sensor.prototype.startStopReply = function(reply, self) {
@@ -238,6 +240,7 @@ Sensor.prototype.startStopReply = function(reply, self) {
 
 Sensor.prototype.stalled = function() {
     // call subclass function
+    if (!this.dev.state.startsWith("err-")) this.dev.state = "err-stalled";
     this.hw_stalled();
 };
 

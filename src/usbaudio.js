@@ -11,10 +11,11 @@
 
 */
 
+// USBAudio extends Sensor
 USBAudio = function(matron, dev, devPlan) {
-// devPlan has items:
-// label: text label for output from this device
-// plan: the actual plan
+    // devPlan has items:
+    // label: text label for output from this device
+    // plan: the actual plan
 
     Sensor.Sensor.call(this, matron, dev, devPlan);
     if(dev.attr.type.match(/funcube/)) {
@@ -66,16 +67,13 @@ USBAudio.prototype.paramNameTables = {
 };
 
 USBAudio.prototype.hw_devPath = function() {
-
     // the device path known by vamp-alsa-host/DevMinder
     // looks like hw:ALSADEV
-
     return "hw:" + this.dev.attr.alsaDev;
 };
 
 USBAudio.prototype.hw_init = function(callback) {
     // nothing to do for usbaudio; handled by VAH
-// DEBUG:    console.log("usbaudio: hw_init\n");
     callback();
 };
 
@@ -87,7 +85,6 @@ USBAudio.prototype.translateParamName = function(name) {
     // convert parameter name to something appropriate for the
     // command-line parameter setting program by looking it up
     // in paramNameTable.  If not found, leave name as-is.
-
     if (this.paramNameTable)
         return this.paramNameTable[name] || name;
     return name;
@@ -116,9 +113,7 @@ USBAudio.prototype.hw_setParam = function(parSetting, callback) {
     if (this.command) {
         var parName = this.translateParamName(parSetting.par);
         console.log(`USBAudio ${this.dev.attr.usbPath}: setting ${parSetting.par} to ${parSetting.val}`);
-        ChildProcess.execFile(this.command,
-                            this.baseArgs.concat(parName, parSetting.val),
-                            callback);
+        ChildProcess.execFile(this.command, this.baseArgs.concat(parName, parSetting.val), callback);
     }
 };
 
