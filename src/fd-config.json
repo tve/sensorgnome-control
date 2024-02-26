@@ -509,7 +509,7 @@
       "rows": 2,
       "cols": 3,
       "static": {
-        "title": "pp",
+        "title": "",
         "widgets": [
           "w02325",
           "w06813",

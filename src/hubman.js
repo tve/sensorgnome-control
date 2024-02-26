@@ -55,8 +55,8 @@ class HubMan {
         matron.on("VAHstarted", () => this.VAHstarted())
         matron.on("VAHdied", () => this.VAHdied())
         matron.on("devState", (port, state, msg) => this.setDevState(port, state, msg))
-        setInterval(()=> console.log(`Hubman devices: ${Object.values(this.devs).map(d => 
-            JSON.stringify([d.attr?.port, d.attr?.type, d.state, d.msg]))}`), 20_000)
+        // setInterval(()=> console.log(`Hubman devices: ${Object.values(this.devs).map(d => 
+        //     JSON.stringify([d.attr?.port, d.attr?.type, d.state, d.msg]))}`), 20_000)
     }
 
     // return a list of attached devices
@@ -194,6 +194,7 @@ class HubMan {
         if (port in this.devs) {
             this.devs[port].state = state
             this.devs[port].msg = msg || ""
+            console.log(`devState: ${port}: ${state} (${msg})`)
         } else {
             console.log("Error: setDevState for unknown port", port)
         }

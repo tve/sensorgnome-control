@@ -95,9 +95,9 @@ Sensor.prototype.close = function() {
 
 // devSDtalled event handler, triggered by VAH when rate is out of bounds
 Sensor.prototype.devStalled = function(vahDevLabel, message) {
-    console.log("Got devStalled for " + vahDevLabel);
+    // console.log("Got devStalled for " + vahDevLabel);
     if (vahDevLabel == this.dev.attr.port) {
-        this.matron.emit("devState", this.dev.attr.port, "stalled", message);
+        this.matron.emit("devState", this.dev.attr.port, "error", message);
         this.hw_stalled(); // call subclass function
     }
 };
@@ -126,13 +126,13 @@ Sensor.prototype.initDone = function() {
 
 Sensor.prototype.vahOpenReply = function (reply, self) {
     if (reply.error) {
-        console.log(`sensor vahopenreply port ${self.dev.attr?.port} got ${JSON.stringify(reply)}\n`);
+        console.log(`sensor VAH open reply port ${self.dev.attr?.port} got ${JSON.stringify(reply)}\n`);
         // schedule a retry on this device (every 10 seconds up to 10 times)
+        self.matron.emit("devState", self.dev.attr.port, "error", "VAH cannot open device");
         if (++self.numOpenRetries < 3) {
             setTimeout (self.this_init, 10000);
         } else {
-            self.matron.emit("bad", "Unable to open VAH device: " + JSON.stringify(self.dev));
-            self.matron.emit("devState", self.dev.attr.port, "error", reply);
+            self.matron.emit("bad", "Unable to open VAH device: " + self.dev.path, reply.error);
             self.hw_stalled();
         }
         return;
