@@ -242,15 +242,15 @@
       "rows": 1,
       "cols": 2,
       "static": {
-        "title": "Invalid Ports",
+        "title": "Radio errors",
         "value": "0",
         "color": "#4CAF50",
         "high_threshold": 1,
         "high_color": "#F44336",
-        "popup_info": "Ports must be numbered 0-9; ports >9 are invalid"
+        "popup_info": ""
       },
       "dynamic": {
-        "value": "radios/bad"
+        "value": "radio_state/errors"
       },
       "id": "w05188"
     },
@@ -509,12 +509,13 @@
       "rows": 2,
       "cols": 3,
       "static": {
-        "title": "",
+        "title": "pp",
         "widgets": [
           "w02325",
           "w06813",
           "w05188",
-          "w07260"
+          "w07260",
+          "w01644"
         ],
         "solid": false
       },
@@ -1940,6 +1941,23 @@
       },
       "id": "w02046",
       "output": "alter_bootCount"
+    },
+    "w01644": {
+      "kind": "PopupButton",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "errors",
+        "color": "#FFC107",
+        "text": "tada",
+        "popup_info": "null"
+      },
+      "dynamic": {
+        "color": "radio_state/color",
+        "enabled": "radio_state/enabled",
+        "text": "radio_state/text"
+      },
+      "id": "w01644"
     }
   },
   "grids": {

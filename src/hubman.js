@@ -54,6 +54,9 @@ class HubMan {
 
         matron.on("VAHstarted", () => this.VAHstarted())
         matron.on("VAHdied", () => this.VAHdied())
+        matron.on("devState", (port, state, msg) => this.setDevState(port, state, msg))
+        setInterval(()=> console.log(`Hubman devices: ${Object.values(this.devs).map(d => 
+            JSON.stringify([d.attr?.port, d.attr?.type, d.state, d.msg]))}`), 20_000)
     }
 
     // return a list of attached devices
@@ -108,7 +111,7 @@ class HubMan {
         try {
             let stat = Fs.statSync(path)
             if (! this.devs[port]) {
-                this.devs[port] = {path, attr, stat, state: "init"}
+                this.devs[port] = {path, attr, stat, state: "init", msg:""}
                 console.log(`Added ${path} port=${port} attr=` + JSON.stringify(this.devs[port]))
                 this.matron.emit("devAdded", this.devs[port])
             }
@@ -117,9 +120,9 @@ class HubMan {
             if (e.code !== "ENOENT") console.log(`Error: Removed ${path} due to ${e}`)
             // only emit a message if we already knew about this device
             if (this.devs[port]) {
-                this.devs[port].state = "err-removed"
-                this.matron.emit("devRemoved", this.devs[port])
+                const d = this.devs[port]
                 delete this.devs[port]
+                this.matron.emit("devRemoved", d)
             } else console.log("Removed unknown device", path)
             //console.log(`event ${event} for ${path}: ${e.stack}`)
         }
@@ -184,6 +187,15 @@ class HubMan {
         for (let i=11; i<100; ++i) {
             let p = ""+i
             if (! this.devs[p]) return p
+        }
+    }
+
+    setDevState(port, state, msg) {
+        if (port in this.devs) {
+            this.devs[port].state = state
+            this.devs[port].msg = msg || ""
+        } else {
+            console.log("Error: setDevState for unknown port", port)
         }
     }
 

@@ -282,6 +282,9 @@ VAH.prototype.checkRates = function() {
 var logRateCnt = 0;
 
 VAH.prototype.checkRatesReply = function(reply) {
+    // FIXME: `p` in this function refers to a value like `p2` where the `p` really stands for
+    // VAH Plugin, but `p` is also used as Port designator here. The use of the same letter is
+    // actually a coincidence. It works, but not great.
     // check that all the plugins are producing data at the correct rate
     const now = Date.now()
     // console.log("VAH rates: ", JSON.stringify(reply, null, 2));
@@ -307,13 +310,14 @@ VAH.prototype.checkRatesReply = function(reply) {
                 console.log(`VAH rate for ${p}: nominal ${info.rate}, actual ${rate.toFixed(0)} frames/sec`);
             if (!ok) fp.bad++; else fp.bad = 0;
             if (fp.bad > 6) {
-                console.log(`VAH rate for ${p} is out of range: nominal ${info.rate}, actual ${rate.toFixed(0)} frames/sec`);
-                this.matron.emit("devStalled", p);
+                const msg = `VAH rate for ${p} is out of range: nominal ${info.rate}, actual ${rate.toFixed(0)} frames/sec`
+                console.log(msg);
+                this.matron.emit("devStalled", p, msg);
             }
         } else if (fp.frames > 0 || Date.now() - fp.at > 60_000) {
             // plugin has died
             console.log(`VAH plugin ${p} has died`);
-            this.matron.emit("devStalled", p);
+            this.matron.emit("devStalled", p, `port ${p} is not producing data`);
         }
     }
 };

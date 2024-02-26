@@ -46,7 +46,7 @@ Matron.prototype.devRemoved = function(dev) {
 
 Matron.prototype.VAHdied = function() {
     // destroy device objects, since device server has died
-    // TvE: this is also done in hubman's VAHdied callback...
+    // TvE: this is actually done in hubman's VAHdied callback...
     // for (var i in this.devices) {
     //     if ('alsaDev' in this.devices[i].attr) {
     //         this.devices[i] = null;

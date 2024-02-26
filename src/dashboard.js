@@ -38,7 +38,7 @@ class Dashboard {
             'df', 'sdcardUse', 'vahData', 'netDefaultRoute', 'netInet', 'netMotus', 'netWifiState',
             'netHotspotState', 'netWifiConfig', 'portmapFile', 'tagDBInfo', 'motusRecv',
             'motusUploadResult', 'netDefaultGw', 'netDNS', 'lotekFreq', 'netCellState', 'netCellReason',
-            'netCellInfo', 'netCellConfig', 'cttRadioVersion', 'vahRate', 'vahFrames',
+            'netCellInfo', 'netCellConfig', 'cttRadioVersion', 'vahRate', 'vahFrames', 'devState',
             // dashboard events triggered by a message from FlexDash
             'dash_download', 'dash_upload', 'dash_deployment_update', 'dash_enable_wifi',
             'dash_enable_hotspot', 'dash_config_wifi', 'dash_update_portmap', 'dash_creds_update',
@@ -174,6 +174,41 @@ class Dashboard {
             bad: Object.keys(HubMan.devs).filter(p => (p < 1 || p > 10) && HubMan.devs[p].attr?.radio).length,
         }
     }
+
+    // update rge state of all the radios, triggered by devAdded/Removed and also devState
+    handle_devState() {
+        const green = "#4CAF50", red = "#F44336", yellow = "#FFC107"
+        let color = green, cnt = 0, text = []
+        for (const dev of Object.values(HubMan.devs)) {
+            switch (dev.state) {
+            case "running": break;
+            case "init":
+                if (color == green) color = yellow
+                cnt++
+                text.push(`port ${dev.attr.port} is initializing`)
+                break;
+            case "error":
+                color = red
+                cnt++
+                text.push(`port ${dev.attr.port}: ${dev.msg}`)
+                break;
+            default:
+                if (color == green) color = yellow
+                cnt++
+                text.push(`port ${dev.attr.port}: ${dev.state}`)
+                break;
+            }
+            if (dev.attr?.radio < 1 || dev.attr?.radio > 10) {
+                color = red
+                cnt++
+                text.push(`port ${dev.attr.port}: invalid port, must be in range [1..10]`)
+            }
+        }
+        text = text.join('\n\n')
+        const title = cnt>0 ? `${cnt} errors` : '--'
+        console.log("Radio state:", JSON.stringify({ color, enabled: cnt>0, title, text }))
+        FlexDash.set('radio_state', { color, enabled: cnt>0, errors: cnt, title, text }) // title doesn't work :-(
+    }
     
     handle_gotGPSFix(fix) { FlexDash.set('gps', fix) } // {lat, lon, alt, time, state, ...}
     handle_chrony(info) { FlexDash.set('chrony', info) } // {rms_error, time_source}
@@ -185,11 +220,13 @@ class Dashboard {
         FlexDash.set(`devices/${info.attr.port}`, this.genDevInfo(info))
         FlexDash.set(`radios`, this.updateNumRadios())
         this.tsAddDevice(info)
+        this.handle_devState()
     }
     handle_devRemoved(info){
         FlexDash.unset(`devices/${info.attr.port}`)
         FlexDash.set(`radios`, this.updateNumRadios())
         this.tsRemoveDevice(info)
+        this.handle_devState()
     }
     handle_cttRadioVersion(info) {
         const v = info.version.replace(/\..*/, '')
@@ -931,6 +968,7 @@ class Dashboard {
                 counts: FlexDash.get('radios'),
                 devices: FlexDash.get('devices'),
                 samples: FlexDash.get('samples'),
+                state: FlexDash.get('radio_state'),
             },
             detections: {
                 series: FlexDash.get('detection_series'),

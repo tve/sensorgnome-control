@@ -77,7 +77,7 @@ class TagFinder {
         this.child.stdout.on("data", x => {
             const info = x.toString().replace(/^[0-9]/gm, "L$&")
             this.matron.emit("gotTag", info)
-            console.log(`Lotek tag: ${info}`)
+            console.log(`Lotek tag: ${info.trim()}`)
         })
     }
 

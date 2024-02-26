@@ -80,7 +80,7 @@ class CornellTagXCVR {
 
   init_sp(no_write=false) {
     if (!this.dev) return // device removed
-    this.dev.state = "init"
+    this.matron.emit("devState", this.dev.attr.port, "init")
     const path = this.dev.path
     const sp = new SerialPort({ path: path, baudRate: 9600 }) // baud rate irrelevant with USB
     const did = debugId++
@@ -88,18 +88,22 @@ class CornellTagXCVR {
       console.log(`Opened SerialPort #${did} ${path}`)
       // write a version command to see whether the radio supports that
       // apparently the firmware needs some time before it responds...
-      if (!no_write) {
+      if (no_write) {
+        this.matron.emit("devState", this.dev.attr.port, "running") // we can't know...
+      } else {
         setTimeout(() => this.askVersion(), 2000)
         setTimeout(() => this.checkVersion(), 6000)
       }
     })
     sp.on("close", () => {
       console.log(`SerialPort #${did} ${path} was closed`)
-      if (this.dev && !this.dev.state.startsWith("err")) this.dev.state = "err-closed"
+      if (this.dev && !this.dev.state.startsWith("err"))
+        this.matron.emit("devState", this.dev.attr.port, "error", "port was closed");
     })
     sp.on("error", err => {
       console.log(`Error on SerialPort #${did} ${path}: ${err.message}\nStack: ${err.stack}`)
-      if (this.dev && !this.dev.state.startsWith("err")) this.dev.state = "err-serialerror"
+      if (this.dev && !this.dev.state.startsWith("err"))
+        this.matron.emit("devState", this.dev.attr.port, "error", err.message);
       if (sp.isOpen) sp.close()
       if (this.retries++ < 3) {
         setTimeout(() => {
@@ -134,7 +138,7 @@ class CornellTagXCVR {
   // Not used! (determined in constructor)
   init(no_write=false) {
     if (!this.dev) return // device removed
-    this.dev.state = "init"
+    this.matron.emit("devState", this.dev.attr.port, "init");
     Fs.open(this.dev.path, "r+", (err, fd) => {
       if (err) {
         console.log("Error opening " + this.dev.path + ": " + err.message)
@@ -228,14 +232,15 @@ class CornellTagXCVR {
         if (this.attr?.attr) this.attr.attr.type = "CTTv3"
         // response to a 'version' command with firmware version
         this.matron.emit("cttRadioVersion", { port, version: record.firmware })
+        this.matron.emit("devState", this.dev.attr.port, "running");
         this.gotVersion = now_secs
-        this.dev.state = "running"
         if (this.wd == null) {
           console.log(`CTT radio on port ${port} has firmware ${record.firmware}`)
           this.wd = setInterval(() => {
             if (now_secs - this.gotVersion > 60) {
-              console.log(`CTT radio on port ${port} is not responding`)
-              this.dev.state = "err-notresponding"
+              const msg = `CTT radio on port ${port} is not responding`
+              console.log(msg)
+              this.matron.emit("devState", this.dev.attr.port, "error", msg);
             }
             this.askVersion()
           }, 60000)
@@ -243,10 +248,10 @@ class CornellTagXCVR {
       } else if (record.key) {
         // response to a command (dunno what that corresponds to...)
         this.matron.emit("cttRadioResponse", { port, response: record })
-        this.dev.state = "running"
+        this.matron.emit("devState", this.dev.attr.port, "running");
       } else if (record.data?.tag || record.data?.id) {
         // tag detection
-        this.dev.state = "running"
+        this.matron.emit("devState", this.dev.attr.port, "running");
         var tag = record.data?.tag || record.data
         var rssi = record.data?.rssi || record.meta?.rssi
         if (!('error_bits' in tag) || tag.error_bits == 0) {
@@ -284,7 +289,7 @@ class CornellTagXCVR {
       var vals = record.split(",")
       var tag = vals.shift() // Tag ID should be the first field
       if (tag) {
-        this.dev.state = "running"
+        this.matron.emit("devState", this.dev.attr.port, "running");
         var now_secs = Date.now() / 1000
         var rssi = vals.shift() // RSSI should be the second field
         var lifetag_record = ["T" + this.dev.attr.port, now_secs, tag, rssi].join(",") // build the values to generate a CSV row

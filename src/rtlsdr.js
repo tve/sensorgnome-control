@@ -254,7 +254,10 @@ RTLSDR.prototype.serverDied = function(code, signal) {
     console.log("rtl_tcp server died, code:" + code + " signal:" + signal)
     this.server = null
     this.close() // in Sensor
-    if (!this.killing) console.log("rtl_tcp server died, code:" + code + " signal:" + signal)
+    if (!this.killing) {
+        console.log("rtl_tcp server died, code:" + code + " signal:" + signal)
+        this.matron.emit('devState', this.dev.attr?.port, "error", `rtl_tcp server died, exit code ${code}`)
+    }
     if (this.restart || (code && !signal)) this.hw_restart();
 };
 
