@@ -184,7 +184,7 @@ class CornellTagXCVR {
     if (this.sp) {
       this.sp.write("version\r\n", (err, n) => {
         if (err) {
-          console.log(`Error writing to ${this.dev.path}: ${err} (retrying)`)
+          console.log(`Error writing to ${this.dev?.path}: ${err} (retrying)`)
           // reopen device
           this.close()
           this.init_sp(true)
@@ -194,12 +194,12 @@ class CornellTagXCVR {
       // code section if not using SerialPort
       Fs.write(this.fd, "version\r\n", (err, n) => {
         if (err?.code == "EBADF") {
-          console.log(`Cannot write to ${this.dev.path}, assuming old firmware`)
+          console.log(`Cannot write to ${this.dev?.path}, assuming old firmware`)
           // reopen the device and ensure we don't write again: it gets hung due to the write
           this.close()
           this.init(true)
         } else if (err) {
-          console.log(`Error writing to ${this.dev.path}: (${err.code}) ${err}`)
+          console.log(`Error writing to ${this.dev?.path}: (${err.code}) ${err}`)
         }
       })
     }
@@ -209,11 +209,11 @@ class CornellTagXCVR {
   // reopen the device 'cause it gets stuck due to the attempted 'version\r\n' write
   checkVersion() {
     if (this.gotVersion == 0) {
-      console.log(`No version response from ${this.dev.path}, assuming old firmware`)
+      console.log(`No version response from ${this.dev?.path}, assuming old firmware`)
       this.close()
       // give removal/close/... time to propagate before reopening
       setTimeout(() => {
-        console.log("Reopening " + this.dev.path)
+        console.log("Reopening " + this.dev?.path)
         if (this.fd) {
           this.init(true)
         } else {
@@ -251,7 +251,8 @@ class CornellTagXCVR {
         this.matron.emit("devState", this.dev.attr.port, "running");
       } else if (record.data?.tag || record.data?.id) {
         // tag detection
-        this.matron.emit("devState", this.dev.attr.port, "running");
+        if (this.dev.state != "running")
+          this.matron.emit("devState", this.dev.attr.port, "running");
         var tag = record.data?.tag || record.data
         var rssi = record.data?.rssi || record.meta?.rssi
         if (!('error_bits' in tag) || tag.error_bits == 0) {
@@ -289,7 +290,8 @@ class CornellTagXCVR {
       var vals = record.split(",")
       var tag = vals.shift() // Tag ID should be the first field
       if (tag) {
-        this.matron.emit("devState", this.dev.attr.port, "running");
+        if (this.dev.state != "running")
+          this.matron.emit("devState", this.dev.attr.port, "running");
         var now_secs = Date.now() / 1000
         var rssi = vals.shift() // RSSI should be the second field
         var lifetag_record = ["T" + this.dev.attr.port, now_secs, tag, rssi].join(",") // build the values to generate a CSV row
