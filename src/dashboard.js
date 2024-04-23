@@ -83,7 +83,11 @@ class Dashboard {
         this.handle_dash_detection_range(TimeSeries.ranges[0])
         setInterval(() => this.tsSave(), 60000)
 
-        this.handle_motusRecv({})
+        // prime some data
+        setTimeout(() => {
+            this.handle_motusRecv({})
+            this.handle_devState()
+        }, 1000)
 
         console.log("Dashboard handlers registered")
     }
@@ -175,41 +179,43 @@ class Dashboard {
         }
     }
 
-    // update rge state of all the radios, triggered by devAdded/Removed and also devState
+    // update the state of all the radios, triggered by devAdded/Removed and also devState
     handle_devState() {
-        const green = "#4CAF50", red = "#F44336", yellow = "#FFC107"
-        let color = green, cnt = 0, text = []
-        for (const dev of Object.values(HubMan.devs)) {
-            switch (dev.state) {
-            case "running":
-                text.push(`port ${dev.attr.port} is running OK`)
-                break;
-            case "init":
-                if (color == green) color = yellow
-                cnt++
-                text.push(`port ${dev.attr.port} is initializing`)
-                break;
-            case "error":
-                color = red
-                cnt++
-                text.push(`port ${dev.attr.port}: ``${dev.msg}```)
-                break;
-            default:
-                if (color == green) color = yellow
-                cnt++
-                text.push(`port ${dev.attr.port}: ${dev.state}`)
-                break;
+        setTimeout(() => { // give HubMan a chance to process the devState event first
+            const green = "#4CAF50", red = "#F44336", yellow = "#FFC107"
+            let color = green, cnt = 0, text = []
+            for (const dev of Object.values(HubMan.devs)) {
+                switch (dev.state) {
+                case "running":
+                    text.push(`port ${dev.attr?.port} is running OK`)
+                    break;
+                case "init":
+                    if (color == green) color = yellow
+                    cnt++
+                    text.push(`port ${dev.attr?.port} is initializing`)
+                    break;
+                case "error":
+                    color = red
+                    cnt++
+                    text.push(`port ${dev.attr?.port}: ``${dev.msg}```)
+                    break;
+                default:
+                    if (color == green) color = yellow
+                    cnt++
+                    text.push(`port ${dev.attr?.port}: ${dev.state}`)
+                    break;
+                }
+                if (dev.attr?.radio < 1 || dev.attr?.radio > 10) {
+                    color = red
+                    cnt++
+                    text.push(`port ${dev.attr?.port}: invalid port, must be in range [1..10]`)
+                }
             }
-            if (dev.attr?.radio < 1 || dev.attr?.radio > 10) {
-                color = red
-                cnt++
-                text.push(`port ${dev.attr.port}: invalid port, must be in range [1..10]`)
-            }
-        }
-        text = cnt > 0 ? text.join('\n\n') : ''
-        const title = cnt>0 ? `${cnt} errors` : '--'
-        console.log("Radio state:", JSON.stringify({ color, enabled: cnt>0, title, text }))
-        FlexDash.set('radio_state', { color, enabled: cnt>0, errors: cnt, title, text }) // title doesn't work :-(
+            text = cnt > 0 ? text.join('\n\n') : ''
+            const title = cnt>0 ? `${cnt} errors` : '--'
+            console.log("Radio state:", JSON.stringify({ color, enabled: cnt>0, title, text }))
+            FlexDash.set('radio_state', { color, enabled: cnt>0, errors: cnt, title, text }) // title doesn't work :-(
+        }, 10)
     }
     
     handle_gotGPSFix(fix) { FlexDash.set('gps', fix) } // {lat, lon, alt, time, state, ...}
