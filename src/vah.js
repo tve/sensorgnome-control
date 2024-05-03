@@ -26,6 +26,7 @@ VAH = function(matron, prog, sockName) {
 
     this.commandQueue = []; // list of commands queued before command connection is established
     this.replyBuf = "";
+    this.dataBuf = "";
     this.quitting = false;
     this.inDieHandler = false;
     this.connectCmdTimeout = null;
@@ -257,7 +258,10 @@ VAH.prototype.vahAccept = function(pluginLabel) {
 };
 
 VAH.prototype.gotData = function(data) {
-    this.matron.emit("vahData", data);
+    this.dataBuf += data.toString();
+    const lines = this.dataBuf.split('\n');
+    this.dataBuf = lines.pop();
+    for (const l of lines) this.matron.emit("vahData", l);
 };
 
 VAH.prototype.quit = function() {

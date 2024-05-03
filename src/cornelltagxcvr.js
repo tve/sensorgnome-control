@@ -259,7 +259,7 @@ class CornellTagXCVR {
           var lifetag_record = ["T" + port, now_secs, tag.id, rssi].join(
             ","
           ) // build the values to generate a CSV row
-          this.matron.emit("gotTag", lifetag_record + "\n")
+          this.matron.emit("gotTag", lifetag_record)
           LifetagOut.write(lifetag_record + "\n")
           console.log(`CTT json tag: ${lifetag_record}`)
         } else {
@@ -295,9 +295,9 @@ class CornellTagXCVR {
         var now_secs = Date.now() / 1000
         var rssi = vals.shift() // RSSI should be the second field
         var lifetag_record = ["T" + this.dev.attr.port, now_secs, tag, rssi].join(",") // build the values to generate a CSV row
-        this.matron.emit("gotTag", lifetag_record + "\n")
+        this.matron.emit("gotTag", lifetag_record)
         // an event can be emitted here for vahdata if interested in streaming to 'all' files
-        // this.matron.emit('vahData', lifetag_record+'\n')
+        // this.matron.emit('vahData', lifetag_record)
         LifetagOut.write(lifetag_record + "\n")
         console.log(`CTT tag: ${lifetag_record}`)
       }

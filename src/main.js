@@ -114,7 +114,7 @@ TheMatron.on("gotGPSFix", function(fix) {
 })
 
 // Propagate input received from vamp-alsa-host, i.e. Lotek pulses, to data file
-TheMatron.on("vahData", (d) => { AllOut.write(d) })
+TheMatron.on("vahData", (d) => { AllOut.write(d + '\n') })
 // Propagate vah setting commands into data file
 TheMatron.on("setParam", (s) => {
     AllOut.write(["S", s.time, s.port, s.par, s.val, s.errCode, s.err].join(',') + "\n")
