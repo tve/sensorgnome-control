@@ -87,7 +87,7 @@
                             },
                             {
                                 "name": "minsnr",
-                                "value": 10
+                                "value": 6
                             },
                             {
                                 "name": "noisesize",
