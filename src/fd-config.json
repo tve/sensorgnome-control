@@ -271,21 +271,6 @@
       },
       "id": "w06078"
     },
-    "w04506": {
-      "kind": "Toggle",
-      "rows": 1,
-      "cols": 2,
-      "static": {
-        "title": "FindTags",
-        "on_value": "on",
-        "off_value": "off",
-        "value": "on",
-        "enabled": false
-      },
-      "dynamic": {},
-      "id": "w04506",
-      "output": null
-    },
     "w08190": {
       "kind": "Stat",
       "rows": 1,
@@ -575,7 +560,7 @@
         "axes": [
           "left"
         ],
-        "popup_info": "Each data point represents one hour, the total chart 100 hours. For CTT, tag detections are shown, for Lotek, radio pulses are shown. (It takes 4 pulses for a tag detection.) Each data point shows the sum of detections during the subsequent 60 minutes.",
+        "popup_info": "Display Lotek tag detections for tags that are in the local tag database.",
         "left_unit": "/hr",
         "left_min": 0
       },
@@ -959,7 +944,7 @@
         ],
         "editable": true,
         "send_all": true,
-        "popup_info": "Direction finding is an experimental feature to help track or locate a tag using a hand-held Sensorgnome. The functionality is very simple: up to two tags can be entered and then detections are only shown for those two tags with the RSSI of the detection.\n"
+        "popup_info": "Direction finding is an experimental feature to help track or locate a tag using a hand-held Sensorgnome. The functionality is very simple: up to two tags can be entered and then detections are only shown for those two tags with the RSSI of the detection.\n\nA '*' in the tag1 field enables the display of all received tags. For Lotek tags that are in the local database, provide the numeric ID, such as '1.2'. For CTT tags provide the hex ID, such as 78336498.\n"
       },
       "dynamic": {
         "data": "df_tags"
@@ -1681,7 +1666,7 @@
         "axes": [
           "left"
         ],
-        "popup_info": "Each data point represents one hour, the total chart 100 hours. For CTT, tag detections are shown, for Lotek, radio pulses are shown. (It takes 4 pulses for a tag detection.) Each data point shows the sum of detections during the subsequent 60 minutes.",
+        "popup_info": "",
         "left_unit": "/hr",
         "left_min": 0,
         "left_decimals": 0
@@ -1702,10 +1687,11 @@
         "widgets": [
           "w06035",
           "w01745",
-          "w04506",
+          "w03243",
           "w03109",
           "w06470"
-        ]
+        ],
+        "solid": false
       },
       "dynamic": {},
       "id": "w00699"
@@ -1811,7 +1797,7 @@
         "axes": [
           "left"
         ],
-        "popup_info": "Each data point represents one hour, the total chart 100 hours. For CTT, tag detections are shown, for Lotek, radio pulses are shown. (It takes 4 pulses for a tag detection.) Each data point shows the sum of detections during the subsequent 60 minutes.",
+        "popup_info": "Display pulses received by the FCD or RTL-SDR radios. It takes a burst of 4 pulses to make a tag detection, and in addition two bursts are required so the inter-burst interval can be measured. The two bursts must be consecutive or have a one burst gap.",
         "left_unit": "/hr",
         "left_min": 0
       },
@@ -1831,8 +1817,8 @@
         "axes": [
           "left"
         ],
-        "popup_info": "Each data point represents one hour, the total chart 100 hours. For CTT, tag detections are shown, for Lotek, radio pulses are shown. (It takes 4 pulses for a tag detection.) Each data point shows the sum of detections during the subsequent 60 minutes.",
-        "left_unit": "dBm",
+        "popup_info": "Background noise level reported by the radios when a pulse is received. The background noise is only measured/reported when a pulse arrives so a test tag in the vicinity is pretty much required (unless there are tagged birds around). The noise floor measurement when a random 'noise' pulse is received is likely not to be accurate.",
+        "left_unit": "dB",
         "left_min": null,
         "span_gaps": []
       },
@@ -1911,7 +1897,8 @@
       "static": {
         "title": "Lotek Sample Rate",
         "left_unit": "/s",
-        "left_decimals": 0
+        "left_decimals": 0,
+        "popup_info": "Rate at which the pulse finder is receiving samples from the radio (SDR). This must be 48kHz (within rounding error) for the pulse detection to function correctly. If it is lower than 48kHz is indicates that USB packets are lost and this will affect pulse detection."
       },
       "dynamic": {
         "data": "detections/lotek-rate/data",
@@ -1958,6 +1945,46 @@
         "text": "radio_state/text"
       },
       "id": "w01644"
+    },
+    "w06687": {
+      "kind": "TimePlot",
+      "rows": 3,
+      "cols": 3,
+      "static": {
+        "title": "Lotek SNR",
+        "axes": [
+          "left"
+        ],
+        "popup_info": "Signal-to-noise ratio reported for Lotek pulses. The detection of pulses requires that they stick out at least 6dB above the noise floor.",
+        "left_unit": "dB",
+        "left_min": null,
+        "span_gaps": []
+      },
+      "dynamic": {
+        "data": "detections/lotek-snr/data",
+        "labels": "detections/lotek-snr/labels",
+        "span_gaps": "detections/lotek-snr/labels"
+      },
+      "id": "w06687",
+      "output": null
+    },
+    "w03243": {
+      "kind": "Toggle",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "AGC (experimental)",
+        "on_value": "on",
+        "off_value": "off",
+        "value": "on",
+        "enabled": true,
+        "popup_info": "Enable automatic gain control. Can only be used with RTL-SDR and should only be enabled if a permanent test tag is in the vicinity of the station as the AGC relies on periodic pulses from a test tag. This is an experimental feature that should generally be OFF."
+      },
+      "dynamic": {
+        "value": "deployment/data/agc"
+      },
+      "id": "w03243",
+      "output": "enable_agc"
     }
   },
   "grids": {
@@ -2045,6 +2072,7 @@
         "w09712",
         "w09240",
         "w07135",
+        "w06687",
         "w06943",
         "w07258"
       ],

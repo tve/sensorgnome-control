@@ -39,6 +39,7 @@ class Dashboard {
             'netHotspotState', 'netWifiConfig', 'portmapFile', 'tagDBInfo', 'motusRecv',
             'motusUploadResult', 'netDefaultGw', 'netDNS', 'lotekFreq', 'netCellState', 'netCellReason',
             'netCellInfo', 'netCellConfig', 'cttRadioVersion', 'vahRate', 'vahFrames', 'devState',
+            'rtlInfo',
             // dashboard events triggered by a message from FlexDash
             'dash_download', 'dash_upload', 'dash_deployment_update', 'dash_enable_wifi',
             'dash_enable_hotspot', 'dash_config_wifi', 'dash_update_portmap', 'dash_creds_update',
@@ -158,6 +159,12 @@ class Dashboard {
         return info
     }
 
+    handle_rtlInfo(port, info) {
+        if (port && info?.tuner_type) {
+            FlexDash.set(`devices/${port}/type`, 'rtlsdr/'+info.tuner_type)
+        }
+    }
+
     handle_dash_alter_bootCount(obj) {
         if (!obj?.bootCount) return
         const bc = parseInt(obj.bootCount)
@@ -197,7 +204,7 @@ class Dashboard {
                 case "error":
                     color = red
                     cnt++
-                    text.push(`port ${dev.attr?.port}: ``${dev.msg}```)
+                    text.push(`port ${dev.attr?.port}: "${dev.msg}"`)
                     break;
                 default:
                     if (color == green) color = yellow
@@ -322,6 +329,7 @@ class Dashboard {
                 tags: new TimeSeries(ts_dir, "lotek-tags-"+dev.attr.port),
                 pulses: new TimeSeries(ts_dir, "lotek-pulses-"+dev.attr.port),
                 noise: new TimeSeries(ts_dir, "lotek-noise-"+dev.attr.port),
+                snr: new TimeSeries(ts_dir, "lotek-snr-"+dev.attr.port),
                 rate: new TimeSeries(ts_dir, "lotek-rate-"+dev.attr.port),
             }
         }
@@ -346,10 +354,15 @@ class Dashboard {
             const port = mm[2]
             const time = Math.round(parseFloat(f[1])*1000)
             if (this.ts[port]?.tags) this.ts[port].tags.add(time, 1)
-            if (this.ts[port]?.noise && f.length >= 8) {
-                const noise = parseFloat(f[7])
-                this.ts[port].noise.avg(time, noise)
-            }
+            // we already record noise and snr for the pulses, so don't do it again
+            // if (this.ts[port]?.noise && f.length >= 8) {
+            //     const noise = parseFloat(f[7])
+            //     this.ts[port].noise.avg(time, noise)
+            // }
+            // if (this.ts[port]?.snr && f.length >= 8) {
+            //     const snr = parseFloat(f[5]) - parseFloat(f[7])
+            //     this.ts[port].snr.avg(time, snr)
+            // }
         } catch (e) {
             console.warn("tsGotTag", e)
         }
@@ -357,17 +370,19 @@ class Dashboard {
 
     // process a pulse from a lotek radio
     tsGotPulse(info) {
-        // p6,1681004979.0929,3.785,-29.66,-54.81
+        // p6,1681004979.0929,3.785,-29.66,-54.81,25.6
         try {
             const f = info.split(',')
-            if (f.length < 5) return
+            if (f.length < 6) return
             const mm = f[0].match(/^p(\d+)/)
             if (!mm) return
             const port = mm[1]
             const time = Math.round(parseFloat(f[1])*1000)
             const noise = parseFloat(f[4])
+            const snr = parseFloat(f[5])
             if (this.ts[port]?.pulses) this.ts[port].pulses.add(time, 1)
             if (this.ts[port]?.noise) this.ts[port].noise.avg(time, noise)
+            if (this.ts[port]?.snr) this.ts[port].snr.avg(time, snr)
         } catch (e) {
             console.warn("tsGotPulse", e)
         }
@@ -411,7 +426,7 @@ class Dashboard {
         const [times, values] = tsSet[0].get(range, now)
         //console.log("Got:", values)
         const interval = TimeSeries.intervals[this.ts_ix]
-        const fct = ['noise','rate'].includes(series)
+        const fct = ['noise','snr','rate'].includes(series)
             ? v => v
             : v => v == null ? null : v * 3600*1000 / interval
         const data = times.map((t, i) => [Math.floor(t/1000), fct(values[i])])
@@ -439,6 +454,7 @@ class Dashboard {
                 this.tsGotPulse(`p${port},${now/1000},0,0,${-50-Math.random()*10}`)
                 this.tsShow('lotek-pulses')
                 this.tsShow('lotek-noise')
+                this.tsShow('lotek-snr')
                 this.tsShow('lotek-rate')
             } else {
                 this.tsGotTag(`T${port},${now/1000},12345678,0`)
@@ -455,12 +471,13 @@ class Dashboard {
             for (const port in this.ts) {
                 const ts = this.ts[port]
                 for (const series in ts) {
-                    const fill = ['noise','rate'].includes(series) ? null : 0
-                    ts[series].catch_up(now, fill)
+                    const fill = ['noise','snr','rate'].includes(series) ? null : 0
+                    ts[series].append(now, fill, undefined)
                 }
             }
             // display
-            for (const what of ['lotek-tags', 'lotek-pulses', 'lotek-noise', 'lotek-rate', 'ctt-tags']) {
+            for (const what of ['lotek-tags', 'lotek-pulses', 'lotek-noise', 'lotek-snr',
+                    'lotek-rate', 'ctt-tags']) {
                 this.tsShow(what)
             }
         } catch (e) {
@@ -618,32 +635,52 @@ class Dashboard {
         FlexDash.set("detection_log", this.detection_log.join("\n"))
     }
 
+    fmtTagDetection(line) {
+        const ll = line.trim().split(',')
+        if (line[0] == 'L') {
+            // Lotek tag: port,ts,fullID,freq,freq.sd,sig,sig.sd,noise,run.id,pos.in.run,slop,burst.slop,ant.freq
+            const name = ll[2].replace(/@.*/, '')
+            const ts = (new Date(parseFloat(ll[1])*1000)).toISOString().replace(/.*T/, '').replace(/\..+/, '')
+            const snr = (parseFloat(ll[5]) - parseFloat(ll[7])).toFixed(1)
+            return `TAG ${ll[0]} ${ts}: ${ll[2]} ${ll[3]}kHz snr:${snr}dB (${ll[5]}/${ll[7]}dB)`
+        } else if (line[0] == 'T') {
+            // CTT tag:
+            return `TAG ${line}`
+        } else {
+            return line
+        }
+    }
+
     handle_gotTag(tag) {
         if (!tag.match(/^[A-Za-z]?[0-9]/)) return
         if (!tag.match(/^[A-Za-z]/)) tag = "L" + tag // "Lotek" prefix, ugh
         if (tag.startsWith("T")) this.detections.ctt[this.detections.ctt.length-1]++
         FlexDash.set('detections_5min', this.detections)
-        this.detectionLogPush(tag.trim().replace(/^/gm,"TAG: "))
+        this.detectionLogPush(this.fmtTagDetection(tag))
         this.tsGotTag(tag.trim())
         // direction finding
         if (this.df_enable && this.df_tags) {
             let tt = tag.trim().split(",")
             if (tt.length < 4) return
             let name = tt[2].replace(/.*#([^@]+)@.*/,'$1') // lotek mess
-            let signal = tt.length > 5 ? tt[5] : tt[3]
-            if (name == this.df_tags.tag1 || name == this.df_tags.tag2) {
-                this.dfLogPush(name, signal)
+            let signal = tt.length > 7 ? (parseFloat(tt[5]) - parseFloat(tt[7])).toFixed(1) + "dB"
+                                       : tt[3] + "dBm"
+            if (name == this.df_tags.tag1 || name == this.df_tags.tag2 || this.df_tags.tag1 == "*") {
+                this.dfLogPush(tt[0], name, signal)
             }
         }
     }
 
-    handle_vahData(data) {
-        for (const line of data.toString().split("\n")) {
-            if (line.startsWith("p")) {
-                this.detections.lotek[this.detections.lotek.length-1]++
-                this.detectionLogPush("PLS: " + line.trim())
-                this.tsGotPulse(line.trim())
-            }
+    handle_vahData(line) {
+        //console.log(`vahData: ${data.toString().replace(/\n/g, '\\n').replace(/\r/g, '\\r')}`)
+        if (line.startsWith("p")) {
+            this.detections.lotek[this.detections.lotek.length-1]++
+            // convert to something more readable
+            const ll = line.trim().split(',')
+            const ts = (new Date(parseFloat(ll[1])*1000)).toISOString().replace(/.*T/, '').replace(/\..+/, '')
+            const snr = parseFloat(ll[5]).toFixed(1)
+            this.detectionLogPush(`PLS ${ll[0]} ${ts}: ${ll[2]}kHz snr:${snr}dB (${ll[3]}/${ll[4]}dB)`)
+            this.tsGotPulse(line.trim())
         }
         FlexDash.set('detections_5min', this.detections)
     }
@@ -683,9 +720,9 @@ class Dashboard {
         console.log("DF " + (this.df_enable ? "enabled" : "disabled"))
     }
 
-    dfLogPush(name, signal) {
+    dfLogPush(port, name, signal) {
         const ts = new Date().toISOString().replace(/.*T/, '').replace(/\..+/, '')
-        this.df_log.push(ts + " " + name + " " + signal + "dBm")
+        this.df_log.push(port + " " + ts + " " + name + " " + signal)
         let dfl = this.df_log.length
         // keep a fixed number of lines
         if (dfl > 10) this.df_log.splice(0, dfl-10)

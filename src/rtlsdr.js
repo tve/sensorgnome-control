@@ -67,6 +67,7 @@ RTLSDR = function(matron, dev, devPlan) {
     this.this_gotCmdReply      = this.gotCmdReply.bind(this);
     this.this_logServerError   = this.logServerError.bind(this);
     this.this_VAHdied          = this.VAHdied.bind(this);
+    this.this_VAHdata          = this.VAHdata.bind(this);
     this.this_serverDied       = this.serverDied.bind(this);
     this.this_serverError      = this.serverError.bind(this);
     this.this_cmdSockConnected = this.cmdSockConnected.bind(this);
@@ -79,6 +80,9 @@ RTLSDR = function(matron, dev, devPlan) {
 
     // handle situation where program owning other connection to rtl_tcp dies
     this.matron.on("VAHdied", this.this_VAHdied);
+
+    // listen to data to adjust gain based on noise level
+    this.matron.on("vahData", this.this_VAHdata);
 
     // storage for the setting list sent by rtl_tcp
     this.replyBuf = ""; // buffer the reply stream, in case it crosses transmission unit boundaries
@@ -109,11 +113,12 @@ RTLSDR.prototype.rtltcpCmds = {
 
     frequency:          1, // listening frequency;  units: Hz; (deployment.txt units: MHz)
     rate:               2, // sampling rate, in Hz
-    gain_mode:          3, // whether or not to allow gains to be set (0 = no, 1 = yes)
-    tuner_gain:         4, // units: 0.1 dB (deployment.txt units: dB); closest available tuner gain is selected
+    gain_mode:          3, // whether or not to allow tuner gains to be set (0 = no, 1 = yes)
+    tuner_gain:         4, // units: 0.1 dB (deployment.txt units: dB)
     freq_correction:    5, // in units of ppm; we don't use this
 
     // gains for IF stages are sent using the same command; the stage # is encoded in the upper 16 bits of the 32-bit parameter
+    // only the E4000 tuner supports these, for details see https://hz.tools/e4k/
     if_gain1:           6, // IF stage 1 gain; units: 0.1 dB (deployment.txt units: dB)
     if_gain2:           6, // IF stage 2 gain; units: 0.1 dB (deployment.txt units: dB)
     if_gain3:           6, // IF stage 3 gain; units: 0.1 dB (deployment.txt units: dB)
@@ -122,7 +127,7 @@ RTLSDR.prototype.rtltcpCmds = {
     if_gain6:           6, // IF stage 6 gain; units: 0.1 dB (deployment.txt units: dB)
 
     test_mode:          7, // send counter instead of real data, for testing (0 = no, 1 = yes)
-    agc_mode:           8, // automatic gain control (0 = no, 1 = yes); not sure which gain stages are affected
+    agc_mode:           8, // automatic digital gain control (0 = no, 1 = yes) in rtl2832
     direct_sampling:    9, // sample RF directly, rather than IF stage; 0 = no, 1 = yes (not for radio frequencies above 10 MHz)
     offset_tuning:     10, // detune away from exact carrier frequency, to avoid deadzone in some tuners; 0 = no, 1 = yes
     rtl_xtal:          11, // set use of crystal built into rtl8232 chip? (vs off-chip tuner); 0 = no, 1 = yes
@@ -363,7 +368,7 @@ RTLSDR.prototype.hw_setParam = function(parSetting, callback) {
     case "if_gain5":
     case "if_gain6":
         // encode gain stage in upper 16 bits of value, convert dB to 0.1 dB in lower 16 bits
-        val = par.substr(7) << 16 + Math.round(val * 10);
+        val = ((par.charCodeAt(7)-48) << 16) + Math.round(val * 10);
         break;
     }
     var cmdNo = this.rtltcpCmds[parSetting.par];
@@ -396,7 +401,7 @@ RTLSDR.prototype.gotCmdReply = function(data) {
 
     // skip the 12 byte header
     this.replyBuf += data.toString('utf8', this.gotCmdHeader ? 0 : 12);
-    //console.log("gotCmdReply: " + data.toString('utf8', this.gotCmdHeader ? 0 : 12));
+    console.log("gotCmdReply: " + data.toString('utf8', this.gotCmdHeader ? 0 : 12));
     this.gotCmdHeader = true;
     for(;;) {
 	var eol = this.replyBuf.indexOf("\n");
@@ -427,6 +432,7 @@ RTLSDR.prototype.gotCmdReply = function(data) {
                 };
                 dev.settings[p] = val;
             }
+            this.matron.emit('rtlInfo', this.dev.attr?.port, {...dev.settings})
         }
     }
 };
