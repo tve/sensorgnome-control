@@ -35,6 +35,8 @@ class TimeSeries {
 
   // clear the time series such that the last point covers time `at`
   clear(at) {
+    console.log(`Clearing time series ${this.name} at ${this.path}`)
+
     if (!this.data) {
       this.data = {}
       this.t0 = {}
@@ -54,8 +56,9 @@ class TimeSeries {
     this.dirty = true
   }
 
-  // ensure the last lement in the time series covers time `at`
-  catch_up(at, fill) {
+  // ensure the last element in the time series covers time `at`
+  // then perform append by calling func with each range and range-index
+  append(at, fill, func) {
     if (!'data' in this) {
       throw new Error("TimeSeries: not initialized " + this.name)
     }
@@ -66,23 +69,31 @@ class TimeSeries {
     TimeSeries.ranges.forEach((r, i) => {
       const interval = TimeSeries.intervals[i]
       const limit = TimeSeries.limits[i]
-      if (this.data[r].length != limit)
-        throw new Error(`TimeSeries: ${this.name} ${r} length mismatch ${this.data[r].length} != ${limit}`)
+      if (this.data[r].length != limit) {
+        console.log(`TimeSeries: ${this.name} ${r} length is ${this.data[r].length}, should be ${limit}`)
+        this.clear(at)
+      }
 
       let tLast = this.t0[r] + (limit-1)*interval
       let offset = Math.floor((at-tLast)/interval)
 
       if (offset > limit) {
         // too far in the future, clear the data
+        console.log(`TimeSeries: ${this.name} ${r} time jumped forward beyond end of data (now=${new Date().toISOString()})`)
         this.clear(at)
-        return
+        offset = 0
       }  
 
       if (offset < 0) {
         // can't insert data into the past
-        if (offset > -5) console.log("TimeSeries: dropping data in the past for", this.name, r)
-        else throw new Error(`TimeSeries: can't insert data into the past: ` +
-          `${this.name} ${r} at=${at} last=${tLast} offset=${offset} ival=${interval} now=${Date.now()}`)
+        // if (offset > -5) {
+          const ago = (tLast-at)/1000
+          console.log(`TimeSeries: dropping data in the past (${ago}s ago) for ${this.name} ${r}`)
+          return
+        // } else {
+        //   throw new Error(`TimeSeries: can't insert data into the past: ` +
+        //   `${this.name} ${r} at=${at} last=${tLast} offset=${offset} ival=${interval} now=${Date.now()}`)
+        // }
       }
 
       if (offset > 0) {
@@ -93,14 +104,15 @@ class TimeSeries {
         this.cnt[r] = 0
         //this.dirty = true
       }
+
+      if (func) func(r, i)
     })
   }
 
   // add a new event to the time series
   // at: Date().now timestamp; n: number of events to add (typ. 1)
   add(at, n) {
-    this.catch_up(at)
-    TimeSeries.ranges.forEach((r, i) => {
+    this.append(at, 0, (r, i) => {
       this.data[r][TimeSeries.limits[i]-1] += n
     })
     this.dirty = true
@@ -108,8 +120,7 @@ class TimeSeries {
 
   // average a new value into the time series
   avg(at, v) {
-    this.catch_up(at, null)
-    TimeSeries.ranges.forEach((r, i) => {
+    this.append(at, null, (r, i) => {
       this.sum[r] += v
       this.cnt[r] += 1
       this.data[r][TimeSeries.limits[i]-1] = this.sum[r]/this.cnt[r]
@@ -176,6 +187,22 @@ class TimeSeries {
       this.t0 = t0
       this.sum = sum
       this.cnt = cnt
+
+      console.log(`TimeSeries: loaded ${this.path}`)
+      // print debug info
+      if (1) {
+        for (const r in data) {
+          const start = new Date(t0[r]).toISOString().replace(/\..*/, '')
+          const intv = TimeSeries.intervals[TimeSeries.ranges.indexOf(r)] ?? 0
+          let first = data[r].findIndex(v => v != null)
+          let last = data[r].findLastIndex(v => v != null)
+          if (first >= 0) first = new Date(t0[r] + (first * intv)).toISOString().replace(/\..*/, '')
+          if (last >= 0) last = new Date(t0[r] + (last * intv)).toISOString().replace(/\..*/, '')
+          const name = (r+"     ").slice(0,5)
+          console.log(`  ${name}: t0=${start} -- data: ${first} .. ${last}`)
+        }
+      }
+
     } catch (err) {
       console.log("TimeSeries: error parsing", this.path, err)
       console.log("Raw: <<<", raw, ">>>")
