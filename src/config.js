@@ -4,7 +4,7 @@ var Fs = require("fs")
 var Fsp = require("fs").promises
 
 // fields that can be updated
-const UPDATABLE = [ 'label', 'memo', 'lotek_freq']
+const UPDATABLE = [ 'label', 'memo', 'lotek_freq', 'agc']
 
 // Acquisition settings for receivers and other sensors, including operating plans
 class Acquisition {
@@ -19,9 +19,12 @@ class Acquisition {
                 d.label = d.short_label
                 delete d.short_label
             }
+            // ensure AGC enable is defined
+            d.agc = !!d.agc
             //
             for (let j in d) this[j] = d[j]
             console.log(`lotek freq: ${this.lotek_freq}`)
+            console.log(`enableAGC: ${this.agc}`)
             if (this.lotek_freq) this.fix_freq(this.lotek_freq)
             console.log(`Aquisition: found ${this.plans.length} plans`)
         } catch (e) {
@@ -76,7 +79,7 @@ class Acquisition {
         if (changed) {
             console.log("Saving ", this.path)
             const data = {}
-            for (let k of ['label','memo','lotek_freq','gps','plans','module_options'])
+            for (let k of ['label','memo','lotek_freq','agc','gps','plans','module_options'])
                 data[k] = this[k]
             try {
                 Fs.writeFileSync(this.path + "~", JSON.stringify(data, null, 2))

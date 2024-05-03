@@ -37,6 +37,8 @@
 
 */
 
+var enableAGC = false; // automatic gain control
+
 RTLSDR = function(matron, dev, devPlan) {
     Sensor.Sensor.call(this, matron, dev, devPlan);
     // path to the socket that rtl_tcp will use
@@ -307,6 +309,37 @@ RTLSDR.prototype.hw_stalled = function() {
     this.hw_delete()
 };
 
+// tune gain to set the noise floor into the -35..-45dB range
+RTLSDR.prototype.VAHdata = function(line) {
+    if (exports.enableAGC && line.startsWith("p"+this.dev.attr?.port)) {
+        // lotek data
+        const ll = line.trim().split(',')
+        if (ll.length < 6) return
+        const noise = parseFloat(ll[4])
+        if (!Number.isFinite(noise) || noise > -10 || noise < -1000) return
+        if (noise >= -45 && noise <= -35) return
+        // should adjust gain, get info together
+        var dev = HubMan.getDevs()[this.dev.attr.port];
+        const tgv = dev?.settings?.tuner_gain_values
+        if (!Array.isArray(tgv)) return
+        const gain = dev?.settings?.tuner_gain
+        if (!Number.isFinite(gain)) return
+        let ix
+        if (noise > -35) {
+            // noise too high, need to turn gain down
+            ix = tgv.findLastIndex(v => v < gain)
+        } else if (noise < -45) {
+            // noise too low, need to turn gain up
+            ix = tgv.findIndex(v => v > gain)
+        }
+        if (ix >= 0) {
+            console.log(`RTLSDR: adjusting gain for P${this.dev.attr.port} from ${gain} to ${tgv[ix]}dB, noise is ${noise}dB`)
+            this.hw_setParam({par:'tuner_gain', val:tgv[ix]})
+        }     
+    }
+    FlexDash.set('detections_5min', this.detections)
+};
+
 RTLSDR.prototype.hw_setParam = function(parSetting, callback) {
     // create the 5-byte command and send it to the socket
     var cmdBuf = Buffer.alloc(5);
@@ -399,3 +432,4 @@ RTLSDR.prototype.gotCmdReply = function(data) {
 };
 
 exports.RTLSDR = RTLSDR;
+exports.enableAGC = enableAGC;

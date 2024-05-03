@@ -46,7 +46,7 @@ class Dashboard {
             'dash_software_enable', 'dash_software_check', 'dash_software_upgrade',
             'dash_allow_shutdown', 'dash_software_shutdown', 'dash_software_restart',
             'dash_download_logs', 'dash_lotek_freq_change', 'dash_config_cell', 'dash_toggle_train',
-            'dash_remote_cmds', 'dash_detection_range', 'dash_alter_bootCount'
+            'dash_remote_cmds', 'dash_detection_range', 'dash_alter_bootCount', 'dash_enable_agc',
         ]) {
             this.matron.on(ev, (...args) => {
                 let fn = 'handle_'+ev
@@ -518,8 +518,9 @@ class Dashboard {
         FlexDash.set('deployment', {
             fields: ["memo"],
             // fields: ["label","memo"],
-            data: { label: Acquisition.label, memo: Acquisition.memo },
-         })
+            data: { label: Acquisition.label, memo: Acquisition.memom, agc: Acquisition.agc?"on":"off" },
+        })
+        RTLSDR.enableAGC = !!Acquisition.agc
     }
 
     handle_dash_deployment_update(update) {
@@ -529,6 +530,13 @@ class Dashboard {
         this.setDeployment()
         // FlexDash.set('motus_login', `checking...`)
         // this.matron.emit("motus-creds")
+    }
+
+    handle_dash_enable_agc(value) {
+        const enabled = value == 'on'
+        RTLSDR.enableAGC = enabled
+        Acquisition.update({ agc: enabled})
+        this.setDeployment()
     }
 
     handle_dash_lotek_freq_change() {
