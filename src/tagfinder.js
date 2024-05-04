@@ -111,7 +111,9 @@ class TagFinder {
         if (!this.child) return
         try {
             this.child.stdin.write(x + '\n')
-        } catch(e) {}
+        } catch(e) {
+            console.log("Error writing to tagfinder:", e)
+        }
     }
 
     gotParamInput(s) {
