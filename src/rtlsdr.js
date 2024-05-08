@@ -289,8 +289,7 @@ RTLSDR.prototype.hw_startStop = function(on) {
 };
 
 // hw_restart is called when either data from the device seems to have stalled
-// (which can be due to chrony stepping the clock forward) or when rtl_tcp
-// has died
+// (which can be due to chrony stepping the clock forward) or when rtl_tcp has died
 RTLSDR.prototype.hw_restart = function() {
     // console.log("rtl_tcp server died, restarting")
     // this.restart = false

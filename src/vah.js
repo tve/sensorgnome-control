@@ -203,7 +203,7 @@ VAH.prototype.vahSubmit = function (cmd, callback, callbackPars) {
 
 
 // Submit a start/stop command to vah. Uses VahSubmit to send the command but then remembers
-// whether the port is on or off so that tha rate check knows whether to expect data.
+// whether the port is on or off so that the rate check knows whether to expect data.
 VAH.prototype.vahStartStop = function (startstop, devLabel, callback, callbackPars) {
     const cmd = startstop + " " + devLabel;
     this.vahSubmit(cmd, callback, callbackPars);

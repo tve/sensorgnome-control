@@ -157,7 +157,7 @@ async function getToken(project) {
         const resp = await centra(URL_TOKEN, 'POST')
             .timeout(60*1000)
             .header(sgAuthHeader())
-            .query({project})
+            .query({project, server: SERVER.replace(/^.*\//, '')})
             .send()
         if (resp.statusCode == 200) {
             let ss = await resp.json()
