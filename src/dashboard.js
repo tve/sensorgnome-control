@@ -84,6 +84,8 @@ class Dashboard {
         this.handle_dash_detection_range(TimeSeries.ranges[0])
         setInterval(() => this.tsSave(), 60000)
 
+        this.pulse_ts = [] // timestamp of last pulse per port
+
         // prime some data
         setTimeout(() => {
             this.handle_motusRecv({})
@@ -677,9 +679,17 @@ class Dashboard {
             this.detections.lotek[this.detections.lotek.length-1]++
             // convert to something more readable
             const ll = line.trim().split(',')
-            const ts = (new Date(parseFloat(ll[1])*1000)).toISOString().replace(/.*T/, '').replace(/\..+/, '')
+            const port =parseInt(ll[0][1])
+            const last_ts = this.pulse_ts[port] || 0
+            const this_ts = parseFloat(ll[1])*1000
+            const delta_ms = this_ts - last_ts < 120_000 ? (this_ts-last_ts).toFixed(1)+"ms" : ""
+            this.pulse_ts[port] = this_ts
+            const ts = (new Date(this_ts)).toISOString().replace(/.*T/, '').replace(/\..*/, '')
             const snr = parseFloat(ll[5]).toFixed(1)
-            this.detectionLogPush(`PLS ${ll[0]} ${ts}: ${ll[2]}kHz snr:${snr}dB (${ll[3]}/${ll[4]}dB)`)
+            this.detectionLogPush(
+                `PLS ${ll[0]} ${ts}: ${ll[2]}kHz snr:${snr}dB ` +
+                `(${parseFloat(ll[3]).toFixed(1)}/${parseFloat(ll[4]).toFixed(1)}dB) ${delta_ms}`
+            )
             this.tsGotPulse(line.trim())
         }
         FlexDash.set('detections_5min', this.detections)
