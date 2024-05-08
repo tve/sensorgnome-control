@@ -95,8 +95,8 @@ Sensor.prototype.close = function() {
 
 // devSDtalled event handler, triggered by VAH when rate is out of bounds
 Sensor.prototype.devStalled = function(vahDevLabel, message) {
-    // console.log("Got devStalled for " + vahDevLabel);
-    if (vahDevLabel == this.dev.attr.port) {
+    if (vahDevLabel == 'p'+this.dev.attr.port) {
+        console.log("Got devStalled for " + vahDevLabel);
         this.matron.emit("devState", this.dev.attr.port, "error", message);
         this.hw_stalled(); // call subclass function
     }

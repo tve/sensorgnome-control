@@ -100,6 +100,7 @@ USBAudio.prototype.hw_stalled = function() {
     if (this.command) {
         console.log(`USBAudio: ${this.dev.attr.usbPath}: resetting`);
         ChildProcess.execFile(this.command, this.baseArgs.concat("-R"));
+        // FIXME: probably need a timeout to force-kill if the fcd reset process hangs
     }
     var dev = JSON.parse(JSON.stringify(this.dev));
     // re-add after 5 seconds
