@@ -133,6 +133,7 @@ RTLSDR.prototype.rtltcpCmds = {
     rtl_xtal:          11, // set use of crystal built into rtl8232 chip? (vs off-chip tuner); 0 = no, 1 = yes
     tuner_xtal:        12, // set use of crystal on tuner (vs off-board tuner); 0 = no, 1 = yes
     tuner_gain_index:  13, // tuner gain setting by index into array of possible values; array size is returned when first connecting to rtl_tcp
+    bias_tee:          14, // bias tee control 0=off, 1=on
     streaming:         96  // have rtl_tcp start (1) or stop (0) submitting URBs and sending sample data to other connection
 };
 
