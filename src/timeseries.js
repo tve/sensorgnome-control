@@ -44,16 +44,21 @@ class TimeSeries {
       this.cnt = {}
     }
 
-    TimeSeries.ranges.forEach((r, i) => {
-      const interval = TimeSeries.intervals[i]
-      const tLast = Math.trunc(at/interval)*interval
-      const t0 = tLast - (TimeSeries.limits[i]-1)*interval
-      this.data[r] = Array(TimeSeries.limits[i]).fill(null)
-      this.t0[r] = t0
-      this.sum[r] = 0
-      this.cnt[r] = 0
-    })
+    for (let ix in TimeSeries.ranges) this.clear_range(at, ix)
     this.dirty = true
+  }
+
+  clear_range(at, ix) {
+    const r = TimeSeries.ranges[ix]
+    console.log(`Clearing range ${r} of time series ${this.name} at ${this.path}`)
+    const interval = TimeSeries.intervals[ix]
+    const limit = TimeSeries.limits[ix]
+    const t0 = (Math.trunc(at/interval) - limit + 1) * interval
+    // const tLast = t0 + (TimeSeries.limits[ix]-1)*interval
+    this.data[r] = Array(limit).fill(null)
+    this.t0[r] = t0
+    this.sum[r] = 0
+    this.cnt[r] = 0
   }
 
   // ensure the last element in the time series covers time `at`
@@ -79,16 +84,19 @@ class TimeSeries {
 
       if (offset > limit) {
         // too far in the future, clear the data
-        console.log(`TimeSeries: ${this.name} ${r} time jumped forward beyond end of data (now=${new Date().toISOString()})`)
-        this.clear(at)
+        console.log(`TimeSeries: ${this.name} ${r} time jumped forward beyond end of data`)
+        console.log(`At=${new Date(at).toISOString()} now=${new Date().toISOString()} end=${new Date(tLast).toISOString()}`)
+        this.clear_range(at, i)
         offset = 0
+        this.dirty = true
       }  
 
       if (offset < 0) {
         // can't insert data into the past
         // if (offset > -5) {
           const ago = (tLast-at)/1000
-          console.log(`TimeSeries: dropping data in the past (${ago}s ago) for ${this.name} ${r}`)
+          console.log(`TimeSeries: dropping incoming data for the past (${ago}s ago) for ${this.name} ${r}`)
+          console.log(`At=${new Date(at).toISOString()} now=${new Date().toISOString()} end=${new Date(tLast).toISOString()}`)
           return
         // } else {
         //   throw new Error(`TimeSeries: can't insert data into the past: ` +
@@ -175,7 +183,7 @@ class TimeSeries {
     } catch (err) {
       if (err.code != 'ENOENT') {
         console.log("TimeSeries: error reading", this.path, err)
-      } else console.log("Empty time series", this.path)
+      } else console.log(`Missing time series ${this.path}`)
       // no file: create empty time series
       this.clear(Date.now())
       return
