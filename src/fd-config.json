@@ -1898,7 +1898,8 @@
         "title": "Lotek Sample Rate",
         "left_unit": "/s",
         "left_decimals": 0,
-        "popup_info": "Rate at which the pulse finder is receiving samples from the radio (SDR). This must be 48kHz (within rounding error) for the pulse detection to function correctly. If it is lower than 48kHz is indicates that USB packets are lost and this will affect pulse detection."
+        "popup_info": "Rate at which the pulse finder is receiving samples from the radio (SDR). This must be 48kHz (within rounding error) for the pulse detection to function correctly. If it is lower than 48kHz is indicates that USB packets are lost and this will affect pulse detection.",
+        "left_min": 0
       },
       "dynamic": {
         "data": "detections/lotek-rate/data",

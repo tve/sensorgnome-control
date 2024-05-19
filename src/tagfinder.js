@@ -75,6 +75,7 @@ class TagFinder {
             .on("error", ()=>this.childDied())
     
         this.child.stdout.on("data", x => {
+            console.log("From tagfinder:", x.toString());
             for (let line of x.toString().split('\n')) {
                 if (!(/^[0-9]/.test(line))) continue
                 this.matron.emit("gotTag", line)
