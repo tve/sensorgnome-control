@@ -401,7 +401,7 @@ RTLSDR.prototype.gotCmdReply = function(data) {
 
     // skip the 12 byte header
     this.replyBuf += data.toString('utf8', this.gotCmdHeader ? 0 : 12);
-    console.log("gotCmdReply: " + data.toString('utf8', this.gotCmdHeader ? 0 : 12));
+    // console.log("gotCmdReply: " + data.toString('utf8', this.gotCmdHeader ? 0 : 12));
     this.gotCmdHeader = true;
     for(;;) {
 	var eol = this.replyBuf.indexOf("\n");

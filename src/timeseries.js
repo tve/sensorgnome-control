@@ -198,7 +198,7 @@ class TimeSeries {
 
       console.log(`TimeSeries: loaded ${this.path}`)
       // print debug info
-      if (1) {
+      if (0) {
         for (const r in data) {
           const start = new Date(t0[r]).toISOString().replace(/\..*/, '')
           const intv = TimeSeries.intervals[TimeSeries.ranges.indexOf(r)] ?? 0
