@@ -95,6 +95,8 @@ RTLSDR = function(matron, dev, devPlan) {
 
     this.killing = false; // when true, we've deliberately killed the server
 
+    this.agc_at = 0; // timestamp of last AGC change
+
     console.log("rtlsdr: created");
 };
 
@@ -316,7 +318,7 @@ RTLSDR.prototype.hw_stalled = function() {
 
 // tune gain to set the noise floor into the -35..-45dB range
 RTLSDR.prototype.VAHdata = function(line) {
-    if (exports.enableAGC && line.startsWith("p"+this.dev.attr?.port)) {
+    if (exports.enableAGC && line.startsWith("p"+this.dev.attr?.port) && Date.now()-this.agc_at > 60_000) {
         // lotek data
         const ll = line.trim().split(',')
         if (ll.length < 6) return
@@ -340,6 +342,8 @@ RTLSDR.prototype.VAHdata = function(line) {
         if (ix >= 0) {
             console.log(`RTLSDR: adjusting gain for P${this.dev.attr.port} from ${gain} to ${tgv[ix]}dB, noise is ${noise}dB`)
             this.hw_setParam({par:'tuner_gain', val:tgv[ix]})
+            this.agc_at = Date.now()
+            FlexDash.set(`rtl_sdr_gain/${this.dev.attr.port}`, tgv[ix])
         }     
     }
     FlexDash.set('detections_5min', this.detections)
@@ -359,6 +363,7 @@ RTLSDR.prototype.hw_setParam = function(parSetting, callback) {
         break;
     case "tuner_gain":
         // convert from dB to 0.1 dB
+        FlexDash.set(`rtl_sdr_gain/${this.dev.attr.port}`, val)
         val = Math.round(val * 10);
         break;
     case "if_gain1":

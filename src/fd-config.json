@@ -902,7 +902,7 @@
     "w03109": {
       "kind": "TextView",
       "rows": 2,
-      "cols": 6,
+      "cols": 4,
       "static": {
         "title": "Tag database content"
       },
@@ -1689,6 +1689,7 @@
           "w01745",
           "w03243",
           "w03109",
+          "w03402",
           "w06470"
         ],
         "solid": false
@@ -1974,18 +1975,33 @@
       "rows": 1,
       "cols": 2,
       "static": {
-        "title": "AGC (experimental)",
+        "title": "RTL-SDR AGC",
         "on_value": "on",
         "off_value": "off",
         "value": "on",
         "enabled": true,
-        "popup_info": "Enable automatic gain control. Can only be used with RTL-SDR and should only be enabled if a permanent test tag is in the vicinity of the station as the AGC relies on periodic pulses from a test tag. This is an experimental feature that should generally be OFF."
+        "popup_info": "Enable automatic gain control. Can only be used with RTL-SDR and should only be enabled if a permanent test tag is in the vicinity of the station as the AGC relies on periodic pulses from a test tag. AGC adjusts the gain once a minute when a pulse is detected to place the noise level between -35dB and -45dB.\nThis is an experimental feature that should generally be OFF."
       },
       "dynamic": {
         "value": "deployment/data/agc"
       },
       "id": "w03243",
       "output": "enable_agc"
+    },
+    "w03402": {
+      "kind": "PropsTable",
+      "rows": 2,
+      "cols": 2,
+      "static": {
+        "title": "RTL-SDR gains",
+        "popup_info": "RF gain configured into the receiver of each port. The initial gain is set in the acquisitions.json file. For RTL-SDRs it is possible to enable AGC (automatic gain control)."
+      },
+      "dynamic": {
+        "data": "rtl_sdr_gain",
+        "fields": "rtl_sdr_gain"
+      },
+      "id": "w03402",
+      "output": null
     }
   },
   "grids": {
