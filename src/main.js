@@ -6,6 +6,7 @@ const ACQUISITION = CONFDIR+"/acquisition.json"    // Receiver/sensor configurat
 const PORTMAP     = CONFDIR+"/usb-port-map.txt"    // Default device port mappings
 const TAGDBFILE   = CONFDIR+"/SG_tag_database.sqlite"
 const CELLCONFIG  = CONFDIR+"/cellular.json"
+const FEEDCONFIG  = CONFDIR+"/feed.json"           // Serial output feed
 const DEVROOT     = "/dev/sensorgnome"             // Dir where uDev rules add device files
 const VARDIR      = "/var/lib/sensorgnome"         // where runtime state files are located
 const DATAFILE    = VARDIR+"/datafiles.json"       // where database about data files is located
@@ -87,6 +88,7 @@ DataSaver     = new (require('./datasaver.js').DataSaver) (TheMatron, DATADIR)
 DataFiles     = new (require('./datafiles.js').DataFiles) (TheMatron, DATADIR, DATAFILE)
 SafeStream    = require('./safestream.js').SafeStream
 MotusUp       = new (require('./motus_up.js').MotusUploader) (TheMatron, STATEFILE)
+Feed          = new (require('./datafeed.js').Feed)(TheMatron, FEEDCONFIG)
 // Create the two datafiles we write to for Lotek and CTT detections
 // Rotate every hour and also if hitting 1MB in size
 AllOut        = new SafeStream(TheMatron, "all", ".txt", 1000000, 3600, "parse") // 1MB max filesize
@@ -126,7 +128,8 @@ TheMatron.on("gpsSetClock", (prec, elapsed) => {
     LifetagOut.write(line)
 })
 
-//Uploader.start();
+// Start output feed
+Feed.start()
 
 // After initial flurry settles, read in info about existing data files
 setTimeout(()=>{ DataFiles.start().then(()=>{}) }, 2000)
