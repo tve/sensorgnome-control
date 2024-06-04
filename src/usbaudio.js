@@ -97,10 +97,10 @@ USBAudio.prototype.hw_startStop = function(on) {
 
 USBAudio.prototype.hw_stalled = function() {
     // reset this device
-    if (this.command) {
+    if(this.dev.attr.type.match(/funcube/)) {
         console.log(`USBAudio: ${this.dev.attr.usbPath}: resetting`);
-        ChildProcess.execFile(this.command, this.baseArgs.concat("-R"));
-        // FIXME: probably need a timeout to force-kill if the fcd reset process hangs
+        // ChildProcess.execFile(this.command, this.baseArgs.concat("-R"));
+        ChildProcess.execFile("/usr/bin/usbreset", [this.dev.attr.usbPath.replace(':', '/')]);
     }
     var dev = JSON.parse(JSON.stringify(this.dev));
     // re-add after 5 seconds

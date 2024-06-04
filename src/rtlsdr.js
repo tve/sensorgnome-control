@@ -268,6 +268,7 @@ RTLSDR.prototype.serverDied = function(code, signal) {
         console.log("rtl_tcp server died, code:" + code + " signal:" + signal)
         this.matron.emit('devState', this.dev.attr?.port, "error", `rtl_tcp server died, exit code ${code}`)
     }
+    // restart if we said so, or the process exited with non-zero status and not due to a signal
     if (this.restart || (code && !signal)) this.hw_restart();
 };
 
@@ -294,12 +295,8 @@ RTLSDR.prototype.hw_startStop = function(on) {
 // hw_restart is called when either data from the device seems to have stalled
 // (which can be due to chrony stepping the clock forward) or when rtl_tcp has died
 RTLSDR.prototype.hw_restart = function() {
-    // console.log("rtl_tcp server died, restarting")
-    // this.restart = false
-    // this.killing = false
-    // setTimeout(() => this.init(), 1000)
-
-    // pretend the device has been removed then added
+    // pretend the device has been removed then added, this will trigger deletion of all resources
+    // and then relaunch of rtl_tcp.
     console.log("rtlsdr::hw_reset - faking a remove & re-add");
     // copy the device structure (really - this is the best node has to offer for cloning POD?)
     var dev = JSON.parse(JSON.stringify(this.dev));
