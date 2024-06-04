@@ -44,6 +44,12 @@ if [[ -f $DEP ]]; then
     rm -f $DEP /etc/sensorgnome/acquisition.txt
 fi
 
+# Upgrade from 2.0-rc14 to 2.0-rc15: change rtl-sdr minsdr from 12dB to 6dB to match FCD
+if [[ -f $ACQ ]]; then
+    echo "Ensuring RTL-SDR minsnr is 6 and not 10"
+    sed -E -i -e '/minsnr/,+1s/"value": 10/"value": 6/' $ACQ
+fi
+
 # enable and start/restart units
 for U in sg-control; do
     # code from debhelper's postinst-systemd-enable template
