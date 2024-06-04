@@ -44,6 +44,31 @@ events and data in the app with values displayed in the dashboard, and it receiv
 the dashboard and calls the appropriate functions in the rest of the app.
 This avoids having dashboard-specific code strewn around the entire app.
 
+## RTL-SDR gain setting
+
+### E4000 tuner
+
+The E4000 tuner is not so common as it's a discontinued chip, however, Nooelec still has them
+available to a large degree because they can be tuned to slightly higher frequencies than the more
+common Rafael Micro tuners (this is of no import to Motus use).
+
+The E4000 tuner has different tuner gain settings and the driver requires that they be set exactly,
+otherwise the gain is not changed. This is a problem in that the default Sensorgnome acquisitions.json
+file specifies a gain of 40.2 for all RTL-SDR and that gain is not supported by the E4000.
+The setting needs to be changed, for example to 42.0.
+
+In addition, the E4000 supports setting 6 IF gain stages (the Rafael Micro tuners have
+2 IF stages that are set automatically).
+The internal gain settings can be chosen to have high sensitivity or high linearity, see
+https://hz.tools/e4k/. For Motus use sensitivity is what matters.
+
+The settings in the acquisitions.json file TvE recommends are 6, 9, 6, 0, 3, 3 for a total 30dB gain.
+Setting this properly requires Sensorgnome V2 build 2024-140 or RC15 or later.
+The default in the driver is 6, 0, 0, 0, 9, 9, which is neither in the list of high sensitivity
+settings nor high linearity...
+
+Note that the tuner gain setting is separate and in addition to the 6 IF gain settings.
+
 ## Analog to Digital inputs
 
 The CTT SensorStations all have an ADC to measure voltages.

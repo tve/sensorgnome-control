@@ -30,20 +30,62 @@
                             "value": 0
                         }
                     },
-                   {
-                       "name": "gain_mode",
-                       "schedule": {
-                           "type": "Constant",
-                           "value": 1
-                       }
-                   },
-                   {
-                       "name": "tuner_gain",
-                       "schedule": {
-                           "type": "Constant",
-                           "value": 40.2
-                       }
-                   },
+                    {
+                        "name": "gain_mode",
+                        "schedule": {
+                            "type": "Constant",
+                            "value": 1
+                        }
+                    },
+                    {
+                        "name": "tuner_gain",
+                        "schedule": {
+                            "type": "Constant",
+                            "value": 40.2
+                        }
+                    },
+                    {
+                        "name": "if_gain1",
+                        "schedule": {
+                            "type": "Constant",
+                            "value": 6
+                        }
+                    },
+                    {
+                        "name": "if_gain2",
+                        "schedule": {
+                            "type": "Constant",
+                            "value": 9
+                        }
+                    },
+                    {
+                        "name": "if_gain3",
+                        "schedule": {
+                            "type": "Constant",
+                            "value": 6
+                        }
+                    },
+                    {
+                        "name": "if_gain4",
+                        "schedule": {
+                            "type": "Constant",
+                            "value": 0
+                        }
+                    },
+                    {
+                        "name": "if_gain5",
+                        "schedule": {
+                            "type": "Constant",
+                            "value": 3
+                        }
+                    },
+                    {
+                        "name": "if_gain6",
+                        "schedule": {
+                            "type": "Constant",
+                            "value": 3
+                        }
+                    },
                     {
                         "name": "test_mode",
                         "schedule": {
@@ -57,7 +99,14 @@
                             "type": "Constant",
                             "value": 0
                         }
-                    }
+                    },
+                    {
+                        "name": "bias_tee",
+                        "schedule": {
+                            "type": "Constant",
+                            "value": 0
+                        }
+                    }              
                 ],
                 "raw": {
                     "enabled": false,
