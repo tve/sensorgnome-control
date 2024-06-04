@@ -9,6 +9,8 @@ const fs = require('fs')
 // is sync and the latter occurs when the former is still writing the file...
 const allTS = {}
 
+let cnt = 0; // to name temp files before renaming
+
 class TimeSeries {
   static ranges = ['5mins', 'hour', 'day', 'month', 'year']
   static intervals = [10000, 60*1000, 3600*1000, 24*3600*1000, 7*24*3600*1000] // 10min, 1h, 1d, 1w
@@ -167,11 +169,24 @@ class TimeSeries {
     this.dirty = false // assume it will work, avoid race conditions
     const data = {data: this.data, t0: this.t0, sum: this.sum, cnt: this.cnt}
     //console.log("TimeSeries: saving", this.path)
-    fs.writeFile(this.path, JSON.stringify(data), err => {
+    const json = JSON.stringify(data)
+    if (json.length < 100) {
+      // there have been issues with zero-length time series files being written, see whether this helps
+      const err = `TimeSeries: error saving ${this.path}, json too short <<${json}>>`
+      console.log(err)
+      if (cb) cb(err)
+      return
+    }
+    const fname = this.path + "-" + cnt++
+    fs.writeFile(fname, json, err => {
       if (err) {
         this.dirty = true // "oops"... try again later
         console.log("TimeSeries: error writing", this.path, err)
-      } //else console.log("TimeSeries: saved", this.path)
+      } else {
+        fs.rename(fname, this.path, ()=>{
+          // console.log("TimeSeries: saved", this.path)
+        })
+      }
       if (cb) cb(err)
     })
   }
