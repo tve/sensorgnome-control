@@ -128,6 +128,7 @@ class CellMan {
         info["packet service"] = modem?.["3gpp"]?.["packet-service-state"]
         info["capabilities"] = modem?.generic?.["current-capabilities"].join(" ")
         info["model"] = modem?.generic?.model
+        info["imei"] = modem?.["3gpp"]?.["imei"]
         info["number"] = modem?.generic?.["own-numbers"]?.join(" ")
         // see what to query next
         const bearer = modem?.generic?.bearers?.length > 0 && modem?.generic?.bearers[0]
