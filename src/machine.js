@@ -194,10 +194,10 @@ class Upgrader {
         }
         console.log("Upgradable packages: " + pkgs.map(v => v.join("/")).join(" "))
         const sgPkgs = pkgs
-          .filter(v => v[0].match(/^(sensorgnome|sg-)/))
+          .filter(v => v[0].match(/^(sensorgnome|sg-|vamp)/))
           .map(v => v[0] + ": " + v[1] + " (" + v[2] + ")")
         const osPkgs = pkgs
-          .filter(v => !v[0].match(/^(sensorgnome|sg-)/))
+          .filter(v => !v[0].match(/^(sensorgnome|sg-|vamp)/))
           .map(v => v[0] + ": " + v[1] + " (" + v[2] + ")")
         const sgText = sgPkgs.length > 0 ?
           "Available Sensorgnome packages:\n" + sgPkgs.join("\n") :
