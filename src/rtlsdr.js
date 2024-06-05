@@ -269,7 +269,8 @@ RTLSDR.prototype.serverDied = function(code, signal) {
         this.matron.emit('devState', this.dev.attr?.port, "error", `rtl_tcp server died, exit code ${code}`)
     }
     // restart if we said so, or the process exited with non-zero status and not due to a signal
-    if (this.restart || (code && !signal)) this.hw_restart();
+    //if (this.restart || (code && !signal)) this.hw_restart();
+    if (this.restart || !signal) this.hw_restart();
 };
 
 RTLSDR.prototype.hw_delete = function() {
