@@ -1994,7 +1994,8 @@
       "cols": 2,
       "static": {
         "title": "RTL-SDR gains",
-        "popup_info": "RF gain configured into the receiver of each port. The initial gain is set in the acquisitions.json file. For RTL-SDRs it is possible to enable AGC (automatic gain control)."
+        "popup_info": "RF gain configured into the receiver of each port. The initial gain is set in the acquisitions.json file. For RTL-SDRs it is possible to enable AGC (automatic gain control).",
+        "data": ""
       },
       "dynamic": {
         "data": "rtl_sdr_gain",

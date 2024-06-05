@@ -128,6 +128,7 @@ class Dashboard {
         FlexDash.set('df_enable', 'OFF')
         FlexDash.set('df_tags', this.df_tags)
         FlexDash.set('df_log', "")
+        FlexDash.set(`rtl_sdr_gain`, {})
 
         FlexDash.monitoring = this.monitoring.bind(this)
 
@@ -222,7 +223,7 @@ class Dashboard {
             }
             text = cnt > 0 ? text.join('\n\n') : ''
             const title = cnt>0 ? `${cnt} errors` : '--'
-            console.log("Radio state:", JSON.stringify({ color, enabled: cnt>0, title, text }))
+            //console.log("Radio state:", JSON.stringify({ color, enabled: cnt>0, title, text }))
             FlexDash.set('radio_state', { color, enabled: cnt>0, errors: cnt, title, text }) // title doesn't work :-(
         }, 10)
     }
