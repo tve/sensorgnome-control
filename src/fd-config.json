@@ -901,7 +901,7 @@
     },
     "w03109": {
       "kind": "TextView",
-      "rows": 2,
+      "rows": 3,
       "cols": 4,
       "static": {
         "title": "Tag database content"
@@ -1687,8 +1687,9 @@
         "widgets": [
           "w06035",
           "w01745",
-          "w03243",
+          "w04712",
           "w03109",
+          "w03243",
           "w03402",
           "w06470"
         ],
@@ -2003,6 +2004,39 @@
       },
       "id": "w03402",
       "output": null
+    },
+    "w04506": {
+      "kind": "Toggle",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "ShowPulses",
+        "on_value": "on",
+        "off_value": "off",
+        "value": "on",
+        "enabled": true
+      },
+      "dynamic": {
+        "value": "lotek_show_pulses"
+      },
+      "id": "w04506",
+      "output": "lotek_show_pulses"
+    },
+    "w04712": {
+      "kind": "Toggle",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "Show pulses",
+        "on_value": "on",
+        "off_value": "off",
+        "popup_info": "Toggle the display of detected Lotek pulses in the tags and pulses panel on/off. Tags are always shown."
+      },
+      "dynamic": {
+        "value": "lotek_show_pulses"
+      },
+      "id": "w04712",
+      "output": "show_pulses"
     }
   },
   "grids": {

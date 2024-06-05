@@ -48,6 +48,7 @@ class Dashboard {
             'dash_allow_shutdown', 'dash_software_shutdown', 'dash_software_restart',
             'dash_download_logs', 'dash_lotek_freq_change', 'dash_config_cell', 'dash_toggle_train',
             'dash_remote_cmds', 'dash_detection_range', 'dash_alter_bootCount', 'dash_enable_agc',
+            'dash_show_pulses'
         ]) {
             this.matron.on(ev, (...args) => {
                 let fn = 'handle_'+ev
@@ -128,7 +129,9 @@ class Dashboard {
         FlexDash.set('df_enable', 'OFF')
         FlexDash.set('df_tags', this.df_tags)
         FlexDash.set('df_log', "")
-        FlexDash.set(`rtl_sdr_gain`, {})
+        FlexDash.set('rtl_sdr_gain', {})
+        FlexDash.set('lotek_show_pulses', "on")
+        this.show_pulses = true
 
         FlexDash.monitoring = this.monitoring.bind(this)
 
@@ -255,6 +258,10 @@ class Dashboard {
     handle_tagDBInfo(data) { FlexDash.set('tagdb', data) }
     handle_motusUploadResult(data) { FlexDash.set('motus_upload', data) }
     handle_lotekFreq(f) { FlexDash.set('lotek_freq', f) }
+    handle_dash_show_pulses(v) {
+        FlexDash.set('lotek_show_pulses', v=="on" ? "on" : "off")
+        this.show_pulses = v == "on"
+    }
 
     // ===== Network / Internet
 
@@ -678,19 +685,21 @@ class Dashboard {
         //console.log(`vahData: ${data.toString().replace(/\n/g, '\\n').replace(/\r/g, '\\r')}`)
         if (line.startsWith("p")) {
             this.detections.lotek[this.detections.lotek.length-1]++
-            // convert to something more readable
-            const ll = line.trim().split(',')
-            const port =parseInt(ll[0][1])
-            const last_ts = this.pulse_ts[port] || 0
-            const this_ts = parseFloat(ll[1])*1000
-            const delta_ms = this_ts - last_ts < 120_000 ? (this_ts-last_ts).toFixed(1)+"ms" : ""
-            this.pulse_ts[port] = this_ts
-            const ts = (new Date(this_ts)).toISOString().replace(/.*T/, '').replace(/\..*/, '')
-            const snr = parseFloat(ll[5]).toFixed(1)
-            this.detectionLogPush(
-                `PLS ${ll[0]} ${ts}: ${ll[2]}kHz snr:${snr}dB ` +
-                `(${parseFloat(ll[3]).toFixed(1)}/${parseFloat(ll[4]).toFixed(1)}dB) ${delta_ms}`
-            )
+            if (this.show_pulses) {
+                // convert to something more readable
+                const ll = line.trim().split(',')
+                const port =parseInt(ll[0][1])
+                const last_ts = this.pulse_ts[port] || 0
+                const this_ts = parseFloat(ll[1])*1000
+                const delta_ms = this_ts - last_ts < 120_000 ? (this_ts-last_ts).toFixed(1)+"ms" : ""
+                this.pulse_ts[port] = this_ts
+                const ts = (new Date(this_ts)).toISOString().replace(/.*T/, '').replace(/\..*/, '')
+                const snr = parseFloat(ll[5]).toFixed(1)
+                this.detectionLogPush(
+                    `PLS ${ll[0]} ${ts}: ${ll[2]}kHz snr:${snr}dB ` +
+                    `(${parseFloat(ll[3]).toFixed(1)}/${parseFloat(ll[4]).toFixed(1)}dB) ${delta_ms}`
+                )
+            }
             this.tsGotPulse(line.trim())
         }
         FlexDash.set('detections_5min', this.detections)
