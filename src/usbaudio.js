@@ -25,6 +25,7 @@ USBAudio = function(matron, dev, devPlan) {
         this.command = null;
     }
     this.paramNameTable = this.paramNameTables[dev.attr.type];
+    this.lastResetAt = 0;
 };
 
 USBAudio.prototype = Object.create(Sensor.Sensor.prototype);
@@ -96,17 +97,24 @@ USBAudio.prototype.hw_startStop = function(on) {
 };
 
 USBAudio.prototype.hw_stalled = function() {
-    // reset this device
+    const dt = Date.now() - this.lastResetAt;
+    if (dt < 10_000) {
+        console.log("USBAudio: hw_stalled ignored, dt<10secs")
+        return
+    }
     if(this.dev.attr.type.match(/funcube/)) {
+        // reset this device, it will be seen as removed and then readded via USB detection
         console.log(`USBAudio: ${this.dev.attr.usbPath}: resetting`);
         // ChildProcess.execFile(this.command, this.baseArgs.concat("-R"));
         ChildProcess.execFile("/usr/bin/usbreset", [this.dev.attr.usbPath.replace(':', '/')]);
+    } else {
+        // do a "soft" reset by removing and re-adding the device
+        var dev = JSON.parse(JSON.stringify(this.dev));
+        // re-add after 5 seconds
+        setTimeout(function(){TheMatron.emit("devAdded", dev)}, 5000);
+        // remove now
+        this.matron.emit("devRemoved", this.dev);
     }
-    var dev = JSON.parse(JSON.stringify(this.dev));
-    // re-add after 5 seconds
-    setTimeout(function(){TheMatron.emit("devAdded", dev)}, 5000);
-    // remove now
-    this.matron.emit("devRemoved", this.dev);
 };
 
 
