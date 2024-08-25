@@ -82,7 +82,7 @@ class CornellTagXCVR {
     if (!this.dev) return // device removed
     this.matron.emit("devState", this.dev.attr.port, "init")
     const path = this.dev.path
-    const sp = new SerialPort({ path: path, baudRate: 9600 }) // baud rate irrelevant with USB
+    const sp = new SerialPort({ path: path, baudRate: 115200 })
     const did = debugId++
     sp.on("open", () => {
       console.log(`Opened SerialPort #${did} ${path}`)
