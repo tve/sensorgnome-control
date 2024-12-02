@@ -1,5 +1,5 @@
 // feed - data feed with all data written to files for output to serial port or similar
-// Copyright ©2021 Thorsten von Eicken
+// Copyright ©2024 Thorsten von Eicken
 
 const {SerialPort} = require('serialport')
 const fs = require('node:fs')
