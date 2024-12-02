@@ -369,11 +369,11 @@ class DataFiles {
     updateUpDownDate(which, files, info) {
         // sanity check on dates (unix timestamps), too easy to mess up...
         if (which == "uploaded") {
-            if (!info.date || !(info.date > 1577854800 && info.date < 2145934800)) { //2020..2038
+            if (!info.date || !(info.date > 1514764800 && info.date < 2145934800)) { //2018..2038
                 throw new Error(`Invalid upload date in info: ${info}`)
             }
         } else if (which == "downloaded") {
-            if (!info || !(info > 1577854800 && info < 2145934800)) { //2020..2038
+            if (!info || !(info > 1514764800 && info < 2145934800)) { //2018..2038
                 throw new Error(`Invalid download date: ${info}`)
             }
         } else {
