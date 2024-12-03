@@ -51,7 +51,7 @@ class Feed {
         sp?.write(["C", Date.now() / 1000, prec, elapsed].join(',') + "\n")
       })
       // GPS fix changes
-      TheMatron.on("gotGPSFix", (fix) => {
+      this.matron.on("gotGPSFix", (fix) => {
         if (!fix.state?.includes('fix') || !fix.time) return
         sp?.write("G," + fix.time + "," + fix.lat + "," + fix.lon + "," + fix.alt + "\n")
       })

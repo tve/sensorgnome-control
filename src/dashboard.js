@@ -48,7 +48,8 @@ class Dashboard {
             'dash_allow_shutdown', 'dash_software_shutdown', 'dash_software_restart',
             'dash_download_logs', 'dash_lotek_freq_change', 'dash_config_cell', 'dash_toggle_train',
             'dash_remote_cmds', 'dash_detection_range', 'dash_alter_bootCount', 'dash_enable_agc',
-            'dash_show_pulses'
+            'dash_show_pulses', 'dash_cellular_priority', 'dash_burstfinder_burst',
+            'dash_burstfinder_raw', 'dash_burstfinder_filtered', 'dash_burstfinder_delta'
         ]) {
             this.matron.on(ev, (...args) => {
                 let fn = 'handle_'+ev
@@ -297,6 +298,10 @@ class Dashboard {
     handle_dash_enable_hotspot(state) { WifiMan.enableHotspot(state == "ON") }
     handle_dash_config_wifi(config) { WifiMan.setWifiConfig(config).then(() => {}) }
     handle_dash_config_cell(config) { CellMan.setCellConfig(config) }
+    handle_dash_cellular_priority(prio) {
+        CellMan.setCellPriority(prio)
+        setTimeout(()=>FlexDash.set('cellular/priority', CellMan.getCellPriority()), 5000)
+    }
 
     // upload info
     handle_motusRecv(info) {
@@ -1030,6 +1035,8 @@ class Dashboard {
                 console.log(`${vnstat} parsing failed:`, e)
             }
         })
+
+        FlexDash.set('cellular/priority', CellMan.getCellPriority())
     }
 
     // ===== Return monitoring data in json format

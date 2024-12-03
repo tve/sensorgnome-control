@@ -902,7 +902,7 @@
     "w03109": {
       "kind": "TextView",
       "rows": 3,
-      "cols": 4,
+      "cols": 6,
       "static": {
         "title": "Tag database content"
       },
@@ -1689,8 +1689,6 @@
           "w01745",
           "w04712",
           "w03109",
-          "w03243",
-          "w03402",
           "w06470"
         ],
         "solid": false
@@ -2037,6 +2035,183 @@
       },
       "id": "w04712",
       "output": "show_pulses"
+    },
+    "w02187": {
+      "kind": "Markdown",
+      "rows": 2,
+      "cols": 3,
+      "static": {
+        "title": "! WARNING !",
+        "text": "**WARNING this tab contains experimental features that can cause malfunction of your Sensorgnome and corrupt your data! Please do not use unless you understand what the feature does.**\n\nYou're welcome to ask about anything here in the Motus forum..."
+      },
+      "dynamic": {},
+      "id": "w02187"
+    },
+    "w07689": {
+      "kind": "Panel",
+      "rows": 3,
+      "cols": 3,
+      "static": {
+        "title": "Burst Finder",
+        "widgets": [
+          "w08989",
+          "w07224",
+          "w02630",
+          "w00327",
+          "w04578"
+        ],
+        "solid": false
+      },
+      "dynamic": {},
+      "id": "w07689"
+    },
+    "w04578": {
+      "kind": "Toggle",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "Delta pulses",
+        "popup_info": "Enable/disable the burst finder. Its operation is controlled by the other switches in this panel. When disabled the SG operates in the \"traditional\" manner, meaning, pulses are written to the data files unfiltered and unprocessed.",
+        "show_value": false,
+        "on_value": "on",
+        "off_value": "off"
+      },
+      "dynamic": {
+        "value": "burstfinder/delta"
+      },
+      "id": "w04578",
+      "output": "burstfinder_delta"
+    },
+    "w08989": {
+      "kind": "Markdown",
+      "rows": 1,
+      "cols": 4,
+      "static": {
+        "title": "",
+        "text": "The burst finder processes Lotek pulses and detects bursts (sequence of 4 pulses) that belong to a tag. This can be used to filter out noise pulses and/or to output bursts instead of pulses."
+      },
+      "dynamic": {},
+      "id": "w08989"
+    },
+    "w02630": {
+      "kind": "Toggle",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "Raw pulses",
+        "popup_info": "Controls whether to output raw pulses (traditional operation) to data files. This results in lines starting with a \"p\".",
+        "on_value": "on",
+        "off_value": "off",
+        "show_value": false
+      },
+      "dynamic": {
+        "value": "burstfinder/raw"
+      },
+      "id": "w02630",
+      "output": "burstfinder_raw"
+    },
+    "w00327": {
+      "kind": "Toggle",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "Filtered pulses",
+        "on_value": "on",
+        "off_value": "off",
+        "popup_info": "Whether to output filtered pulses, meaning pulses that belong to a burst. This results in lines starting with a \"P\".",
+        "show_value": false
+      },
+      "dynamic": {
+        "value": "burstfinder/filtered"
+      },
+      "id": "w00327",
+      "output": "burstfinder_filtered"
+    },
+    "w07224": {
+      "kind": "Toggle",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "Burst",
+        "on_value": "on",
+        "off_value": "off",
+        "popup_info": "Whether to output bursts. This results in lines starting with a \"b\".",
+        "show_value": false
+      },
+      "dynamic": {
+        "value": "burstfinder/burst"
+      },
+      "id": "w07224",
+      "output": "burstfinder_burst"
+    },
+    "w05065": {
+      "kind": "Panel",
+      "rows": 1,
+      "cols": 3,
+      "static": {
+        "title": "Cellular",
+        "widgets": [
+          "w06297",
+          "w09114"
+        ],
+        "solid": false
+      },
+      "dynamic": {},
+      "id": "w05065"
+    },
+    "w06297": {
+      "kind": "Markdown",
+      "rows": 1,
+      "cols": 4,
+      "static": {
+        "title": "",
+        "text": "The toggles here are intended for some cellular troubleshooting.\nAfter toggling wait 10 seconds!"
+      },
+      "dynamic": {},
+      "id": "w06297"
+    },
+    "w09114": {
+      "kind": "Toggle",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "Priority",
+        "on_value": "high",
+        "off_value": "low",
+        "popup_info": "Normally the cellular connection has lower priority than ethernet and wifi so those (cheaper) networks are used if available. Toggling to \"high\" here raises the cellular priority _above_ ethernet and wifi it's it's always used. This is useful to force-test the cellular connection while being locally connected for troubleshooting. Note that the \"local connection\" has to be on the same subnet."
+      },
+      "dynamic": {
+        "value": "cellular/priority"
+      },
+      "id": "w09114",
+      "output": "cellular_priority"
+    },
+    "w03097": {
+      "kind": "Panel",
+      "rows": 2,
+      "cols": 3,
+      "static": {
+        "title": "RTL-SDR",
+        "widgets": [
+          "w05984",
+          "w03402",
+          "w03243"
+        ],
+        "solid": false
+      },
+      "dynamic": {},
+      "id": "w03097"
+    },
+    "w05984": {
+      "kind": "Markdown",
+      "rows": 1,
+      "cols": 4,
+      "static": {
+        "title": "",
+        "text": "Experimental controls for RTL-SDR dongles used for Lotek detections."
+      },
+      "dynamic": {},
+      "id": "w05984"
     }
   },
   "grids": {
@@ -2114,6 +2289,7 @@
         "w08547"
       ],
       "id": "g05782",
+      "min_cols": 3,
       "max_cols": 6
     },
     "g08970": {
@@ -2129,6 +2305,20 @@
         "w07258"
       ],
       "id": "g08970",
+      "min_cols": 3,
+      "max_cols": 6
+    },
+    "g05117": {
+      "kind": "FixedGrid",
+      "title": "",
+      "widgets": [
+        "w02187",
+        "w07689",
+        "w05065",
+        "w03097"
+      ],
+      "id": "g05117",
+      "min_cols": 3,
       "max_cols": 6
     }
   },
@@ -2140,7 +2330,8 @@
       "t06560",
       "t06959",
       "t08355",
-      "t09219"
+      "t09219",
+      "t05656"
     ]
   },
   "tabs": {
@@ -2190,6 +2381,14 @@
       "id": "t09219",
       "grids": [
         "g05782"
+      ]
+    },
+    "t05656": {
+      "icon": "flask",
+      "title": "lab",
+      "id": "t05656",
+      "grids": [
+        "g05117"
       ]
     }
   },

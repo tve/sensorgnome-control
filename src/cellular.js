@@ -10,7 +10,7 @@ class CellConfig {
   constructor(path) {
     this.path = path
     // config values
-    this.data = { apn: "", "ip-type": "ipv4v6", "allow-roaming": "yes"}
+    this.data = { apn: "", "ip-type": "ipv4v6", "allow-roaming": "yes", priority: "low"}
     //
     try {
       let text = Fs.readFileSync(path).toString()
@@ -82,6 +82,43 @@ class CellMan {
       })
       this.getCellStatusSoon(2000)
     }
+  }
+
+  getCellPriority() {
+    let metric = undefined
+    ChildProcess.execFile("/usr/bin/ip", ["route"], (code, stdout, stderr) => {
+      console.log(`ip route code=${code} stderr=${stderr}`)
+      for (const line of stdout.split('\n')) {
+        const mm = line.match(/^default .*dev (wwan[0-9]|usb[0-9]).* metric ([0-9]*)/)
+        if (mm && mm[2]) { metric = parseInt(mm[2]); break }
+      }
+    })
+    if (!metric) {
+      try {
+        let text = Fs.readFileSync("/etc/dhcpcd.conf").toString()
+        const mm = text.match(/^metric ([0-9]*)/m)
+        if (mm && mm[1]) metric = parseInt(mm[1])
+      } catch (e) {
+        console.log("Error reading dhcpcd config: " + e.toString())
+      }
+    }
+    return metric < 1000 ? "high" : "low"
+  }
+
+  setCellPriority(priority) {
+    if (!["low","high"].includes(priority)) return
+    if (priority == this.config.priority) return // no change
+    this.config.update({priority})
+    const metric = priority == "high" ? 500 : 10000
+    ChildProcess.execFile("/usr/bin/sed",
+      ["-i", "-e", `s/^metric .*/metric ${metric}/`, "/etc/dhcpcd.conf"],
+      (code, stdout, stderr) => {
+        console.log(`Change cell metric code=${code} stdout=${stdout} stderr=${stderr}`)
+        ChildProcess.execFile("/usr/bin/systemctl", ["restart", "dhcpcd"], (code, stdout, stderr) => {
+          console.log(`Restart dhcpcd code=${code} stdout=${stdout} stderr=${stderr}`)
+        })
+      }
+    )
   }
 
   getCellStatusSoon(ms) {
