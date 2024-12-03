@@ -120,7 +120,7 @@ TheMatron.on("gotGPSFix", function(fix) {
 // Propagate input received from vamp-alsa-host, i.e. Lotek pulses, to data file
 // TheMatron.on("vahData", (d) => { AllOut.write(d + '\n') })
 // Propagate burst finder output (as configured in burst finder) to data file
-TheMatron.on("bfOut", (d) => { AllOut.write(d.text + '\n'); console.log("BF: " + d.text) })
+TheMatron.on("bfOut", (d) => { AllOut.write(d.text + '\n'); /*console.log("BF: " + d.text)*/ })
 // Propagate vah setting commands into data file
 TheMatron.on("setParam", (s) => {
     AllOut.write(["S", s.time, s.port, s.par, s.val, s.errCode, s.err].join(',') + "\n")
