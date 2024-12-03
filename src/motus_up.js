@@ -369,7 +369,9 @@ class MotusUploader {
     startArchiveStream(files) {
         let archive = AR('zip', { zlib: { level: 1 } }) // we're putting .gz files in...
         for (const [f, sz, d] of files) {
-            archive.file(f, { name: Path.basename(f), date: new Date(d*1000) })
+            const p = f.split('/')
+            const name = (p.length > 2 ? p.slice(p.length-2) : p).join('/')
+            archive.file(f, { name: name, date: new Date(d*1000) })
         }
         archive.finalize()
         return archive
@@ -422,7 +424,7 @@ class MotusUploader {
         //console.log("Verify request completed in", Date.now() - t0, "ms")
         if (resp.statusCode == 200) {
             const txt = await resp.text()
-            if (txt.startsWith('<')) throw new Error(`Upload verify got non-json response`)
+            if (txt.trim().startsWith('<')) throw new Error(`Upload verify got HTML response: ${txt.slice(0,20)}...`)
             const j = JSON.parse(txt)
             //console.log("Upload verify response:", txt)
             if ("filePartName" in j) return [ true, j.filePartName]
