@@ -171,7 +171,7 @@ class CellMan {
         const bearer = modem?.generic?.bearers?.length > 0 && modem?.generic?.bearers[0]
         if (bearer) return this.execMMCli(m, ["-b", bearer.replace(/.*\//, "")], true)
         if (!["no-sim", "disabled", "failed"].includes(this.cell_state))
-          return this.execMMCli(m, ["--3gpp-scan"], true)
+          return this.execMMCli(m, ["--3gpp-scan"], false) // true)
         return {}
       })
       .then(data => {
