@@ -39,7 +39,7 @@ class Dashboard {
             'netHotspotState', 'netWifiConfig', 'portmapFile', 'tagDBInfo', 'motusRecv',
             'motusUploadResult', 'netDefaultGw', 'netDNS', 'lotekFreq', 'netCellState', 'netCellReason',
             'netCellInfo', 'netCellConfig', 'cttRadioVersion', 'vahRate', 'vahFrames', 'devState',
-            'rtlInfo',
+            'rtlInfo', 'bfOutConfig',
             // dashboard events triggered by a message from FlexDash
             'dash_download', 'dash_upload', 'dash_deployment_update', 'dash_enable_wifi',
             'dash_enable_hotspot', 'dash_config_wifi', 'dash_update_portmap', 'dash_creds_update',
@@ -263,6 +263,16 @@ class Dashboard {
         FlexDash.set('lotek_show_pulses', v=="on" ? "on" : "off")
         this.show_pulses = v == "on"
     }
+
+    handle_bfOutConfig(config) {
+        FlexDash.set('burstfinder',
+            Object.fromEntries(Object.entries(config).map(([k,v])=>[k,v?"on":"off"]))
+        )
+    }
+    handle_dash_burstfinder_burst(v) { BurstFinder.setOutput("burst", v=="on") }
+    handle_dash_burstfinder_raw(v) { BurstFinder.setOutput("raw", v=="on") }
+    handle_dash_burstfinder_filtered(v) { BurstFinder.setOutput("filtered", v=="on") }
+    handle_dash_burstfinder_delta(v) { BurstFinder.setOutput("delta", v=="on") }
 
     // ===== Network / Internet
 

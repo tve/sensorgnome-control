@@ -5,6 +5,7 @@ const CONFDIR     = "/etc/sensorgnome"             // where config files are loc
 const ACQUISITION = CONFDIR+"/acquisition.json"    // Receiver/sensor configuration
 const PORTMAP     = CONFDIR+"/usb-port-map.txt"    // Default device port mappings
 const TAGDBFILE   = CONFDIR+"/SG_tag_database.sqlite"
+const BURSTDBFILE = CONFDIR+"/bursts.json"
 const CELLCONFIG  = CONFDIR+"/cellular.json"
 const FEEDCONFIG  = CONFDIR+"/feed.json"           // Serial output feed
 const DEVROOT     = "/dev/sensorgnome"             // Dir where uDev rules add device files
@@ -82,6 +83,7 @@ function makeTagFinder() {
 makeTagFinder()
 TheMatron.on('lotekFreqChg', () => {
     console.log("Restarting tagFinder"); TagFinder.quit(); makeTagFinder(); TagFinder.start() })
+BurstFinder   = new (require('./burstfinder.js').BurstFinder) (TheMatron, BURSTDBFILE)
 
 // Start the data file saving/writing/etc...
 DataSaver     = new (require('./datasaver.js').DataSaver) (TheMatron, DATADIR)
@@ -116,7 +118,9 @@ TheMatron.on("gotGPSFix", function(fix) {
 })
 
 // Propagate input received from vamp-alsa-host, i.e. Lotek pulses, to data file
-TheMatron.on("vahData", (d) => { AllOut.write(d + '\n') })
+// TheMatron.on("vahData", (d) => { AllOut.write(d + '\n') })
+// Propagate burst finder output (as configured in burst finder) to data file
+TheMatron.on("bfOut", (d) => { AllOut.write(d.text + '\n'); console.log("BF: " + d.text) })
 // Propagate vah setting commands into data file
 TheMatron.on("setParam", (s) => {
     AllOut.write(["S", s.time, s.port, s.par, s.val, s.errCode, s.err].join(',') + "\n")
@@ -147,6 +151,7 @@ FlexDash.start()
 Dashboard.start()
 
 // Start the tagFinder
+BurstFinder.start()
 TagFinder.start()
 
 MotusUp.start()

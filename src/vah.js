@@ -268,6 +268,7 @@ VAH.prototype.gotData = function(data) {
     this.dataBuf += data.toString();
     const lines = this.dataBuf.split('\n');
     this.dataBuf = lines.pop();
+    //for (const l of lines) console.log("vahData:", l)
     for (const l of lines) this.matron.emit("vahData", l);
 };
 
