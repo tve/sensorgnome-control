@@ -424,7 +424,7 @@ class MotusUploader {
         //console.log("Verify request completed in", Date.now() - t0, "ms")
         if (resp.statusCode == 200) {
             const txt = await resp.text()
-            if (txt.trim().startsWith('<')) throw new Error(`Upload verify got HTML response: ${txt.slice(0,20)}...`)
+            if (txt.trim().startsWith('<'))  throw new Error(`Upload verify got HTML response: ${txt.slice(0,20)}...`)
             const j = JSON.parse(txt)
             //console.log("Upload verify response:", txt)
             if ("filePartName" in j) return [ true, j.filePartName]
