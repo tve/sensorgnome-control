@@ -39,7 +39,7 @@ class Dashboard {
             'netHotspotState', 'netWifiConfig', 'portmapFile', 'tagDBInfo', 'motusRecv',
             'motusUploadResult', 'netDefaultGw', 'netDNS', 'lotekFreq', 'netCellState', 'netCellReason',
             'netCellInfo', 'netCellConfig', 'cttRadioVersion', 'vahRate', 'vahFrames', 'devState',
-            'rtlInfo', 'bfOutConfig',
+            'rtlInfo', 'bfOutConfig', 'gotBurst',
             // dashboard events triggered by a message from FlexDash
             'dash_download', 'dash_upload', 'dash_deployment_update', 'dash_enable_wifi',
             'dash_enable_hotspot', 'dash_config_wifi', 'dash_update_portmap', 'dash_creds_update',
@@ -694,6 +694,15 @@ class Dashboard {
                 this.dfLogPush(tt[0], name, signal)
             }
         }
+    }
+
+    handle_gotBurst(burst) {
+        // { text, info, meanFreq, sdFreq, meanSig, sdSig, meanNoise, meanSnr }
+        // info: [ s0.port, s0.ts/1000, this.tagid, ...intv, ...tags[this.tagid] ]
+        const ts = (new Date(burst.info[1]*1000)).toISOString().replace(/.*T/, '').replace(/\..*/, '')
+        this.detectionLogPush(
+            `BUR B${burst.info[0]} ${ts}: #${burst.info[2]} ${burst.meanFreq}kHz snr:${burst.meanSnr}dB`
+        )
     }
 
     handle_vahData(line) {
