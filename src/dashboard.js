@@ -868,15 +868,17 @@ class Dashboard {
     }
 
     // show and toggle release train
+    releasemap = {stable:'bookworm',testing:'booktest',bookworm:'stable',booktest:'testing'}
     handle_dash_toggle_train(value) {
         FlexDash.set('software/train', value)
         if (['stable','testing'].includes(value)) {
+            value = this.releasemap[value]
             Fs.readFile('/etc/apt/sources.list.d/sensorgnome.list', (err, data) => {
                 if (err) {
                     console.log("Error reading sensorgnome.list:", err)
                     return
                 }
-                data = data.toString().replace(/(stable|testing)/, value)
+                data = data.toString().replace(/(bookworm|booktest)/, value)
                 Fs.writeFile('/etc/apt/sources.list.d/sensorgnome.list', data, (err) => {
                     if (err) {
                         console.log("Error writing sensorgnome.list:", err)
@@ -894,8 +896,10 @@ class Dashboard {
                 console.log("Error reading sensorgnome.list:", err)
                 return
             }
-            let train = data.toString().match(/(stable|testing)/)
-            if (train) FlexDash.set('software/train', train[1])
+            let train = data.toString().match(/(bookworm|booktest)/)
+            if (train) {
+                FlexDash.set('software/train', this.releasemap[train[1]])
+            }
         })
     }
 
