@@ -22,21 +22,24 @@
 //       name: "file1.txt.gz",
 //       type: "ctt", // receiver type (ctt/all)
 //       size: 12345, // file size in bytes
-//       data_lines: 123, // number of tag detections for CTT, number of pulses for Lotek
-//       start: 1637958427, // unix timestamp when file was started
-//       first_data: 1637958427, // unix timestamp of first data record in the file, null if none
-//       last_data: 1637958429, // unix timestamp of last data record in the file, null if none
+//       start: 1637958427, // unix timestamp when file was started, derived from filename
 //       uploaded: 1637958429, // unix timestamp of last upload to server, null otherwise
 //       downloaded: 1637958429, // unix timestamp of last download via web interface, null otherwise
 //     }]}
 // The data file is written when something changes, e.g., an new file is started, an
 // upload is performed, etc
+// Note: the original version of this module parsed data files to collect stats about the number
+// of detections, this was removed 12/2024
 
 const SAVE_DLY = 900 // milliseconds to delay save in case some more stuff shows up
 
 const Fs = require("fs")
 const FSP = require("fs/promises")
 const Zlib = require("zlib")
+const util = require('node:util')
+const execFile = util.promisify(require('node:child_process').execFile)
+
+async function sleep(time) { return new Promise(resolve => setTimeout(resolve, time)) }
 
 // find all files in a subtree and yield each file's {path, stat} in turn
 // findFiles is an async generator (yay! ugh#%^), it will yield each {path,stat} value when 
@@ -66,10 +69,7 @@ class FileInfo {
         if (!info) throw Error("Invalid path")
         this.info = { ...info,
             size: 0,
-            data_lines: 0,
             gps: false,
-            first_data: null,
-            last_data: null,
             uploaded: null,
             downloaded: null,
         }
@@ -95,44 +95,6 @@ class FileInfo {
         return data
     }
 
-    parseLine(line) {
-        if (line.startsWith("G")) {
-            this.info.gps = true
-        } else if (line.startsWith("T") || line.startsWith("p")) {
-            this.info.data_lines++
-            const fields = line.split(",")
-            // handle ISOString datetimes provisionally due to bug
-            const ts = Math.trunc( fields[1].includes("T") ? (new Date(fields[1])).getTime()/1000 : parseFloat(fields[1]) )
-            if (this.info.first_data === null) this.info.first_data = ts
-            this.info.last_data = ts
-        }
-    }
-
-    // parse a data chunk
-    parseChunk(chunk) {
-        let lines = (this.lines+chunk.toString()).split("\n")
-        while (lines.length > 1) {
-            let line = lines.shift()
-            this.parseLine(line)
-        }
-        this.lines = lines[0]
-    }
-
-    // parse the file asynchronously, optionally pass in the file size (e.g. from a stat call)
-    async parseFile(size=null) {
-        const path = this.info.dir + '/' + this.info.name
-        const input = path.endsWith(".gz") ? Fs.createReadStream(path).pipe(Zlib.createGunzip())
-                                           : Fs.createReadStream(path)
-        input.setEncoding('utf8')
-
-        if (size !== null) this.info.size = size
-
-        // we let exceptions prop up
-        for await (const chunk of input) {
-            this.parseChunk(chunk)
-        }
-    }
-
     // changes the path to the one provided and stats it to get the size
     // used in safestream after the file is gzipped
     async statFile(path) {
@@ -141,7 +103,6 @@ class FileInfo {
     }
 
     setSize(sz) { this.info.size = sz }
-    
 }
 
 class DataFiles {
@@ -161,13 +122,6 @@ class DataFiles {
         this.summary = {
             total_files: 0, total_bytes: 0, pre_2010_files: 0, other_sg_files: 0,
         }
-
-        // plottable information about data records
-        // det_by_day is a map of dates to a map of file types ("all", "ctt", ..) to the number of
-        // detections, the date being of the form YYYYMMDD
-        // det_by_hour is similar with the top-level key being the Date.now() of the hour
-        this.det_by_day = { }
-        this.det_by_hour = { }
     }
 
     // start tracking data files, begins by reading the file with info from previous runs, then
@@ -185,15 +139,24 @@ class DataFiles {
         } catch(e) {
             console.log(`DataFiles: cannot read ${this.datafile_path}: ${e}\n...starting afresh`)
         }
-        // update for every media device we have
-        const old = this.files.length
+        // update the info we have and kick-off daily compression of files
+        this.daily().then(()=>{})
+    }
+
+    // check the filesystem for unexpected changes as well as compress files about once a day
+    async daily() {
+        this.reading = true
         await this.updateTree(this.datadir)
         this.reading = false
-        if (this.files.length != old) {
-            await this.save()
-        }
+        await this.save()
+        this.reading = true
+        await this.compressFiles(this.datadir)
+        this.reading = false
+        await this.save()
         this.updateStats()
         this.pubStats()
+
+        setTimeout(() => this.daily().then(()=>{}), 23*3600*1000)
     }
 
     // save the accumulated info about data files to a json file
@@ -224,6 +187,7 @@ class DataFiles {
 
     // update information about data files starting at the given dir
     async updateTree(dir) {
+        for (const f of this.files) f.found = false
         for await (const { path, stat } of findFiles(dir)) {
             if (OpenFiles.includes(path)) continue // don't add files that are open (in SafeStream)
             let file_info
@@ -235,15 +199,54 @@ class DataFiles {
             }
             // check whether we have this file already, and if not scan it and add it
             const name = file_info.toInfo().name
-            if (this.files.some(f => f.name === name)) continue
-            // otherwise read and parse the file, then add it to the database
-            try{
-                await file_info.parseFile(stat.size)
+            const f = this.files.find(f => f.name == name)
+            if (f) {
+                f.found = true
+            } else {
+                if (stat.size !== null) file_info.setSize(stat.size)
+                file_info.info.found = true
                 this.addFile(file_info.toInfo(), false)
-            } catch (e) {
-               console.log(`DataFiles: ${e} in ${path}`)
             }
-        }        
+        }
+        // any files missing?
+        for (let i=0; i<this.files.length; ) {
+            const f = this.files[i]
+            if (f.found) {
+                i++
+            } else {
+                console.log(`Datafile ${f.name} has disappeared`)
+                this.delStats(f)
+                this.files.splice(i, 1)
+            }
+            delete f.found
+        }
+    }
+
+    // find files in the DB that are uncompressed and either have been uplaoded or are old and
+    // compress them (slowly). Very recent files are not compressed so they can be uploaded
+    async compressFiles(dir) {
+        const cutoff = Date.now()/1000 - 48*3600 // don't compress files more recent than 48 hours
+        console.log(`Compressing files, cutoff=${cutoff}`)
+        for (const file of this.files) {
+            const path = file.dir + '/' + file.name
+            if (path.endsWith('.gz')) continue
+            if (!path.endsWith('.txt')) continue // redundant, for safety...
+            if (!file.uploaded && file.start > cutoff) continue
+            console.log(`Bg gzip ${file.name}`)
+            try {
+                const {stdout, stderr} = await execFile("/usr/bin/nice", ["/usr/bin/gzip", path])
+                const gzpath = path + '.gz'
+                const oldsize = file.size
+                this.delStats(file)
+                file.size = (await FSP.stat(gzpath)).size
+                file.name = gzpath
+                this.addStats(file, false)
+            } catch (err) {
+                console.log(`Failed to compress ${path}: ${err}`)
+                //if (err.stderr) console.log(err.stderr)
+            }
+            await sleep(10*1000)
+        }
     }
     
     // add info about a data file and save all the info (the initial filesystem scan uses
@@ -251,7 +254,7 @@ class DataFiles {
     addFile(info, save=true) {
         this.files.push(info)
         if (typeof __TEST__ === 'undefined')
-            console.log(`DataFile added with ${info.data_lines} data lines: ${info.name}`)
+            console.log(`DataFile ${info.name} added`)
         this.addStats(info, save && !this.reading) // don't pub while reading
         // save if desired
         if (save) this.saveSoon() // delay and make async
@@ -273,29 +276,24 @@ class DataFiles {
         if (info.date < '20100101') this.summary.pre_2010_files++
         const id = Machine.machineID.substring(Machine.machineID.indexOf('-')+1)
         if (!info.name?.includes(id)) this.summary.other_sg_files++
-
-        // update daily stats
-        const secs_per_day = 24 * 3600
-        let start = info.first_data || info.start
-        if (start < (new Date('1999-12-12T00:00:00Z')).valueOf()/1000) console.log("OOPS", start, info.first_data, info.start)
-        const day = Math.trunc(start / secs_per_day) * secs_per_day
-        if (!this.det_by_day[day]) this.det_by_day[day] = { }
-        this.det_by_day[day][info.type] = (this.det_by_day[day][info.type] || 0) + info.data_lines
-        // prune daily to 100 days
-        //console.log("det_by_day", day, this.det_by_day)
-        let cutoff = Date.now()/1000 - 100*secs_per_day
-        Object.keys(this.det_by_day).filter(k => !(k >= cutoff)).forEach(k => delete this.det_by_day[k])
-
-        // same for hourly
-        const hour = Math.trunc(start / (3600)) * 3600
-        if (!this.det_by_hour[hour]) this.det_by_hour[hour] = { }
-        this.det_by_hour[hour][info.type] = (this.det_by_hour[hour][info.type] || 0) + info.data_lines
-        //console.log("Hour: ", hour, this.det_by_hour[hour], "added", start, JSON.stringify(info))
-        // prune hourly to 5 days
-        cutoff = Date.now()/1000 - 5*secs_per_day
-        Object.keys(this.det_by_hour).filter(k => !(k >= cutoff)).forEach(k => delete this.det_by_hour[k])
-        
         if (pub) this.pubStats()
+    }
+
+    // remove stats due to a file gone missing
+    delStats(info) {
+        this.summary.total_files--
+        this.summary.total_bytes -= info.size
+        if (!info.uploaded) {
+            this.summary.files_to_upload--
+            this.summary.bytes_to_upload -= info.size
+        }
+        if (!info.uploaded && !info.downloaded) {
+            this.summary.files_to_download--
+            this.summary.bytes_to_download -= info.size
+        }
+        if (info.date < '20100101') this.summary.pre_2010_files--
+        const id = Machine.machineID.substring(Machine.machineID.indexOf('-')+1)
+        if (!info.name?.includes(id)) this.summary.other_sg_files--
     }
 
     // update stats that can change due to an upload or download
@@ -329,8 +327,6 @@ class DataFiles {
     pubStats() {
         console.log("DataFile stats:", JSON.stringify(this.summary))
         this.matron.emit("data_file_summary", this.summary)
-        this.matron.emit("detection_stats", this.det_by_day, this.det_by_hour)
-        //console.log(`DataFiles: det_by_hour ${JSON.stringify(this.det_by_hour)}`)
     }
 
     downloadList(what) {

@@ -15,6 +15,9 @@
   Writing to txt and then running gzip to compress makes everything simpler, the only downside
   is that when the SDcard is full the gz may fail, so there would be an uncompressed txt file left.
   In the days of 32GB SDcards for $10 that should be a rare occurrence...
+
+  Updated 2024: this module no longer compresses the files so they can easily be filtered
+  before being uploaded. Instead, files are compressed later.
 */
 
 const { FileInfo } = require("./datafiles")
@@ -59,11 +62,11 @@ class SafeStream {
             this.end()
             this.setupStreams()
         }
-        if (this.info) this.info.parseChunk(data)
     }
 
     // by the time gzip gets called the SafeStream object may well already be re-initialized
     // for the next file, so we shouldn't use this.info
+    // note: not used anymore! see end() method
     gzip(path, info, bw) {
         // the gzip process is a bit of a fire-and-forget: if it fails the uncompressed
         // file will still be there
@@ -97,7 +100,14 @@ class SafeStream {
             const path = this.sout.path // capture before it gets overwritten
             const bw = this.bytesWritten
             const info = this.info
-            this.sout.stream.on('close', () => this.gzip(path, info, bw))
+            // this.sout.stream.on('close', () => this.gzip(path, info, bw))
+            this.sout.stream.on('close', () => {
+                OpenFiles = OpenFiles.filter(f => f != path)
+                if (info) {
+                    info.setSize(bw)
+                    this.matron.emit("datafile", info.toInfo())
+                }
+            })
             // now end the stream
             this.sout.stream.end()
             this.sout.stream = null

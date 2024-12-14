@@ -14,6 +14,8 @@ const centra = require("./centra.js")
 const Path = require('path')
 const { promisify } = require('util')
 const pipeline = promisify(stream.pipeline)
+const { Transform } = require('node:stream')
+const { createGunzip } = require('node:zlib')
 const crypto = require('crypto')
 const { Buffer } = require('buffer')
 const fs = require('fs')
@@ -49,6 +51,26 @@ function buffer2sha1(buffer) {
     const sha1 = require('crypto').createHash('sha1')
     sha1.update(buffer, 'binary')
     return sha1.digest('hex')
+}
+
+//===== Filtering of Lotek pulse files
+
+class FilterPulses extends Transform {
+    fragment = ""
+    constructor(opts) { super(opts) } // necessary?
+    _transform(chunk, encoding, callback) {
+        const data = this.fragment + chunk.toString()
+        let lines = data.split('\n')
+        this.fragment = lines.pop()
+        for (const l of lines) {
+            if (!l.startsWith('P')) this.push(l+'\n') // P lines are pulses not used in a burst
+        }
+        callback()
+    }
+    _flush(callback) {
+        if (!this.fragment.startsWith('P')) this.push(this.fragment + '\n')
+        callback()
+    }
 }
 
 //===== functions related to authentication with Motus
@@ -122,7 +144,7 @@ async function getReceiverInfo() {
     if (resp.statusCode == 200) {
         const j = await resp.json()
         //console.log("Receiver info:", JSON.stringify(j))
-        let deployment = { status: 'unknown', project: null, name: null, antennas: [] }
+        let deployment = { status: 'unknown', project: 460, name: null, antennas: [] }
         for (const r of j.data || []) {
             if (r.receiverID == Machine.machineID) {
                 if (r.deploymentStatus == "active" || !deployment.project) {
@@ -367,14 +389,42 @@ class MotusUploader {
 
     // return a readable stream that contains the archive
     startArchiveStream(files) {
-        let archive = AR('zip', { zlib: { level: 1 } }) // we're putting .gz files in...
+        // new version where Lotek files are filtered to remove pulses not used by bursts
+        let archive = AR('zip', { zlib: { level: 7 } }) // we're putting uncompressed data in
         for (const [f, sz, d] of files) {
+            if (!fs.existsSync(f)) console.log(`OOPS: file ${f} missing`)
             const p = f.split('/')
             const name = (p.length > 2 ? p.slice(p.length-2) : p).join('/')
-            archive.file(f, { name: name, date: new Date(d*1000) })
+            // the following special treatment of Lotek files should really be driven by some flag
+            if (name.endsWith("-all.txt")) {
+                const freader = fs.createReadStream(f)
+                const filter = new FilterPulses()
+                const filtered = stream.compose(freader, filter)
+                archive.append(filtered, { name: name, date: new Date(d*1000) })
+                filtered.on('error', e => archive.emit('error', e))
+            } else if (name.endsWith("-all.txt.gz")) {
+                const freader = fs.createReadStream(f)
+                const filter = new FilterPulses()
+                const filtered = stream.compose(freader, createGunzip(), filter)
+                archive.append(filtered, { name: name, date: new Date(d*1000) })
+                filtered.on('error', e => archive.emit('error', e))
+            } else {
+                // add file as-is, e.g. CTT tag file
+                archive.file(f, { name: name, date: new Date(d*1000) })
+            }
         }
         archive.finalize()
         return archive
+
+        // original version where we just added files to the archive
+        // let archive = AR('zip', { zlib: { level: 1 } }) // we're putting .gz files in...
+        // for (const [f, sz, d] of files) {
+        //     const p = f.split('/')
+        //     const name = (p.length > 2 ? p.slice(p.length-2) : p).join('/')
+        //     archive.file(f, { name: name, date: new Date(d*1000) })
+        // }
+        // archive.finalize()
+        // return archive
     }
     
     // produce an archive from the files and compute its SHA1, return archive and sha1
@@ -383,10 +433,7 @@ class MotusUploader {
         const arstream = this.startArchiveStream(files)
         let error = null
         arstream.on('error', (msg) => { if (!error) error = new Error(msg) })
-        // pipe into hasher
-        // const hasher = new StreamingSHA1()
-        // await pipeline(arstream, hasher)
-        // locad into buffer and get sha1
+        // load into buffer and get sha1
         const archive = await stream2buffer(arstream)
         if (error) throw error
         const sha1 = buffer2sha1(archive)
@@ -453,6 +500,8 @@ class MotusUploader {
     // Perform a POST to motus.org to upload an archive with the provided files.
     // Returns the filePartName if successful. Throws otherwise.
     async upload_archive(archive, filePartName) {
+        // fs.writeFileSync("/tmp/upload.zip", archive)
+        // throw new Error("Please find upload in /tmp!")
         // start the request
         const t0 = Date.now()
         const resp = await centra(SERVER + URL_UPLOAD, 'POST')

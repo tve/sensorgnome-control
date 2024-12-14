@@ -83,7 +83,7 @@ function makeTagFinder() {
 makeTagFinder()
 TheMatron.on('lotekFreqChg', () => {
     console.log("Restarting tagFinder"); TagFinder.quit(); makeTagFinder(); TagFinder.start() })
-BurstFinder   = new (require('./burstfinder.js').BurstFinder) (TheMatron, BURSTDBFILE)
+PulseFilter   = new (require('./pulsefilter.js').PulseFilter) (TheMatron, BURSTDBFILE)
 
 // Start the data file saving/writing/etc...
 DataSaver     = new (require('./datasaver.js').DataSaver) (TheMatron, DATADIR)
@@ -119,7 +119,7 @@ TheMatron.on("gotGPSFix", function(fix) {
 
 // Propagate input received from vamp-alsa-host, i.e. Lotek pulses, to data file
 // TheMatron.on("vahData", (d) => { AllOut.write(d + '\n') })
-// Propagate burst finder output (as configured in burst finder) to data file
+// Propagate pulse filter output (as configured in burst finder) to data file
 TheMatron.on("bfOut", (d) => { AllOut.write(d.text + '\n'); /*console.log("BF: " + d.text)*/ })
 // Propagate vah setting commands into data file
 TheMatron.on("setParam", (s) => {
@@ -151,7 +151,7 @@ FlexDash.start()
 Dashboard.start()
 
 // Start the tagFinder
-BurstFinder.start()
+PulseFilter.start()
 TagFinder.start()
 
 MotusUp.start()

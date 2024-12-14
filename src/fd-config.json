@@ -2047,135 +2047,29 @@
       "dynamic": {},
       "id": "w02187"
     },
-    "w07689": {
-      "kind": "Panel",
-      "rows": 3,
-      "cols": 3,
-      "static": {
-        "title": "Burst Finder",
-        "widgets": [
-          "w08989",
-          "w07224",
-          "w02630",
-          "w00327",
-          "w04578"
-        ],
-        "solid": false
-      },
-      "dynamic": {},
-      "id": "w07689"
-    },
-    "w04578": {
-      "kind": "Toggle",
-      "rows": 1,
-      "cols": 2,
-      "static": {
-        "title": "Delta pulses",
-        "popup_info": "Enable/disable the burst finder. Its operation is controlled by the other switches in this panel. When disabled the SG operates in the \"traditional\" manner, meaning, pulses are written to the data files unfiltered and unprocessed.",
-        "show_value": false,
-        "on_value": "on",
-        "off_value": "off"
-      },
-      "dynamic": {
-        "value": "burstfinder/delta"
-      },
-      "id": "w04578",
-      "output": "burstfinder_delta"
-    },
-    "w08989": {
-      "kind": "Markdown",
-      "rows": 1,
-      "cols": 4,
-      "static": {
-        "title": "",
-        "text": "The burst finder processes Lotek pulses and detects bursts (sequence of 4 pulses) that belong to a tag. This can be used to filter out noise pulses and/or to output bursts instead of pulses."
-      },
-      "dynamic": {},
-      "id": "w08989"
-    },
-    "w02630": {
-      "kind": "Toggle",
-      "rows": 1,
-      "cols": 2,
-      "static": {
-        "title": "Raw pulses",
-        "popup_info": "Controls whether to output raw pulses (traditional operation) to data files. This results in lines starting with a \"p\".",
-        "on_value": "on",
-        "off_value": "off",
-        "show_value": false
-      },
-      "dynamic": {
-        "value": "burstfinder/raw"
-      },
-      "id": "w02630",
-      "output": "burstfinder_raw"
-    },
-    "w00327": {
-      "kind": "Toggle",
-      "rows": 1,
-      "cols": 2,
-      "static": {
-        "title": "Filtered pulses",
-        "on_value": "on",
-        "off_value": "off",
-        "popup_info": "Whether to output filtered pulses, meaning pulses that belong to a burst. This results in lines starting with a \"P\".",
-        "show_value": false
-      },
-      "dynamic": {
-        "value": "burstfinder/filtered"
-      },
-      "id": "w00327",
-      "output": "burstfinder_filtered"
-    },
-    "w07224": {
-      "kind": "Toggle",
-      "rows": 1,
-      "cols": 2,
-      "static": {
-        "title": "Burst",
-        "on_value": "on",
-        "off_value": "off",
-        "popup_info": "Whether to output bursts. This results in lines starting with a \"b\".",
-        "show_value": false
-      },
-      "dynamic": {
-        "value": "burstfinder/burst"
-      },
-      "id": "w07224",
-      "output": "burstfinder_burst"
-    },
     "w05065": {
       "kind": "Panel",
-      "rows": 1,
+      "rows": 6,
       "cols": 3,
       "static": {
         "title": "Cellular",
         "widgets": [
-          "w06297",
-          "w09114"
+          "w09114",
+          "w03046",
+          "w06416",
+          "w09838"
         ],
         "solid": false
       },
       "dynamic": {},
       "id": "w05065"
     },
-    "w06297": {
-      "kind": "Markdown",
-      "rows": 1,
-      "cols": 4,
-      "static": {
-        "title": "",
-        "text": "The toggles here are intended for some cellular troubleshooting.\nAfter toggling wait 10 seconds!"
-      },
-      "dynamic": {},
-      "id": "w06297"
-    },
     "w09114": {
       "kind": "Toggle",
       "rows": 1,
       "cols": 2,
       "static": {
-        "title": "Priority",
+        "title": "Route Priority",
         "on_value": "high",
         "off_value": "low",
         "popup_info": "Normally the cellular connection has lower priority than ethernet and wifi so those (cheaper) networks are used if available. Toggling to \"high\" here raises the cellular priority _above_ ethernet and wifi it's it's always used. This is useful to force-test the cellular connection while being locally connected for troubleshooting. Note that the \"local connection\" has to be on the same subnet."
@@ -2212,6 +2106,45 @@
       },
       "dynamic": {},
       "id": "w05984"
+    },
+    "w09838": {
+      "kind": "TextView",
+      "rows": 5,
+      "cols": 6,
+      "static": {
+        "title": ""
+      },
+      "dynamic": {
+        "text": "cellular/debug"
+      },
+      "id": "w09838",
+      "output": ""
+    },
+    "w03046": {
+      "kind": "PushButton",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "Debug dump",
+        "popup_info": "Generate a debug dump",
+        "color": "#EEEEEE"
+      },
+      "dynamic": {},
+      "id": "w03046",
+      "output": "cell_debug"
+    },
+    "w06416": {
+      "kind": "PushButton",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "Scan",
+        "popup_info": "Scan for available carriers, takes 10-20 seconds",
+        "color": "#EEEEEE"
+      },
+      "dynamic": {},
+      "id": "w06416",
+      "output": "cell_scan"
     }
   },
   "grids": {
@@ -2313,9 +2246,8 @@
       "title": "",
       "widgets": [
         "w02187",
-        "w07689",
-        "w05065",
-        "w03097"
+        "w03097",
+        "w05065"
       ],
       "id": "g05117",
       "min_cols": 3,

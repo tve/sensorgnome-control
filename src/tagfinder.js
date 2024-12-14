@@ -79,8 +79,8 @@ class TagFinder {
             for (let line of x.toString().split('\n')) {
                 if (!(/^[0-9]/.test(line))) continue
                 this.matron.emit("gotTag", line)
-                line = 'L' + line
-                console.log(`Lotek tag: ${line}`)
+                // line = 'L' + line
+                // console.log(`Lotek tag: ${line}`)
             }
         })
     }
