@@ -215,9 +215,12 @@ class CellMan {
           //console.log("nets:", nets)
           info["scan"] = nets.length + " networks"
           for (let i = 0; i < nets.length && i < 10; i++) {
-            const op = nets[i].match(/operator-name: *([^,]*)/)?.[1]
-            const tech = nets[i].match(/access-technologies: *([^,]*)/)?.[1]
-            const avail = nets[i].match(/availability: *([^,]*)/)?.[1]
+            const op = nets[i]["operator-name"] + " (" + nets[i]["operator-code"] + ")"
+            const tech = nets[i]["access-technologies"]
+            const avail = nets[i]["availability"]
+            // const op = nets[i].match(/operator-name: *([^,]*)/)?.[1]
+            // const tech = nets[i].match(/access-technologies: *([^,]*)/)?.[1]
+            // const avail = nets[i].match(/availability: *([^,]*)/)?.[1]
             if (op) info[op] = tech + ", " + avail
           }
           if (reason == "") {
@@ -233,6 +236,29 @@ class CellMan {
       })
   }
 
+  async getCellDebug() {
+    try {
+      const res1 = await this.execFile(MMCLI, ["-m", "a"])
+      const bearer = res1.match(/([^ \n]*Bearer[^ \n]*)/)?.[1]
+      const sim = res1.match(/([^ \n]*\/SIM\/[^ \n]*)/)?.[1]
+      console.log("SIM:", sim)
+      console.log("Bearer:", bearer)
+      const res2 = sim ? await this.execFile(MMCLI, ["-m", "a", "-i", sim]) : "no sim"
+      const res3 = bearer ? await this.execFile(MMCLI, ["-m", "a", "-b", bearer]) : "no bearer"
+      return res1 + "\n\nSIM:\n" + res2 + "\n\nBearer:\n" + res3
+    } catch (err) {
+      return "Error getting cellular dump: " + err.stack
+    }
+  }
+
+  async getCellScan() {
+    try {
+      const res1 = await this.execFile(MMCLI, ["-m", "a", "--3gpp-scan"])
+      return res1
+    } catch (err) {
+      return "Error performing cellular scan: " + err.stack
+    }
+  }
   async execMMCli(modem, args, nolog = false) {
     const a = ["-J", ...args]
     if (modem != null) a.unshift("-m", modem)

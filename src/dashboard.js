@@ -49,7 +49,8 @@ class Dashboard {
             'dash_download_logs', 'dash_lotek_freq_change', 'dash_config_cell', 'dash_toggle_train',
             'dash_remote_cmds', 'dash_detection_range', 'dash_alter_bootCount', 'dash_enable_agc',
             'dash_show_pulses', 'dash_cellular_priority', 'dash_burstfinder_burst',
-            'dash_burstfinder_raw', 'dash_burstfinder_filtered', 'dash_burstfinder_delta'
+            'dash_burstfinder_raw', 'dash_burstfinder_filtered', 'dash_burstfinder_delta',
+            'dash_cell_debug', 'dash_cell_scan'
         ]) {
             this.matron.on(ev, (...args) => {
                 let fn = 'handle_'+ev
@@ -311,6 +312,13 @@ class Dashboard {
     handle_dash_cellular_priority(prio) {
         CellMan.setCellPriority(prio)
         setTimeout(()=>FlexDash.set('cellular/priority', CellMan.getCellPriority()), 5000)
+    }
+    handle_dash_cell_debug() {
+        CellMan.getCellDebug().then(dbg => FlexDash.set('cellular/debug', dbg))
+    }
+    handle_dash_cell_scan() {
+        FlexDash.set('cellular/debug', "Scan takes 10-20 seconds...")
+        CellMan.getCellScan().then(dbg => FlexDash.set('cellular/debug', dbg))
     }
 
     // upload info
