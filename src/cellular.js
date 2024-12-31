@@ -149,13 +149,15 @@ class CellMan {
         const old_state = this.cell_state
         this.cell_state = modem.generic.state
         reason = modem.generic["state-failed-reason"]
-        if (reason == "--") reason = ""
+        if (reason == "--") reason = "timeout?"
         this.matron.emit("netCellState", this.cell_state)
         this.matron.emit("netCellReason", reason)
         // see whether a connectivity check is in order
         if (old_state != this.cell_state) this.getCellStatusSoon()
         if (!["connected"].includes(this.cell_state)) {
           this.getCellStatusSoon(20000)
+        } else {
+          this.getCellStatusSoon(300000)
         }
         // pull out some info to display in props table
         info = {}
@@ -228,7 +230,26 @@ class CellMan {
             this.matron.emit("netCellReason", reason)
           }
         }
+        console.log("Cell state:", this.cell_state)
+        if (["registered","connected"].includes(this.cell_state)) {
+          return this.execMMCli(m, ["--signal-get"], true)
+        }
         this.matron.emit("netCellInfo", info)
+      })
+      .then(data => {
+        if (typeof data != "object" || data == {}) {
+        } else if ("modem" in data && "signal" in data.modem) {
+          const sig = data.modem.signal
+          for (const rat in sig) {
+            if (rat == "threshold") continue
+            if ((sig[rat].rssi && sig[rat].rssi != '--') ||
+                (sig[rat].rsrp && sig[rat].rsrp != '--')) {
+              info["signal"] = { rat, ...sig[rat] }
+              break
+            }
+          }
+        this.matron.emit("netCellInfo", info)
+      }
       })
       .catch(err => {
         console.log("getCellStatus:", err.message.trim())
