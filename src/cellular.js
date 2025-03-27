@@ -167,6 +167,7 @@ class CellMan {
         info["packet service"] = modem?.["3gpp"]?.["packet-service-state"]
         info["capabilities"] = modem?.generic?.["current-capabilities"].join(" ")
         info["model"] = modem?.generic?.model
+        info["firmware"] = modem?.generic?.revision
         info["imei"] = modem?.["3gpp"]?.["imei"]
         info["number"] = modem?.generic?.["own-numbers"]?.join(" ")
         // see what to query next
