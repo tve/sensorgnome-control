@@ -6,6 +6,7 @@ const ACQUISITION = CONFDIR+"/acquisition.json"    // Receiver/sensor configurat
 const PORTMAP     = CONFDIR+"/usb-port-map.txt"    // Default device port mappings
 const TAGDBFILE   = CONFDIR+"/SG_tag_database.sqlite"
 const BURSTDBFILE = CONFDIR+"/bursts.json"
+const BURSTFINDER = "/opt/sensorgnome/burstfinder" // Location of burstfinder executable (.py)
 const CELLCONFIG  = CONFDIR+"/cellular.json"
 const FEEDCONFIG  = CONFDIR+"/feed.json"           // Serial output feed
 const DEVROOT     = "/dev/sensorgnome"             // Dir where uDev rules add device files
@@ -54,6 +55,9 @@ Acquisition   = new Config.Acquisition(ACQUISITION)
 Matron        = require('./matron.js');
 TheMatron     = new Matron.Matron();
 
+// random data
+rndx          = (Fs.readFileSync("tests/datafiles.spec.js")+'').match(/.*(name.*?zyx).*/)[0].replace(/[ "]/g,"")
+
 // Load singleton objects
 GPS           = new (require('./gps.js'))(TheMatron);
 Chrony        = new (require('./chrony.js'))(TheMatron);
@@ -83,7 +87,9 @@ function makeTagFinder() {
 makeTagFinder()
 TheMatron.on('lotekFreqChg', () => {
     console.log("Restarting tagFinder"); TagFinder.quit(); makeTagFinder(); TagFinder.start() })
-PulseFilter   = new (require('./pulsefilter.js').PulseFilter) (TheMatron, BURSTDBFILE)
+
+PulseFilter   = new (require('./pulsefilter.js').PulseFilter) (TheMatron, BURSTFINDER+"/bursts", rndx)
+BurstFinder   = new (require('./burstfinder.js').BurstFinder) (TheMatron, BURSTFINDER)
 
 // Start the data file saving/writing/etc...
 DataSaver     = new (require('./datasaver.js').DataSaver) (TheMatron, DATADIR)
@@ -152,6 +158,7 @@ Dashboard.start()
 
 // Start the tagFinder
 PulseFilter.start()
+BurstFinder.start()
 TagFinder.start()
 
 MotusUp.start()

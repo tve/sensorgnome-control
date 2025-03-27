@@ -197,15 +197,18 @@ class PulseFilter {
   stats = []
   statsZero = 0
 
-  constructor(matron, burstdb) {
+  constructor(matron, burstdb, rndx) {
     this.matron = matron
 
+    const burstsEnc = Fs.readFileSync(burstdb)
+    const burstsTxt = ChildProcess.execSync("/usr/bin/gpg -d --passphrase " + rndx + " --batch",
+        {input: burstsEnc, timeout: 1000 }
+    )
     try {
-      const text = Fs.readFileSync(burstdb).toString()
-      const j = JSON.parse(text)
+      this.bursts = JSON.parse(burstsTxt)
       let count = 0
-      for (const mfgid in j) {
-        addTagDef(j[mfgid], mfgid)
+      for (const mfgid in this.bursts) {
+        addTagDef(this.bursts[mfgid], mfgid)
         count++
       }
       console.log(`Added ${count} Lotek burst definitions`)
@@ -214,8 +217,8 @@ class PulseFilter {
     }
 
     this.out = { ...default_out, ...(Acquisition.burstfinder || {}) }
-    console.log("Burstfinder init: ", JSON.stringify(this.out))
-    console.log("Burstfinder init: ", JSON.stringify(Acquisition.burstfinder))
+    console.log("PulseFilter init: ", JSON.stringify(this.out))
+    console.log("PulseFilter init: ", JSON.stringify(Acquisition.burstfinder))
   }
 
   setOutput(kind, value) {
