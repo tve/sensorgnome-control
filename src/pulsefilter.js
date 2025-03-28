@@ -289,7 +289,7 @@ class PulseFilter {
     const ts = (Date.now()/1000).toFixed(4)
     for (const k in config) {
       this.matron.emit("bfOut", { text: `S,${ts},0,${k.toLowerCase()},${config[k]}` })
-      console.log("BF settings", `S,${ts},0,${k.toLowerCase()},${config[k]}`)
+      console.log("PF settings", `S,${ts},0,${k.toLowerCase()},${config[k]}`)
     }
   }
 

@@ -38,8 +38,16 @@ class BurstFinder {
             // console.log("From tagfinder:", x.toString());
             for (let line of x.toString().split('\n')) {
                 if (!(/^[0-9]/.test(line))) continue
-                this.matron.emit("gotBurst", "b"+line)
+                console.log("FROM BF: " + line)
+                // Antenna ID,Unix timestamp (s),Lotek code ID,Frequency offset mean (kHz),Frequency offset range (kHz),
+                // Signal strength mean (dB),Signal strength range (dB),Noise mean (dB),Max pulse slop (s),
+                // Minimum signal to noise (dB),Other bursts using this pulse,Other pulses in the window,Warning flag'
                 this.matron.emit("bfOut", "b"+line)
+                const text = line
+                const ll = line.split(',')
+                const info = [ ll[0], ll[1], ll[2] ]
+                const burst = { text: line, info, meanFreq: ll[3], sdFreq: ll[4], meanSig: ll[5], sdSig: ll[6], meanNoise:ll[7], meanSnr:ll[9] }
+                this.matron.emit("gotBurst", burst)
                 // line = 'L' + line
                 // console.log(`Lotek tag: ${line}`)
             }
@@ -81,8 +89,10 @@ class BurstFinder {
 
     gotInput(x) {
         if (!this.child) return
+        if (typeof x != 'string' || !x.startsWith('p')) return
         try {
-            this.child.stdin.write(x + '\n')
+            this.child.stdin.write(x.trimStart('p') + '\n')
+            console.log("TO BF: " + x.trimStart('p'))
         } catch(e) {
             console.log("Error writing to burstfinder.py:", e)
         }
