@@ -709,7 +709,7 @@ class Dashboard {
         // info: [ s0.port, s0.ts/1000, this.tagid, ...intv, ...tags[this.tagid] ]
         const ts = (new Date(burst.info[1]*1000)).toISOString().replace(/.*T/, '').replace(/\..*/, '')
         this.detectionLogPush(
-            `BUR B${burst.info[0]} ${ts}: #${burst.info[2]} ${burst.meanFreq}kHz snr:${burst.meanSnr}dB`
+            `BUR B${burst.info[0]} ${ts}: #${burst.info[2]} ${burst.meanFreq.toFixed(3)}kHz snr:${burst.meanSnr.toFixed(1)}dB`
         )
     }
 

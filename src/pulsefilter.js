@@ -200,11 +200,11 @@ class PulseFilter {
   constructor(matron, burstdb, rndx) {
     this.matron = matron
 
-    const burstsEnc = Fs.readFileSync(burstdb)
-    const burstsTxt = ChildProcess.execSync("/usr/bin/gpg -d --passphrase " + rndx + " --batch",
-        {input: burstsEnc, timeout: 1000 }
-    )
     try {
+      const burstsEnc = Fs.readFileSync(burstdb)
+      const burstsTxt = ChildProcess.execSync("/usr/bin/gpg -d --passphrase " + rndx + " --batch",
+          {input: burstsEnc, timeout: 1000 }
+      )
       this.bursts = JSON.parse(burstsTxt)
       let count = 0
       for (const mfgid in this.bursts) {
