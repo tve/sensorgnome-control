@@ -202,8 +202,9 @@ class PulseFilter {
 
     try {
       const burstsEnc = Fs.readFileSync(burstdb)
-      const burstsTxt = ChildProcess.execSync("/usr/bin/gpg -d --passphrase " + rndx + " --batch",
-          {input: burstsEnc, timeout: 1000 }
+      const burstsTxt = ChildProcess.execSync(
+          "/usr/bin/gpg -d --passphrase " + rndx + " --batch --no-keyring",
+          {input: burstsEnc, timeout: 4000 }
       )
       this.bursts = JSON.parse(burstsTxt)
       let count = 0
