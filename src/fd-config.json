@@ -2025,16 +2025,16 @@
       "rows": 1,
       "cols": 2,
       "static": {
-        "title": "Show pulses",
+        "title": "Filter pulses",
         "on_value": "on",
         "off_value": "off",
         "popup_info": "Toggle the display of detected Lotek pulses in the tags and pulses panel on/off. Tags are always shown."
       },
       "dynamic": {
-        "value": "lotek_show_pulses"
+        "value": "burstfinder/filter_ui"
       },
       "id": "w04712",
-      "output": "show_pulses"
+      "output": "burstfinder_filter_ui"
     },
     "w02187": {
       "kind": "Markdown",
@@ -2145,6 +2145,70 @@
       "dynamic": {},
       "id": "w06416",
       "output": "cell_scan"
+    },
+    "w01195": {
+      "kind": "Panel",
+      "rows": 2,
+      "cols": 3,
+      "static": {
+        "title": "Burst Finder",
+        "widgets": [
+          "w07178",
+          "w06111",
+          "w04346"
+        ]
+      },
+      "dynamic": {},
+      "id": "w01195"
+    },
+    "w04346": {
+      "kind": "Toggle",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "Method",
+        "on_value": "burstfinder",
+        "off_value": "pulsefilter",
+        "popup_info": "There are two methods for processing pulses into bursts in the Sensorgnome: 'burstfinder' is the same as used in Motus servers while 'pulsefilter' is a simpler, slightly more lenient method. In general, 'burstfinder' should be used. Pulsefilter is available for dev&test reasons.",
+        "show_value": true
+      },
+      "dynamic": {
+        "value": "burstfinder/method"
+      },
+      "id": "w04346",
+      "output": "burstfinder_method"
+    },
+    "w07178": {
+      "kind": "Toggle",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "Filter file output",
+        "on_value": "on",
+        "off_value": "off",
+        "popup_info": "When \"filter file output\" is enabled only bursts are output to data files, when disabled both raw unfiltered pulses and bursts are output. Until burstfinder is fully validated (late 2025??) disable this setting except for Sensorgnomes on satellite or very expensive cellular links."
+      },
+      "dynamic": {
+        "value": "burstfinder/filter_file"
+      },
+      "id": "w07178",
+      "output": "burstfinder_filter_file"
+    },
+    "w06111": {
+      "kind": "Toggle",
+      "rows": 1,
+      "cols": 2,
+      "static": {
+        "title": "Filter UI output",
+        "on_value": "on",
+        "off_value": "off",
+        "popup_info": "When \"filter UI output\" is enabled the Pulses and Tags panel on the Radios tab of the UI only shows bursts and tags. When disabled it also shows raw pulses."
+      },
+      "dynamic": {
+        "value": "burstfinder/filter_ui"
+      },
+      "id": "w06111",
+      "output": "burstfinder_filter_ui"
     }
   },
   "grids": {
@@ -2247,7 +2311,8 @@
       "widgets": [
         "w02187",
         "w03097",
-        "w05065"
+        "w05065",
+        "w01195"
       ],
       "id": "g05117",
       "min_cols": 3,

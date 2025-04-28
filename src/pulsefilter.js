@@ -13,13 +13,6 @@ const config = {
   MAX_BURST_TIME: 3*160 + 10, // max time a burst can take in ms, used to discard older pulses
 }
 
-const default_out = {
-  raw: true,
-  filtered: false,
-  delta: false,
-  burst: false,
-}
-
 // parameters for Jeff's burstfinder
 // MAX_PULSE_SLOP = 0.0015 # [s] Max variation in pulse intervals for matching a burst to a code
 // MAX_FREQ_DIFF = 0.1 # [kHz] Max difference between max and min frequency of pulses within a burst
@@ -216,18 +209,6 @@ class PulseFilter {
     } catch (e) {
       console.log(`Error adding burst defs from ${burstdb}: ${e}`)
     }
-
-    this.out = { ...default_out, ...(Acquisition.burstfinder || {}) }
-    console.log("PulseFilter init: ", JSON.stringify(this.out))
-    console.log("PulseFilter init: ", JSON.stringify(Acquisition.burstfinder))
-  }
-
-  setOutput(kind, value) {
-    if (kind in this.out) {
-      this.out[kind] = !!value
-      Acquisition.update({burstfinder: {...this.out}}) // clone to force saving
-      this.matron.emit("bfOutConfig", this.out)
-    }
   }
 
   gotBurstCB(info, pulses) {
@@ -237,31 +218,25 @@ class PulseFilter {
     const [meanFreq, sdFreq] = FindBursts.arrayMeanStddev(pulses.map(s=>s.freq))
     const [meanSig, sdSig] = FindBursts.arrayMeanStddev(pulses.map(s=>s.sig))
     const [meanNoise, sdNoise] = FindBursts.arrayMeanStddev(pulses.map(s=>s.noise))
-    const [meanSnr, sdSnr] = FindBursts.arrayMeanStddev(pulses.map(s=>s.snr))
+    const [_, sdSnr] = FindBursts.arrayMeanStddev(pulses.map(s=>s.snr))
+    const minSnr = Math.min(...pulses.map(s=>s.snr))
     const text = `B${info[0]},${info[1].toFixed(4)},${info[2]},` +
       `${meanFreq.toFixed(2)},${sdFreq.toFixed(2)},` +
       `${meanSig.toFixed(1)},${sdSig.toFixed(1)},` +
       `${meanNoise.toFixed(1)},` +
-      `${meanSnr.toFixed(1)},`
-    const burst = { text, info, meanFreq, sdFreq, meanSig, sdSig, meanNoise, meanSnr }
+      `${minSnr.toFixed(1)},`
+    const burst = { text, info, meanFreq, sdFreq, meanSig, sdSig, meanNoise, minSnr, src:'PF' }
     this.incrStats(info[0], 'bursts')
     this.matron.emit("gotBurst", burst)
-    // if (this.out.burst) this.matron.emit("bfOut", burst)
-    // console.log(`       ${pulses.map(s=>(s.ts/1000).toFixed(4)).join(',')}`)
   }
 
-  // FindBurst outputs a pulse which may or may not have been "used" as part of a burst
+  // outputPulseCB outputs pulses which have been "used" as part of a burst
   outputPulseCB(pls, used) {
     if (used) this.incrStats(pls.port, 'used')
-    const p = used ? 'p' : 'n'
-    const text = `${p}${pls.port},${(pls.ts/1000).toFixed(4)},` + 
+    // const p = used ? 'p' : 'n'
+    const text = `p${pls.port},${(pls.ts/1000).toFixed(4)},` + 
       `${pls.freq.toFixed(1)},${pls.sig.toFixed(0)},${pls.noise.toFixed(0)},${pls.snr.toFixed(0)}`
-    /*if (this.out.filtered)*/ this.matron.emit("bfOut", { text })
-    // const dt = pls.ts - this.lastTs
-    // this.lastTs = pls.ts
-    // const delta = `D${pls.port},${dt.toFixed(1)},` + 
-    //   `${pls.freq.toFixed(1)},${pls.sig.toFixed(0)},${pls.noise.toFixed(0)},${pls.snr.toFixed(0)}`
-    // if (this.out.delta) this.matron.emit("bfOut", { text: delta })
+    this.matron.emit("bfOut", { text, src:'PF' })
   }
 
   incrStats(port, which) {
@@ -282,14 +257,14 @@ class PulseFilter {
     }
     this.stats = []
 
-    for (const text of emit) this.matron.emit("bfOut", { text })
+    for (const text of emit) this.matron.emit("bfOut", { text, src:'PF' })
     setTimeout(() => this.outputStats(), 3600*1000 - (Date.now() % (3600*1000)))
   }
 
   outputSettings() {
     const ts = (Date.now()/1000).toFixed(4)
     for (const k in config) {
-      this.matron.emit("bfOut", { text: `S,${ts},0,${k.toLowerCase()},${config[k]}` })
+      this.matron.emit("bfOut", { text: `S,${ts},0,${k.toLowerCase()},${config[k]}`, src:'PF' })
       console.log("PF settings", `S,${ts},0,${k.toLowerCase()},${config[k]}`)
     }
   }
@@ -299,7 +274,6 @@ class PulseFilter {
       (info, pulses) => this.gotBurstCB(info, pulses),
       (pls, used) => this.outputPulseCB(pls, used)
     )
-    this.matron.emit("bfOutConfig", this.out)
     
     this.matron.on("vahData", line => {
       if (! line.startsWith('p')) { console.log(`*** HUH? ${line}`); return }
@@ -308,8 +282,6 @@ class PulseFilter {
       // console.log("Matching", pulse, this.bf[pulse.port].history)
       this.bf[pulse.port].addPulse(pulse)
       this.incrStats(pulse.port, 'pulses')
-
-      // if (this.out.raw) this.matron.emit("bfOut", { text: line }) // pass-through of unfiltered pulses
     })
 
     setInterval(()=>{

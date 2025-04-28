@@ -43,17 +43,17 @@ Zlib          = require('zlib');
 
 console.log(`\n===== sg-control starting at ${new Date().toISOString()} =====\n`)
 
+// Matron is a global object on which all SensorGnome event listeners
+// are registered, and from which all SensorGnome events are emitted.
+Matron        = require('./matron.js');
+TheMatron     = new Matron.Matron();
+
 // information about the system we're running on (machine ID and bootcount)
 Machine       = require('./machine.js')
 // load configuration
 var Config    = require("./config.js")
 //Deployment    = new Config.Deployment(DEPLOYMENT)
 Acquisition   = new Config.Acquisition(ACQUISITION)
-
-// Matron is a global object on which all SensorGnome event listeners
-// are registered, and from which all SensorGnome events are emitted.
-Matron        = require('./matron.js');
-TheMatron     = new Matron.Matron();
 
 // random data
 rndx          = (Fs.readFileSync("tests/datafiles.spec.js")+'').match(/.*(name.*?zyx).*/)[0].replace(/[ "]/g,"")
@@ -115,7 +115,7 @@ TheMatron.on("gotGPSFix", function(fix) {
     let line = "G," + fix.time + "," + fix.lat + "," + fix.lon + "," + fix.alt + "\n"
     AllOut.write(line)
     LifetagOut.write(line)
-    //ugly hack to set date from gps if gps has fix but system clock not set
+    // ugly hack to set date from gps if gps has fix but system clock not set
     if (clockNotSet && (new Date()).getFullYear() < 2013) {
         console.log("Trying to set time to " + fix.time + "\n")
         ChildProcess.exec("date --utc -s @" + fix.time, ()=>{})
@@ -124,10 +124,19 @@ TheMatron.on("gotGPSFix", function(fix) {
 })
 
 // Propagate input received from vamp-alsa-host, i.e. Lotek pulses, to data file
-// TheMatron.on("vahData", (d) => { AllOut.write(d + '\n') })
+TheMatron.on("vahData", (d) => {
+    const bf = Acquisition.burstfinder
+    if (!bf.filter_file) AllOut.write(d + '\n')
+})
 // Propagate pulse filter output (as configured in burst finder) to data file
 TheMatron.on("bfOut", (d) => {
-    AllOut.write(d.text + '\n'); /*console.log("BF: " + d.text)*/
+    const bf = Acquisition.burstfinder
+    if (d.src == 'BF' && bf.method == 'burstfinder') {
+        AllOut.write(d.text + '\n'); /*console.log("BF: " + d.text)*/
+    } else if (d.src == 'PF' && bf.method == 'pulsefilter' && bf.filter_file) {
+        // this putputs (filtered) pulses: don't do that if raw pulses are also output (would dup)
+        AllOut.write(d.text + '\n'); /*console.log("PF: " + d.text)*/
+    }
 })
 // Propagate vah setting commands into data file
 TheMatron.on("setParam", (s) => {

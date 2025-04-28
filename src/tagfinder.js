@@ -111,6 +111,7 @@ class TagFinder {
     gotInput(x) {
         if (!this.child) return
         try {
+            // console.log("To Tagfinder:", x)
             this.child.stdin.write(x + '\n')
         } catch(e) {
             console.log("Error writing to tagfinder:", e)

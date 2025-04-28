@@ -1,5 +1,5 @@
 // burstfinder: manage a burstfinder.py child process, sending it vahData messages, then
-//  emitting gotBurst messages.
+//  emitting bfOut and gotBurst messages.
 
 const fs = require('fs')
 const Stream = require('stream');
@@ -17,6 +17,7 @@ class BurstFinder {
         this.CMD_PATH = "/usr/bin/python3"
         this.BY = "/run/bursts.yaml"
         this.CMD_ARGS = [ this.prog + "/burstfinder.py", "--codes", this.BY ] // stdin->stdout is default
+        this.CMD_ENV = { PYTHONUNBUFFERED: 1 } // ensure stdout is unbuffered
     }
 
     start() {
@@ -30,7 +31,7 @@ class BurstFinder {
         }).join('')
         fs.writeFileSync(this.BY, bb)
         let byExists = true
-        this.child = ChildProcess.spawn(this.CMD_PATH, this.CMD_ARGS)
+        this.child = ChildProcess.spawn(this.CMD_PATH, this.CMD_ARGS, {env:this.CMD_ENV})
             .on("exit", ()=>this.childDied())
             .on("error", ()=>this.childDied())
 
@@ -39,14 +40,21 @@ class BurstFinder {
             for (let line of x.toString().split('\n')) {
                 if (!(/^[0-9]/.test(line))) continue
                 console.log("FROM BF: " + line)
-                // Antenna ID,Unix timestamp (s),Lotek code ID,Frequency offset mean (kHz),Frequency offset range (kHz),
-                // Signal strength mean (dB),Signal strength range (dB),Noise mean (dB),Max pulse slop (s),
-                // Minimum signal to noise (dB),Other bursts using this pulse,Other pulses in the window,Warning flag'
-                this.matron.emit("bfOut", "b"+line)
+                // line = f'{sen:.0f},{ts:.4f},{id:.0f},{freq_mean:.3f},{freq_sd:.3f},{freq_diff:.3f},
+                //        {sig_mean:.3f},{sig_sd:.3f},{sig_diff:.3f},{noise_mean:.3f},{interval_diff_max:.5f},
+                //        {snr_min:.3f},{used_pulses:.0f},{num_pulses:.0f},{warning:.0f}\n'
+                this.matron.emit("bfOut", { text: "b"+line, src:'BF' }) // send raw line to output file
                 const text = line
                 const ll = line.split(',')
+                if (ll.length != 15) {
+                    console.log("Invalid burstfinder line:", line)
+                    continue
+                }
                 const info = [ ll[0], ll[1], ll[2] ]
-                const burst = { text: line, info, meanFreq: ll[3], sdFreq: ll[4], meanSig: ll[5], sdSig: ll[6], meanNoise:ll[7], meanSnr:ll[9] }
+                const burst = {
+                    text: line, info, meanFreq: ll[3], sdFreq: ll[4], meanSig: ll[6], sdSig: ll[7],
+                    meanNoise:ll[9], minSnr:ll[11], src:'BF',
+                }
                 this.matron.emit("gotBurst", burst)
                 // line = 'L' + line
                 // console.log(`Lotek tag: ${line}`)

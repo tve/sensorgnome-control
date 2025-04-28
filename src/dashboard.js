@@ -39,7 +39,7 @@ class Dashboard {
             'netHotspotState', 'netWifiConfig', 'portmapFile', 'tagDBInfo', 'motusRecv',
             'motusUploadResult', 'netDefaultGw', 'netDNS', 'lotekFreq', 'netCellState', 'netCellReason',
             'netCellInfo', 'netCellConfig', 'cttRadioVersion', 'vahRate', 'vahFrames', 'devState',
-            'rtlInfo', 'bfOutConfig', 'gotBurst',
+            'rtlInfo', 'acquisition', 'gotBurst',
             // dashboard events triggered by a message from FlexDash
             'dash_download', 'dash_upload', 'dash_deployment_update', 'dash_enable_wifi',
             'dash_enable_hotspot', 'dash_config_wifi', 'dash_update_portmap', 'dash_creds_update',
@@ -49,8 +49,8 @@ class Dashboard {
             'dash_download_logs', 'dash_lotek_freq_change', 'dash_config_cell', 'dash_toggle_train',
             'dash_remote_cmds', 'dash_detection_range', 'dash_alter_bootCount', 'dash_enable_agc',
             'dash_show_pulses', 'dash_cellular_priority', 'dash_burstfinder_burst',
-            'dash_burstfinder_raw', 'dash_burstfinder_filtered', 'dash_burstfinder_delta',
-            'dash_cell_debug', 'dash_cell_scan'
+            'dash_burstfinder_filter_file', 'dash_burstfinder_filter_ui',
+            'dash_burstfinder_method', 'dash_cell_debug', 'dash_cell_scan'
         ]) {
             this.matron.on(ev, (...args) => {
                 let fn = 'handle_'+ev
@@ -93,6 +93,7 @@ class Dashboard {
         setTimeout(() => {
             this.handle_motusRecv({})
             this.handle_devState()
+            this.handle_acquisition(Acquisition)
         }, 1000)
 
         console.log("Dashboard handlers registered")
@@ -265,15 +266,23 @@ class Dashboard {
         this.show_pulses = v == "on"
     }
 
-    handle_bfOutConfig(config) {
+    handle_acquisition(config) {
+        // update burstfinder config elements
         FlexDash.set('burstfinder',
-            Object.fromEntries(Object.entries(config).map(([k,v])=>[k,v?"on":"off"]))
+            Object.fromEntries(Object.entries(config.burstfinder).map((
+                [k,v]) => [k, v==true?"on":v==false?"off":v]
+        ))
         )
     }
-    handle_dash_burstfinder_burst(v) { BurstFinder.setOutput("burst", v=="on") }
-    handle_dash_burstfinder_raw(v) { BurstFinder.setOutput("raw", v=="on") }
-    handle_dash_burstfinder_filtered(v) { BurstFinder.setOutput("filtered", v=="on") }
-    handle_dash_burstfinder_delta(v) { BurstFinder.setOutput("delta", v=="on") }
+    handle_dash_burstfinder_method(v) { 
+        if (['burstfinder','pulsefilter'].includes(v)) this.updateBFConfig("method", v)
+    }
+    handle_dash_burstfinder_filter_file(v) { this.updateBFConfig("filter_file", v=="on") }
+    handle_dash_burstfinder_filter_ui(v) { this.updateBFConfig("filter_ui", v=="on") }
+    updateBFConfig(key, value) {
+        const burstfinder = { ...Acquisition.burstfinder, [key]: value }
+        Acquisition.update({ burstfinder })
+    }
 
     // ===== Network / Internet
 
@@ -707,9 +716,15 @@ class Dashboard {
     handle_gotBurst(burst) {
         // { text, info, meanFreq, sdFreq, meanSig, sdSig, meanNoise, meanSnr }
         // info: [ s0.port, s0.ts/1000, this.tagid, ...intv, ...tags[this.tagid] ]
+        const bf = Acquisition.burstfinder
+        if (burst.src == 'BF' && bf.method != 'burstfinder' && !bf.both_ui) return
+        if (burst.src == 'PF' && bf.method != 'pulsefilter' && !bf.both_ui) return
+
         const ts = (new Date(burst.info[1]*1000)).toISOString().replace(/.*T/, '').replace(/\..*/, '')
+        const meanFreq = parseFloat(burst.meanFreq).toFixed(3)
+        const minSnr = parseFloat(burst.minSnr).toFixed(1)
         this.detectionLogPush(
-            `BUR B${burst.info[0]} ${ts}: #${burst.info[2]} ${burst.meanFreq.toFixed(3)}kHz snr:${burst.meanSnr.toFixed(1)}dB`
+            `BUR B${burst.info[0]} ${ts}: #${burst.info[2]} ${meanFreq}kHz snr:${minSnr}dB src=${burst.src}`
         )
     }
 
@@ -717,13 +732,13 @@ class Dashboard {
         //console.log(`vahData: ${data.toString().replace(/\n/g, '\\n').replace(/\r/g, '\\r')}`)
         if (line.startsWith("p")) {
             this.detections.lotek[this.detections.lotek.length-1]++
-            if (this.show_pulses) {
+            if (!Acquisition.burstfinder.filter_ui) {
                 // convert to something more readable
                 const ll = line.trim().split(',')
                 const port =parseInt(ll[0][1])
                 const last_ts = this.pulse_ts[port] || 0
                 const this_ts = parseFloat(ll[1])*1000
-                const delta_ms = this_ts - last_ts < 120_000 ? (this_ts-last_ts).toFixed(1)+"ms" : ""
+                const delta_ms = this_ts - last_ts < 120_000 ? "Δ"+(this_ts-last_ts).toFixed(1)+"ms" : ""
                 this.pulse_ts[port] = this_ts
                 const ts = (new Date(this_ts)).toISOString().replace(/.*T/, '').replace(/\..*/, '')
                 const snr = parseFloat(ll[5]).toFixed(1)
