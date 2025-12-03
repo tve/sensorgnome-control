@@ -74,6 +74,7 @@ Sensor        = require('./sensor.js');
 USBAudio      = require("./usbaudio.js");
 RTLSDR        = require("./rtlsdr.js");
 CornellTagXCVR= require("./cornelltagxcvr.js");
+DigiBabel     = require("./digibabel.js");
 
 //WavMaker      = require('./wavmaker.js');
 

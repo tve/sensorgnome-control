@@ -35,6 +35,11 @@ Matron.prototype.devAdded = function(dev) {
     if (dev.attr.type == "CTT/CornellRcvr") {
         this.devices[dev.attr.port] = new CornellTagXCVR(this, dev, null);
     }
+    
+    // for DigiBabel, we don't require or use a plan
+    if (dev.attr.type == "DigiBabel") {
+        this.devices[dev.attr.port] = new DigiBabel(this, dev, null);
+    }
 };
 
 Matron.prototype.devRemoved = function(dev) {

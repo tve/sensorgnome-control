@@ -1,0 +1,329 @@
+# Copyright 2012-2017 john brzustowski (sensorgnome.org)
+# Portions Copyright 2012-2013 Osmocom rtl-sdr project
+# Portions Copyright 2021-2022 Thorsten von Eicken
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+# Detect devices attached to the USB hub or directly to the rPi.
+# We need to know which USB port each device is in, so we can
+# label data streams appropriately.
+# (e.g. assign a physical antenna or microphone ID to each audio stream)
+#
+# Disk drives:
+#   mount under /media/disk.port=X.name=Y
+#   make alias at /dev/sensorgnome/disk.port=X.name=Y
+#
+# GPS:
+#   make alias at /dev/sensorgnome/gps.port=X
+#
+# Audio device (e.g. funcube)
+#   make alias at /dev/sensorgnome/DDD.port=X.alsaDev=Y.usbPath=Z
+#   where DDD is one of:
+#    funcubePro
+#    funcubeProPlus
+#    usbAudio
+#
+# RTLSDR dvb dongle
+#   make alias at /dev/sensorgnome/rtlsdr.port=X.usbPath=Z
+#
+# Heavily modified from Arch linux file media-by-label-auto-mount.rules
+
+# This file has been heavily modified by TvE for the Sensorgnome V2:
+# - remove actions for USB hubs, we no longer detect them, the port mapping process has changed
+# - remove disk detection, we don't support plugging a USB stick in and expecting the data to
+#   be written to it
+# - primarily process additions, removals happen automatically in that udev removes symlinks
+# For troubleshooting:
+#  - sudo udevadm 
+
+# uncomment the following block for debug info
+#RUN{program}+="/usr/bin/logger -t sensorgnome vvvvvvvvvvvvvvvvvvv udev action=%a for %p"
+#ACTION=="add",RUN{program}+="/usr/bin/logger -t sensorgnome DBG action=Add %p %E{SUBSYSTEM} k=%k %M/%m %s{idVendor}:%s{idProduct}"
+#ACTION=="remove",RUN{program}+="/usr/bin/logger -t sensorgnome DBG action=remove %p %k %M %m %s{busnum} %s{devnum} %s{idVendor}:%s{idProduct}"
+#ACTION=="change",RUN{program}+="/usr/bin/logger -t sensorgnome DBG action=change %p %k"
+#ACTION=="bind",RUN{program}+="/usr/bin/logger -t sensorgnome DBG action=bind %p %k"
+#ACTION=="unbind",RUN{program}+="/usr/bin/logger -t sensorgnome DBG action=unbind %p %k"
+
+MODE:="0666"
+
+###################  START OF DISK DETECTION #####################
+
+# KERNEL!="sd[a-z][0-9]",KERNEL!="sd[a-z]",GOTO="not_disk"
+# ACTION!="add", GOTO="not_add_disk"
+# # don't try to mount the root device itself
+# KERNEL!="sd[a-z][0-9]",GOTO="done"
+# IMPORT{program}="/sbin/blkid -o udev -p %N"
+# IMPORT{program}="/opt/sensorgnome/udev-usb/get-usb-port.py %p"
+# 
+# # Disk: import FS info
+# ENV{mount_dir}="disk_port%E{PORT_NUM}-%n"
+# ENV{disk_name}="disk.port=%E{PORT_NUM}.name=%k.mount=%E{mount_dir}"
+# # Global mount options
+# ENV{mount_options}="defaults,noatime,users"
+# # Filesystem-specific mount options
+# ENV{ID_FS_TYPE}=="vfat",ENV{mount_options}="%E{mount_options},gid=100,umask=002,utf8,flush"
+# ENV{ID_FS_TYPE}=="ext4",ENV{mount_options}="%E{mount_options},group,users,suid"
+# ENV{ID_FS_TYPE}=="ntfs",ENV{mount_options}="%E{mount_options},gid=100,umask=002,utf8 -tntfs-3g"
+# SYMLINK+="sensorgnome/%E{disk_name}"
+# 
+# # Mount the device
+# ENV{PORT_NUM}!="",RUN+="/usr/bin/mkdir -p /media/%E{mount_dir}"
+# ENV{PORT_NUM}!="",RUN+="/usr/bin/mount -o %E{mount_options} /dev/%k /media/%E{mount_dir}"
+# ENV{PORT_NUM}!="",RUN+="/usr/bin/logger -t sensorgnome Mounted /dev/%k on /media/%E{mount_dir} options %E{mount_options}"
+# GOTO="done"
+# 
+# LABEL="not_add_disk"
+# # Clean up after removal
+# ACTION!="remove",GOTO="done"
+# IMPORT{program}="/opt/sensorgnome/udev-usb/get-usb-port.py %p"
+# ENV{mount_dirs}="disk_port%E{PORT_NUM}*"
+# ENV{PORT_NUM}!="",RUN+="/bin/sh -c 'for DEV in /media/%E{mount_dirs}; do umount -l /dev/%k; rmdir /media/%E{mount_dir}; done'"
+# GOTO="done"
+
+###################  END OF DISK DETECTION #####################
+LABEL="not_disk"
+################# START OTHER DEVICE DETECTION #################
+
+## detect funcube dongles
+SUBSYSTEMS=="usb",ATTRS{idVendor}=="04d8",ATTRS{idProduct}=="fb56",ENV{MYDEVNAME}="funcubePro",GOTO="usbaudio"
+SUBSYSTEMS=="usb",ATTRS{idVendor}=="04d8",ATTRS{idProduct}=="fb31",ENV{MYDEVNAME}="funcubeProPlus",GOTO="usbaudio"
+
+## detect Cornell tag XCVR / CTT LifeTag MOTUS Adapter
+SUBSYSTEM=="tty",ATTRS{idVendor}=="0403",ATTRS{idProduct}=="6001",ENV{MYDEVNAME}="CornellTagXCVR",GOTO="CornellTagXCVR"
+SUBSYSTEM=="tty",ATTRS{idVendor}=="0403",ATTRS{idProduct}=="6010",ENV{MYDEVNAME}="CornellTagXCVR",GOTO="CornellTagXCVR"
+# CTT Motus Adapter v1 with integrated CP2102 serial adapter and std Vid:Pid (ugh!)
+SUBSYSTEM=="tty",ATTRS{idVendor}=="10c4",ATTRS{idProduct}=="ea60",ENV{MYDEVNAME}="CornellTagXCVR",GOTO="CornellTagXCVR"
+# CTT Motus Adapter v2 made with Adafruit Feather #3077 using std Vid:Pid (ugh!)
+SUBSYSTEM=="tty",ATTRS{idVendor}=="239a",ATTRS{idProduct}=="800c",ENV{MYDEVNAME}="CornellTagXCVR",GOTO="CornellTagXCVR"
+
+## detect DigiBabel UHF FSK Tag Receiver
+# DigiBabel uses FTDI FT230X (VID=0403, PID=6015) at 230400 baud
+SUBSYSTEM=="tty",ATTRS{idVendor}=="0403",ATTRS{idProduct}=="6015",ENV{MYDEVNAME}="DigiBabel",GOTO="DigiBabel"
+
+## detect PL2303 serial port and assume it's a GPS (FIXME!)
+SUBSYSTEMS=="usb",ATTRS{idVendor}=="067b",ATTRS{idProduct}=="2303",KERNEL=="tty*",GOTO="pl2303gps"
+
+## detect sensorgnome PPSGPS (with our own custom local VID/PID)
+SUBSYSTEMS=="usb",ATTRS{idVendor}=="bd09",ATTRS{idProduct}=="0001",GOTO="sg_ppsgps"
+
+## any other sound device is assumed to be USB audio
+SUBSYSTEMS=="sound",ENV{MYDEVNAME}="usbAudio",GOTO="usbaudio"
+
+## otherwise, see whether it's an rtlsdr dongle
+GOTO="rtlsdr"
+
+# Cornell (Gabrielson & Winkler) Tag Transceiver / CTT LifeTag MOTUS Adapter
+# line settings: 115200 raw
+# FIXME: the adafruit-based tags show up as /dev/ttyACM, not /dev/ttyUSB
+LABEL="CornellTagXCVR"
+ACTION!="add",GOTO="done"
+IMPORT{program}="/bin/sh -c '(sleep 2; /bin/stty -F /dev/ttyUSB%n 115200 raw &)'"
+IMPORT{program}="/opt/sensorgnome/udev-usb/get-usb-port.py %p"
+ENV{PORT_NUM}!="",SYMLINK+="sensorgnome/CornellTagXCVR.port=%E{PORT_NUM}.usbPath=%s{busnum}:%s{devnum}.port_path=%E{PORT_PATH}"
+ENV{PORT_NUM}!="",RUN{program}+="/usr/bin/logger -t sensorgnome Added CornellTagXCVR %E{PORT_PATH}->port %E{PORT_NUM}"
+GOTO="done"
+
+# DigiBabel UHF FSK Tag Receiver
+# line settings: 230400 baud, 8N1, no flow control
+LABEL="DigiBabel"
+ACTION!="add",GOTO="done"
+IMPORT{program}="/bin/sh -c '(sleep 2; /bin/stty -F /dev/ttyUSB%n 230400 raw -ixon -ixoff -crtscts &)'"
+IMPORT{program}="/opt/sensorgnome/udev-usb/get-usb-port.py %p"
+ENV{PORT_NUM}!="",SYMLINK+="sensorgnome/DigiBabel.port=%E{PORT_NUM}.usbPath=%s{busnum}:%s{devnum}.port_path=%E{PORT_PATH}"
+ENV{PORT_NUM}!="",RUN{program}+="/usr/bin/logger -t sensorgnome Added DigiBabel %E{PORT_PATH}->port %E{PORT_NUM}"
+GOTO="done"
+
+# pl2303gps serial port: add a link indicating which port the device is in
+LABEL="pl2303gps"
+ACTION!="add",GOTO="done"
+# because the device node hasn't been set up yet, we need to run the
+IMPORT{program}="/opt/sensorgnome/udev-usb/get-usb-port.py %p"
+ENV{PORT_NUM}!="",SYMLINK+="sensorgnome/gps.port=%E{PORT_NUM}.pps=0.port_path=%E{PORT_PATH}"
+ENV{PORT_NUM}!="",RUN{program}+="/usr/bin/logger -t sensorgnome Added GPS %E{PORT_PATH}->port %E{PORT_NUM}"
+GOTO="done"
+
+# sensorgnome PPSGPS: a US Globalsat MR350P serial GPS interfaced via an FTDI EVAL232R board,
+# with PPS signal going directly to GPIO pin 48 (= pin 15 on jumper P9)
+LABEL="sg_ppsgps"
+ACTION!="add",GOTO="done"
+IMPORT{program}="/sbin/modprobe ftdi_sio product=0x0001 vendor=0xbd09"
+# FIXME: we'd like to use /dev/ttyUSB%n in the following, but %n won't be defined since it is
+# not until after modprobe ftdi_sio that the kernel even knows this is a serial device!
+IMPORT{program}="/bin/stty -F /dev/ttyUSB0 4800"
+IMPORT{program}="/opt/sensorgnome/udev-usb/get-usb-port.py %p"
+
+ACTION!="add",GOTO="done"
+ENV{PORT_NUM}!="",SYMLINK+="sensorgnome/gps.port=%E{PORT_NUM}.pps=1.port_path=%E{PORT_PATH}"
+ENV{PORT_NUM}!="",RUN{program}+="/usr/bin/logger -t sensorgnome Added GPS %E{PORT_PATH}->port %E{PORT_NUM}"
+GOTO="done"
+
+# any usb audio device
+LABEL="usbaudio"
+ACTION!="add",GOTO="done"
+DRIVERS=="usb",KERNEL=="controlC[0-9]",IMPORT{program}="/opt/sensorgnome/udev-usb/get-usb-port.py %p"
+DRIVERS=="usb",KERNEL=="controlC[0-9]",SYMLINK+="sensorgnome/%E{MYDEVNAME}.port=%E{PORT_NUM}.alsaDev=%n.usbPath=%s{busnum}:%s{devnum}.port_path=%E{PORT_PATH}"
+DRIVERS=="usb",KERNEL=="controlC[0-9]",RUN{program}+="/usr/bin/logger -t sensorgnome Added %E{MYDEVNAME} %E{PORT_PATH}->port %E{PORT_NUM}"
+GOTO="done"
+
+################# END OTHER DEVICE DETECTION #################
+LABEL="rtlsdr"
+################# START RTLSDR DETECTION #################
+# original RTL2832U vid/pid (hama nano, for example)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="0bda", ATTRS{idProduct}=="2832",GOTO="add_rtlsdr"
+
+# RTL2832U OEM vid/pid, e.g. ezcap EzTV668 (E4000), Newsky TV28T (E4000/R820T) etc
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="0bda", ATTRS{idProduct}=="2838",GOTO="add_rtlsdr"
+
+# DigitalNow Quad DVB-T PCI-E card (4x FC0012?)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="0413", ATTRS{idProduct}=="6680",GOTO="add_rtlsdr"
+
+# Leadtek WinFast DTV Dongle mini D (FC0012)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="0413", ATTRS{idProduct}=="6f0f",GOTO="add_rtlsdr"
+
+# Genius TVGo DVB-T03 USB dongle (Ver. B)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="0458", ATTRS{idProduct}=="707f",GOTO="add_rtlsdr"
+
+# Terratec Cinergy T Stick Black (rev 1) (FC0012)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="0ccd", ATTRS{idProduct}=="00a9",GOTO="add_rtlsdr"
+
+# Terratec NOXON rev 1 (FC0013)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="0ccd", ATTRS{idProduct}=="00b3",GOTO="add_rtlsdr"
+
+# Terratec Deutschlandradio DAB Stick (FC0013)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="0ccd", ATTRS{idProduct}=="00b4",GOTO="add_rtlsdr"
+
+# Terratec NOXON DAB Stick - Radio Energy (FC0013)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="0ccd", ATTRS{idProduct}=="00b5",GOTO="add_rtlsdr"
+
+# Terratec Media Broadcast DAB Stick (FC0013)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="0ccd", ATTRS{idProduct}=="00b7",GOTO="add_rtlsdr"
+
+# Terratec BR DAB Stick (FC0013)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="0ccd", ATTRS{idProduct}=="00b8",GOTO="add_rtlsdr"
+
+# Terratec WDR DAB Stick (FC0013)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="0ccd", ATTRS{idProduct}=="00b9",GOTO="add_rtlsdr"
+
+# Terratec MuellerVerlag DAB Stick (FC0013)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="0ccd", ATTRS{idProduct}=="00c0",GOTO="add_rtlsdr"
+
+# Terratec Fraunhofer DAB Stick (FC0013)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="0ccd", ATTRS{idProduct}=="00c6",GOTO="add_rtlsdr"
+
+# Terratec Cinergy T Stick RC (Rev.3) (E4000)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="0ccd", ATTRS{idProduct}=="00d3",GOTO="add_rtlsdr"
+
+# Terratec T Stick PLUS (E4000)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="0ccd", ATTRS{idProduct}=="00d7",GOTO="add_rtlsdr"
+
+# Terratec NOXON rev 2 (E4000)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="0ccd", ATTRS{idProduct}=="00e0",GOTO="add_rtlsdr"
+
+# PixelView PV-DT235U(RN) (FC0012)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1554", ATTRS{idProduct}=="5020",GOTO="add_rtlsdr"
+
+# Astrometa DVB-T/DVB-T2 (R828D)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="15f4", ATTRS{idProduct}=="0131",GOTO="add_rtlsdr"
+
+# HanfTek DAB+FM+DVB-T
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="15f4", ATTRS{idProduct}=="0133",GOTO="add_rtlsdr"
+
+# Compro Videomate U620F (E4000)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="185b", ATTRS{idProduct}=="0620",GOTO="add_rtlsdr"
+
+# Compro Videomate U650F (E4000)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="185b", ATTRS{idProduct}=="0650",GOTO="add_rtlsdr"
+
+# Compro Videomate U680F (E4000)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="185b", ATTRS{idProduct}=="0680",GOTO="add_rtlsdr"
+
+# GIGABYTE GT-U7300 (FC0012)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1b80", ATTRS{idProduct}=="d393",GOTO="add_rtlsdr"
+
+# DIKOM USB-DVBT HD
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1b80", ATTRS{idProduct}=="d394",GOTO="add_rtlsdr"
+
+# Peak 102569AGPK (FC0012)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1b80", ATTRS{idProduct}=="d395",GOTO="add_rtlsdr"
+
+# KWorld KW-UB450-T USB DVB-T Pico TV (TUA9001)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1b80", ATTRS{idProduct}=="d397",GOTO="add_rtlsdr"
+
+# Zaapa ZT-MINDVBZP (FC0012)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1b80", ATTRS{idProduct}=="d398",GOTO="add_rtlsdr"
+
+# SVEON STV20 DVB-T USB & FM (FC0012)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1b80", ATTRS{idProduct}=="d39d",GOTO="add_rtlsdr"
+
+# Twintech UT-40 (FC0013)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1b80", ATTRS{idProduct}=="d3a4",GOTO="add_rtlsdr"
+
+# ASUS U3100MINI_PLUS_V2 (FC0013)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1b80", ATTRS{idProduct}=="d3a8",GOTO="add_rtlsdr"
+
+# SVEON STV27 DVB-T USB & FM (FC0013)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1b80", ATTRS{idProduct}=="d3af",GOTO="add_rtlsdr"
+
+# SVEON STV21 DVB-T USB & FM
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1b80", ATTRS{idProduct}=="d3b0",GOTO="add_rtlsdr"
+
+# Dexatek DK DVB-T Dongle (Logilink VG0002A) (FC2580)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1d19", ATTRS{idProduct}=="1101",GOTO="add_rtlsdr"
+
+# Dexatek DK DVB-T Dongle (MSI DigiVox mini II V3.0)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1d19", ATTRS{idProduct}=="1102",GOTO="add_rtlsdr"
+
+# Dexatek DK 5217 DVB-T Dongle (FC2580)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1d19", ATTRS{idProduct}=="1103",GOTO="add_rtlsdr"
+
+# MSI DigiVox Micro HD (FC2580)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1d19", ATTRS{idProduct}=="1104",GOTO="add_rtlsdr"
+
+# Sweex DVB-T USB (FC0012)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1f4d", ATTRS{idProduct}=="a803",GOTO="add_rtlsdr"
+
+# GTek T803 (FC0012)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1f4d", ATTRS{idProduct}=="b803",GOTO="add_rtlsdr"
+
+# Lifeview LV5TDeluxe (FC0012)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1f4d", ATTRS{idProduct}=="c803",GOTO="add_rtlsdr"
+
+# MyGica TD312 (FC0012)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1f4d", ATTRS{idProduct}=="d286",GOTO="add_rtlsdr"
+
+# PROlectrix DV107669 (FC0012)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1f4d", ATTRS{idProduct}=="d803",GOTO="add_rtlsdr"
+
+GOTO="done"
+
+LABEL="add_rtlsdr"
+RUN{program}+="/usr/bin/logger -t sensorgnome DBG RTLSDR"
+# Can't just use 'add' action, symlink gets removed due to subseq bind, but there's no bind
+# at boot time on a fast rpi4, so need both !?
+ACTION=="add",GOTO="rtlsdr2"
+ACTION=="bind",GOTO="rtlsdr2"
+GOTO="done"
+
+LABEL="rtlsdr2"
+RUN{program}+="/usr/bin/logger -t sensorgnome DBG add/bind RTLSDR %p %k %s{idVendor}:%s{idProduct}"
+IMPORT{program}="/opt/sensorgnome/udev-usb/get-usb-port.py %p"
+ENV{PORT_NUM}!="",SYMLINK+="sensorgnome/rtlsdr.port=%E{PORT_NUM}.usbPath=%s{busnum}:%s{devnum}.port_path=%E{PORT_PATH}.vidpid=%s{idVendor}:%s{idProduct}.mfg=%s{manufacturer}.prod=%s{product}"
+ENV{PORT_NUM}!="",RUN{program}+="/usr/bin/logger -t sensorgnome Added rtlsdr %E{PORT_PATH}->port %E{PORT_NUM}"
+GOTO="done"
+
+
+LABEL="done"
+
+# Exit
