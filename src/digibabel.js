@@ -28,11 +28,14 @@
 //       - Byte 4: RSSI (raw 0-255 value)
 //
 //   This module watches for such frames, and emits gotTag events of the form:
-//       T[0-9]{1,2},<TS>,<ID>,<valid>,<RSSI>\n
+//       T[0-9]{1,2},<TS>,<ID>,<RSSI>,<valid>\n
 //   where the number after 'T' is the USB port #, <TS> is the timestamp in seconds,
-//   <ID> is the 8-hex digit tag ID.  <valid> is 1 when the embedded CRC matches
-//   a CRC-8 over the tag ID bytes (width=8, poly=0x07, init=0x00) and 0 otherwise.
-//   <RSSI> is the RSSI value in dB.
+//   <ID> is the 8-hex digit tag ID. <RSSI> is the RSSI value in dB.
+//   <valid> is:
+//     1 when the embedded CRC matches a CRC-8 over the tag ID bytes
+//       (width=8, poly=0x07, init=0x00),
+//     0 when the embedded CRC does not match (new 6-byte schema),
+//    -1 for old 5-byte schema detections that carry no embedded CRC.
 
 const {SerialPort} = require('serialport')
 
@@ -46,10 +49,16 @@ const DEBUG_RAW_HEX = false
 const START_FLAG = 0x3C  // '<'
 const STOP_FLAG = 0x3E   // '>'
 const TAG_DETECTION_CMD = 0x82
-const INIT_CODE = 0x00
-const INIT_CMD = 0x0C
-const INIT_OP = 0x00
-const INIT_PL = 0x01
+// Bytes to enable detection forwarding from the digibabel
+const DET_ON_CODE = 0x00 // Message code
+const DET_ON_CMD = 0x0C // Command code
+const DET_ON_OP = 0x00 // Operation code
+const DET_ON_PL = 0x0001 // Payload length
+// Bytes to disable LED blinking during detections (Lotek notes that LED blinking can reduce the max detection rate)
+const LED_OFF_CODE = 0x00 // Message code
+const LED_OFF_CMD = 0x0D // Command code
+const LED_OFF_OP = 0x00 // Operation code
+const LED_OFF_PL = 0x0001 // Payload length
 
 // CRC-16-CCITT (False) implementation
 // Polynomial: 0x1021, init varies, RefIn/RefOut: False, XorOut: 0x0000
@@ -99,6 +108,38 @@ function calcCrc8(data, offset, initValue) {
   return crc & 0xFF
 }
 
+function hamming74ErrorCorrection(codeword) {
+  // Hamming(7,4): use only the lower 7 bits of each received byte.
+  const b = codeword & 0x7F
+  const bits = new Array(7)
+  for (let i = 0; i < 7; i++) {
+    bits[i] = (b >> i) & 0x01
+  }
+
+  // Syndrome bits from parity-check rows:
+  // s0: [1,0,1,0,1,0,1], s1: [0,1,1,0,0,1,1], s2: [0,0,0,1,1,1,1]
+  const s0 = (bits[0] ^ bits[2] ^ bits[4] ^ bits[6]) & 0x01
+  const s1 = (bits[1] ^ bits[2] ^ bits[5] ^ bits[6]) & 0x01
+  const s2 = (bits[3] ^ bits[4] ^ bits[5] ^ bits[6]) & 0x01
+  const syndrome = (s2 << 2) | (s1 << 1) | s0
+
+  let corrected = false
+  if (syndrome !== 0) {
+    const errorPos = syndrome - 1
+    if (errorPos < 7) {
+      bits[errorPos] ^= 0x01
+      corrected = true
+    }
+  }
+
+  let correctedCodeword = 0
+  for (let i = 0; i < 7; i++) {
+    correctedCodeword |= (bits[i] & 0x01) << i
+  }
+
+  return { correctedCodeword: correctedCodeword & 0x7F, corrected }
+}
+
 function crcInitFromPayloadLength(length) {
   // The USB CRC init depends on the payload length in this way: 0x{length}00.
   return ((length & 0xFF) << 8) & 0xFFFF
@@ -140,6 +181,14 @@ class DigiBabel {
     this.init_sp()
   }
 
+  getPort() {
+    return this.dev?.attr?.port ?? '?'
+  }
+
+  getPath() {
+    return this.dev?.path ?? '<removed>'
+  }
+
   // enumerate serial ports for debugging purposes
   enum() {
     didEnum = true
@@ -154,7 +203,7 @@ class DigiBabel {
     if (this.sp) {
       if (this.sp.isOpen) this.sp.close()
       this.sp = null
-      console.log("Removed " + this.dev.path)
+      console.log("Removed " + this.getPath())
     }
   }
 
@@ -220,22 +269,51 @@ class DigiBabel {
     if (!this.sp || !this.sp.isOpen) return
     
     try {
-      // Send initialization message: command 0x0C, operation 0x00, payload 0x01
+      // Send initialization messages in order:
+      // 1) Disable LED blinking
+      // 2) Enable detection forwarding
       setTimeout(() => {
-        const data = buildFrame(INIT_CODE, INIT_CMD, INIT_OP, Buffer.from([INIT_PL]))
-        if (this.debugRawHex) {
-          const port = this.dev?.attr?.port ?? '?'
-          const ts = (Date.now() / 1000).toFixed(3)
-          console.log(`DigiBabel raw tx port ${port} ts=${ts} len=${data.length} hex=${data.toString('hex')}`)
-        }
-        this.sp.write(data, (err) => {
-          if (err) {
-            console.log(`Error writing init message to ${this.dev?.path}: ${err}`)
-          } else {
-            console.log(`Sent DigiBabel init message to port ${this.dev.attr.port}`)
-            this.initialized = true
-            this.matron.emit("devState", this.dev.attr.port, "running")
+        if (!this.dev || !this.sp || !this.sp.isOpen) return
+
+        const sendDetectionForwarding = () => {
+          if (!this.dev || !this.sp || !this.sp.isOpen) return
+
+          const detOnData = buildFrame(DET_ON_CODE, DET_ON_CMD, DET_ON_OP, Buffer.from([DET_ON_PL]))
+          if (this.debugRawHex) {
+            const port = this.getPort()
+            const ts = (Date.now() / 1000).toFixed(3)
+            console.log(`DigiBabel raw tx port ${port} ts=${ts} len=${detOnData.length} hex=${detOnData.toString('hex')}`)
           }
+
+          this.sp.write(detOnData, (detErr) => {
+            if (!this.dev) return
+
+            if (detErr) {
+              console.log(`Error writing detection forwarding message to ${this.getPath()}: ${detErr}`)
+            } else {
+              const port = this.getPort()
+              console.log(`Sent DigiBabel detection forwarding message to port ${port}`)
+              this.initialized = true
+              this.matron.emit("devState", port, "running")
+            }
+          })
+        }
+
+        const ledOffData = buildFrame(LED_OFF_CODE, LED_OFF_CMD, LED_OFF_OP, Buffer.from([LED_OFF_PL]))
+        if (this.debugRawHex) {
+          const port = this.getPort()
+          const ts = (Date.now() / 1000).toFixed(3)
+          console.log(`DigiBabel raw tx port ${port} ts=${ts} len=${ledOffData.length} hex=${ledOffData.toString('hex')}`)
+        }
+        this.sp.write(ledOffData, (err) => {
+          if (!this.dev) return
+
+          if (err) {
+            console.log(`Error writing LED disable message to ${this.getPath()}: ${err}`)
+          } else {
+            console.log(`Sent DigiBabel LED disable message to port ${this.getPort()}`)
+          }
+          sendDetectionForwarding()
         })
       }, 100)
     } catch (err) {
@@ -280,18 +358,20 @@ class DigiBabel {
       
       // Extract the complete frame
       const frame = this.buffer.slice(0, frameLength)
-      this.buffer = this.buffer.slice(frameLength)
-      
-      // Parse the frame
-      this.parseFrame(frame, length, messageCode, commandCode, operationCode)
+
+      // Parse frame before consuming it; on invalid frame, advance only one byte to resync.
+      const ok = this.parseFrame(frame, length, messageCode, commandCode, operationCode)
+      this.buffer = this.buffer.slice(ok ? frameLength : 1)
     }
   }
 
   parseFrame(frame, length, messageCode, commandCode, operationCode) {
+    const port = this.getPort()
+
     // Validate stop flag
     if (frame[frame.length - 1] !== STOP_FLAG) {
-      console.log(`Invalid stop flag in DigiBabel frame on port ${this.dev.attr.port}`)
-      return
+      console.log(`Invalid stop flag in DigiBabel frame on port ${port}; attempting resync`)
+      return false
     }
     
     // Extract payload and CRC
@@ -304,9 +384,15 @@ class DigiBabel {
     const crcComputed = calcCrc16(core, 0, crcInitFromPayloadLength(length))
     
     if (crcReceived !== crcComputed) {
-      console.log(`CRC mismatch in DigiBabel frame on port ${this.dev.attr.port}: ` +
-                  `received 0x${crcReceived.toString(16)}, computed 0x${crcComputed.toString(16)}, core=${core.toString('hex')}`)
-      return
+      if (commandCode === TAG_DETECTION_CMD) {
+        // USB-level CRC failed, so this detection is ignored and never emitted as gotTag.
+        console.log(`Discarded DigiBabel detection on port ${port} due to USB CRC mismatch: ` +
+                    `received 0x${crcReceived.toString(16)}, computed 0x${crcComputed.toString(16)}, core=${core.toString('hex')}`)
+      } else {
+        console.log(`CRC mismatch in DigiBabel frame on port ${port}: ` +
+                    `received 0x${crcReceived.toString(16)}, computed 0x${crcComputed.toString(16)}, core=${core.toString('hex')}`)
+      }
+      return false
     }
     
     // Process based on command code
@@ -314,22 +400,28 @@ class DigiBabel {
       this.handleTagDetection(payload)
     } else {
       // Other command responses (could be init responses, status, etc.)
-      console.log(`DigiBabel response on port ${this.dev.attr.port}: ` +
+      console.log(`DigiBabel response on port ${port}: ` +
                   `cmd=0x${commandCode.toString(16).padStart(2, '0')}, ` +
                   `op=0x${operationCode.toString(16).padStart(2, '0')}, ` +
                   `payload=${payload.toString('hex')}`)
     }
+
+    return true
   }
 
   handleTagDetection(payload) {
+    if (!this.dev) return
+    const port = this.getPort()
+
     // Old payload is 5 bytes; new payload is 6 bytes.
     if (payload.length < 5) {
-      console.log(`Invalid tag detection payload length on port ${this.dev.attr.port}: ${payload.length}`)
+      console.log(`Invalid tag detection payload length on port ${port}: ${payload.length}`)
       return
     }
     
-    // Extract tag ID (bytes 0-3)
-    const tagId = payload.slice(0, 4).toString('hex')
+    // Extract original Tag ID bytes (bytes 0-3).
+    const tagOnlyOriginal = Buffer.from(payload.slice(0, 4))
+    let tagOnlyForRecord = tagOnlyOriginal
 
     // New schema includes an embedded CRC byte at payload[4] and moves RSSI to payload[5].
     // Old schema has RSSI at payload[4] and provides no embedded CRC.
@@ -338,22 +430,45 @@ class DigiBabel {
     if (payload.length >= 6) {
       const embeddedCrcReceived = payload[4] & 0xFF
 
-      // The embedded CRC is a CRC-8 over the TagID bytes (payload[0..3]).
-      const tagOnly = payload.slice(0, 4)
-      const embeddedCrcComputed8 = calcCrc8(tagOnly, 0, 0x00)
+      // Apply Hamming(7,4) correction to each Tag ID byte before CRC validation.
+      const tagOnlyCorrected = Buffer.from(tagOnlyOriginal)
+      const hammingCorrections = []
+      for (let i = 0; i < 4; i++) {
+        const originalByte = tagOnlyOriginal[i]
+        const { correctedCodeword, corrected } = hamming74ErrorCorrection(originalByte)
+        tagOnlyCorrected[i] = correctedCodeword
+        if (corrected) {
+          hammingCorrections.push(`byte[${i}] 0x${originalByte.toString(16).padStart(2, '0')}->0x${correctedCodeword.toString(16).padStart(2, '0')}`)
+        }
+      }
+      if (hammingCorrections.length > 0) {
+        console.log(`DigiBabel Hamming correction on port ${port}: ${hammingCorrections.join(', ')}`)
+      }
+
+      // The embedded CRC is a CRC-8 over the corrected TagID bytes.
+      const embeddedCrcComputed8 = calcCrc8(tagOnlyCorrected, 0, 0x00)
       valid = (embeddedCrcReceived === embeddedCrcComputed8) ? 1 : 0
+
+      // If corrected Tag ID fails CRC, keep the originally received Tag ID in output.
+      if (valid === 1) {
+        tagOnlyForRecord = tagOnlyCorrected
+      } else {
+        tagOnlyForRecord = tagOnlyOriginal
+      }
 
       rssiRaw = payload[5]
     } else {
       // Old schema: no embedded CRC byte.
       valid = -1
+      tagOnlyForRecord = tagOnlyOriginal
       rssiRaw = payload[4]
     }
+
+    const tagId = tagOnlyForRecord.toString('hex')
     
-    // Convert RSSI to dB: 10 * log10(rssiRaw / 255)
     let rssiDb
     if (rssiRaw > 0) {
-      rssiDb = 10 * Math.log10(rssiRaw / 255)
+      rssiDb = -rssiRaw / 2 // Formula provided by Lotek
     } else {
       rssiDb = -Infinity
     }
@@ -362,7 +477,7 @@ class DigiBabel {
     const nowSecs = Date.now() / 1000
     
     // Build the record in the expected format: T<port>,<timestamp>,<tagid>,<rssi>,<valid>
-    const lifetagRecord = `T${this.dev.attr.port},${nowSecs},${tagId},${rssiDb.toFixed(2)},${valid}`
+    const lifetagRecord = `T${port},${nowSecs},${tagId},${rssiDb.toFixed(1)},${valid}`
     
     // Emit the gotTag event
     this.matron.emit("gotTag", lifetagRecord)
