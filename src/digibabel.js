@@ -59,6 +59,10 @@ const LED_OFF_CODE = 0x00 // Message code
 const LED_OFF_CMD = 0x0D // Command code
 const LED_OFF_OP = 0x00 // Operation code
 const LED_OFF_PL = 0x0001 // Payload length
+const CMD_REQ_PAYLOAD = 0x01
+const DET_ON_ACK_PAYLOAD = 0xFE
+const LED_OFF_ACK_PAYLOAD = 0xFF
+const CMD_ACK_TIMEOUT_MS = 2000
 
 // CRC-16-CCITT (False) implementation
 // Polynomial: 0x1021, init varies, RefIn/RefOut: False, XorOut: 0x0000
@@ -69,6 +73,7 @@ const POLY16 = 0x1021
 const POLY8 = 0x07
 
 function calcIncrCrc16(bNext, uInit) {
+  // Incrementally update CRC16 with a single next byte.
   let uCrc = uInit & 0xFFFF
   let uTemp = (bNext & 0xFF) << 8
   uCrc ^= uTemp
@@ -83,6 +88,7 @@ function calcIncrCrc16(bNext, uInit) {
 }
 
 function calcCrc16(data, offset, uInit) {
+  // Compute CRC16 over a byte buffer from offset to end.
   let uCrc = uInit & 0xFFFF
   for (let i = offset; i < data.length; i++) {
     uCrc = calcIncrCrc16(data[i], uCrc)
@@ -94,6 +100,7 @@ function calcCrc16(data, offset, uInit) {
 }
 
 function calcCrc8(data, offset, initValue) {
+  // Compute CRC8 over a byte buffer from offset to end.
   let crc = (initValue ?? 0x00) & 0xFF
   for (let i = offset ?? 0; i < data.length; i++) {
     crc ^= data[i] & 0xFF
@@ -109,6 +116,7 @@ function calcCrc8(data, offset, initValue) {
 }
 
 function hamming74ErrorCorrection(codeword) {
+  // Correct a single-bit error in a Hamming(7,4) codeword and report whether correction was applied.
   // Hamming(7,4): use only the lower 7 bits of each received byte.
   const b = codeword & 0x7F
   const bits = new Array(7)
@@ -146,6 +154,7 @@ function crcInitFromPayloadLength(length) {
 }
 
 function buildFrame(messageCode, commandCode, operationCode, payload) {
+  // Build a complete framed DigiBabel command with CRC and delimiters.
   const N = payload.length
   if (N > 255) {
     throw new Error('Payload length must be <= 255')
@@ -164,6 +173,7 @@ function buildFrame(messageCode, commandCode, operationCode, payload) {
 }
 
 class DigiBabel {
+  // Initialize a receiver instance and open its serial stream immediately.
   constructor(matron, dev, options) {
     if (!didEnum) this.enum()
 
@@ -175,6 +185,7 @@ class DigiBabel {
     this.buffer = Buffer.alloc(0) // buffer for incoming data
     this.retries = 0 // number of retries opening the device
     this.initialized = false // whether init messages have been sent
+    this.pendingControlAck = null // pending control-command acknowledgement waiter
 
     this.matron.on("devRemoved", (dev) => this.devRemoved(dev))
 
@@ -182,10 +193,12 @@ class DigiBabel {
   }
 
   getPort() {
+    // Resolve current USB port number safely for logs/state updates.
     return this.dev?.attr?.port ?? '?'
   }
 
   getPath() {
+    // Resolve current device path safely for logs after unplug events.
     return this.dev?.path ?? '<removed>'
   }
 
@@ -200,6 +213,7 @@ class DigiBabel {
   }
 
   close() {
+    // Close and detach the serial stream for this receiver instance.
     if (this.sp) {
       if (this.sp.isOpen) this.sp.close()
       this.sp = null
@@ -208,12 +222,14 @@ class DigiBabel {
   }
 
   devRemoved(dev) {
+    // React only to removal of this specific device and clear local handle.
     if (!this.dev || dev.path != this.dev.path) return
     this.close()
     this.dev = null
   }
 
   init_sp() {
+    // Open the serial device and install event handlers for lifecycle and frame input.
     if (!this.dev) return // device removed
     this.matron.emit("devState", this.dev.attr.port, "init")
     const path = this.dev.path
@@ -265,7 +281,98 @@ class DigiBabel {
     console.log("Starting DigiBabel read stream using SerialPort at", path)
   }
 
+  sendControlFrame(messageCode, commandCode, operationCode, payloadByte, expectedAckPayload, label) {
+    // Send one control command and resolve only after a matching protocol-level acknowledgement arrives.
+    if (!this.dev || !this.sp || !this.sp.isOpen) {
+      return Promise.reject(new Error(`Cannot send ${label}: serial port not open`))
+    }
+
+    if (this.pendingControlAck) {
+      return Promise.reject(new Error(`Cannot send ${label}: another control acknowledgement is pending`))
+    }
+
+    const data = buildFrame(messageCode, commandCode, operationCode, Buffer.from([payloadByte]))
+    if (this.debugRawHex) {
+      const port = this.getPort()
+      const ts = (Date.now() / 1000).toFixed(3)
+      console.log(`DigiBabel raw tx port ${port} ts=${ts} len=${data.length} hex=${data.toString('hex')}`)
+    }
+
+    return new Promise((resolve, reject) => {
+      // Start an acknowledgement timeout so init cannot hang indefinitely.
+      const timeout = setTimeout(() => {
+        if (this.pendingControlAck?.label !== label) return
+        this.pendingControlAck = null
+        reject(new Error(`Timed out waiting for ${label} acknowledgement`))
+      }, CMD_ACK_TIMEOUT_MS)
+
+      // Track the expected response shape to match in parseFrame().
+      this.pendingControlAck = {
+        label,
+        messageCode,
+        commandCode,
+        operationCode,
+        expectedAckPayload,
+        resolve,
+        reject,
+        timeout,
+      }
+
+      // Write request frame to the serial port; acknowledgement is handled asynchronously from input frames.
+      this.sp.write(data, (err) => {
+        if (!this.dev) {
+          if (this.pendingControlAck?.label === label) {
+            clearTimeout(timeout)
+            this.pendingControlAck = null
+          }
+          reject(new Error(`Cannot complete ${label}: device removed`))
+          return
+        }
+
+        if (err) {
+          if (this.pendingControlAck?.label === label) {
+            clearTimeout(timeout)
+            this.pendingControlAck = null
+          }
+          console.log(`Error writing ${label} message to ${this.getPath()}: ${err}`)
+          reject(err)
+          return
+        }
+
+        console.log(`Sent DigiBabel ${label} message to port ${this.getPort()}, waiting for ack`)
+      })
+    })
+  }
+
+  handleControlAck(frameMessageCode, frameCommandCode, frameOperationCode, payload) {
+    // Match an incoming non-tag response against the currently pending command acknowledgement.
+    const pending = this.pendingControlAck
+    if (!pending) return false
+
+    if (frameMessageCode !== pending.messageCode ||
+        frameCommandCode !== pending.commandCode ||
+        frameOperationCode !== pending.operationCode) {
+      return false
+    }
+
+    clearTimeout(pending.timeout)
+    this.pendingControlAck = null
+
+    if (payload.length === 1 && payload[0] === pending.expectedAckPayload) {
+      console.log(`Received DigiBabel ack for ${pending.label} on port ${this.getPort()}`)
+      pending.resolve()
+    } else {
+      const payloadHex = payload.toString('hex')
+      const expectedHex = pending.expectedAckPayload.toString(16).padStart(2, '0')
+      const err = new Error(`Unexpected ack payload for ${pending.label}: ${payloadHex} (expected ${expectedHex})`)
+      console.log(err.message)
+      pending.reject(err)
+    }
+    return true
+  }
+
   sendInitMessages() {
+    // Run startup command sequence and transition device state to running only after both ACKs succeed.
     if (!this.sp || !this.sp.isOpen) return
     
     try {
@@ -274,47 +381,23 @@ class DigiBabel {
       // 2) Enable detection forwarding
       setTimeout(() => {
         if (!this.dev || !this.sp || !this.sp.isOpen) return
+        ;(async () => {
+          try {
+            // Keep startup ordering explicit: LED behavior first, then detection forwarding.
+            await this.sendControlFrame(LED_OFF_CODE, LED_OFF_CMD, LED_OFF_OP, CMD_REQ_PAYLOAD, LED_OFF_ACK_PAYLOAD, 'LED disable')
+            await this.sendControlFrame(DET_ON_CODE, DET_ON_CMD, DET_ON_OP, CMD_REQ_PAYLOAD, DET_ON_ACK_PAYLOAD, 'detection forwarding enable')
 
-        const sendDetectionForwarding = () => {
-          if (!this.dev || !this.sp || !this.sp.isOpen) return
-
-          const detOnData = buildFrame(DET_ON_CODE, DET_ON_CMD, DET_ON_OP, Buffer.from([DET_ON_PL]))
-          if (this.debugRawHex) {
-            const port = this.getPort()
-            const ts = (Date.now() / 1000).toFixed(3)
-            console.log(`DigiBabel raw tx port ${port} ts=${ts} len=${detOnData.length} hex=${detOnData.toString('hex')}`)
-          }
-
-          this.sp.write(detOnData, (detErr) => {
             if (!this.dev) return
-
-            if (detErr) {
-              console.log(`Error writing detection forwarding message to ${this.getPath()}: ${detErr}`)
-            } else {
-              const port = this.getPort()
-              console.log(`Sent DigiBabel detection forwarding message to port ${port}`)
-              this.initialized = true
-              this.matron.emit("devState", port, "running")
-            }
-          })
-        }
-
-        const ledOffData = buildFrame(LED_OFF_CODE, LED_OFF_CMD, LED_OFF_OP, Buffer.from([LED_OFF_PL]))
-        if (this.debugRawHex) {
-          const port = this.getPort()
-          const ts = (Date.now() / 1000).toFixed(3)
-          console.log(`DigiBabel raw tx port ${port} ts=${ts} len=${ledOffData.length} hex=${ledOffData.toString('hex')}`)
-        }
-        this.sp.write(ledOffData, (err) => {
-          if (!this.dev) return
-
-          if (err) {
-            console.log(`Error writing LED disable message to ${this.getPath()}: ${err}`)
-          } else {
-            console.log(`Sent DigiBabel LED disable message to port ${this.getPort()}`)
+            const port = this.getPort()
+            this.initialized = true
+            this.matron.emit("devState", port, "running")
+          } catch (initErr) {
+            if (!this.dev || this.dev.state?.startsWith("err")) return
+            const msg = `DigiBabel init failed: ${initErr.message}`
+            console.log(msg)
+            this.matron.emit("devState", this.getPort(), "error", msg)
           }
-          sendDetectionForwarding()
-        })
+        })()
       }, 100)
     } catch (err) {
       console.log(`Error building init messages: ${err.message}`)
@@ -322,6 +405,7 @@ class DigiBabel {
   }
 
   processBuffer() {
+    // Incrementally parse framed protocol data from a rolling serial buffer.
     while (true) {
       // Look for start flag
       const startIdx = this.buffer.indexOf(START_FLAG)
@@ -366,6 +450,7 @@ class DigiBabel {
   }
 
   parseFrame(frame, length, messageCode, commandCode, operationCode) {
+    // Validate one complete frame and dispatch either ACK responses or tag detections.
     const port = this.getPort()
 
     // Validate stop flag
@@ -394,6 +479,11 @@ class DigiBabel {
       }
       return false
     }
+
+    // Resolve any in-flight control-command acknowledgement before generic handling.
+    if (this.handleControlAck(messageCode, commandCode, operationCode, payload)) {
+      return true
+    }
     
     // Process based on command code
     if (commandCode === TAG_DETECTION_CMD) {
@@ -410,6 +500,7 @@ class DigiBabel {
   }
 
   handleTagDetection(payload) {
+    // Decode a tag-detection payload, validate/correct ID bits, and emit the normalized gotTag record.
     if (!this.dev) return
     const port = this.getPort()
 
