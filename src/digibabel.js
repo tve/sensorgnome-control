@@ -99,6 +99,11 @@ function calcCrc8(data, offset, initValue) {
   return crc & 0xFF
 }
 
+function crcInitFromPayloadLength(length) {
+  // The USB CRC init depends on the payload length in this way: 0x{length}00.
+  return ((length & 0xFF) << 8) & 0xFFFF
+}
+
 function buildFrame(messageCode, commandCode, operationCode, payload) {
   const N = payload.length
   if (N > 255) {
@@ -107,7 +112,7 @@ function buildFrame(messageCode, commandCode, operationCode, payload) {
   
   const head = Buffer.from([N, messageCode, commandCode, operationCode])
   const core = Buffer.concat([head, payload])
-  const crc = calcCrc16(core, 0, 0x0100)
+  const crc = calcCrc16(core, 0, crcInitFromPayloadLength(N))
   
   return Buffer.concat([
     Buffer.from([START_FLAG]),
@@ -294,19 +299,9 @@ class DigiBabel {
     const crcBytes = frame.slice(5 + length, 5 + length + 2)
     const crcReceived = (crcBytes[0] << 8) | crcBytes[1]
     
-    // Compute CRC over header + payload
-    let crcComputed = null
+    // Compute CRC over header + payload using init=0x{payloadLength}00
     const core = frame.slice(1, 5 + length)
-    if (commandCode == 0x82) {
-      if (length >= 6) {
-        // New schema with 6-byte payload uses CRC init 0x0600
-        crcComputed = calcCrc16(core, 0, 0x0600) }
-      else {
-        // Old schema with 5-byte payload uses CRC init 0x0500
-        crcComputed = calcCrc16(core, 0, 0x0500) }
-    } else {
-      crcComputed = calcCrc16(core, 0, 0x0100)
-    }
+    const crcComputed = calcCrc16(core, 0, crcInitFromPayloadLength(length))
     
     if (crcReceived !== crcComputed) {
       console.log(`CRC mismatch in DigiBabel frame on port ${this.dev.attr.port}: ` +
