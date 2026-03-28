@@ -100,6 +100,8 @@ class HubMan {
         // temporary hacks, need to change uDev rules instead
         if (attr.type.includes("Cornell")) attr.type = "CTT/CornellRcvr"
         if (attr.type.includes("Cornell")) attr.radio = "CTT/Cornell"
+        if (attr.type.includes("DigiBabel")) attr.type = "DigiBabel"
+        if (attr.type.includes("DigiBabel")) attr.radio = "DigiBabel"
         if (attr.type.includes("funcube")) attr.radio = "VAH"
         if (attr.type.includes("rtlsdr")) attr.radio = "VAH"
 

@@ -499,7 +499,7 @@ class Dashboard {
                 this.tsShow('lotek-snr')
                 this.tsShow('lotek-rate')
             } else {
-                this.tsGotTag(`T${port},${now/1000},12345678,0`)
+                this.tsGotTag(`T${port},${now/1000},12345678,0,1`)
                 this.tsShow('ctt-tags')
             }
         }
