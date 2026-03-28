@@ -170,7 +170,7 @@ Dashboard.start()
 
 // Start the tagFinder
 PulseFilter.start()
-BurstFinder.start()
+// BurstFinder.start()
 TagFinder.start()
 
 MotusUp.start()

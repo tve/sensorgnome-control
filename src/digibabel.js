@@ -28,7 +28,7 @@
 //       - Byte 4: RSSI (raw 0-255 value)
 //
 //   This module watches for such frames, and emits gotTag events of the form:
-//       T[0-9]{1,2},<TS>,<ID>,<RSSI>,<valid>\n
+//       T[0-9]{1,2},<TS>,<ID>,<RSSI>,<valid>[,<extraPayloadHex>]\n
 //   where the number after 'T' is the USB port #, <TS> is the timestamp in seconds,
 //   <ID> is the 8-hex digit tag ID. <RSSI> is the RSSI value in dB.
 //   <valid> is:
@@ -39,29 +39,42 @@
 
 const {SerialPort} = require('serialport')
 
+// Guard to enumerate available serial ports only once per module load for debugging.
 let didEnum = false
+// Monotonic counter used to tag each SerialPort instance in log messages.
 let debugId = 1
 
 // Debug switch: set to true to log every raw received serial chunk as hex.
 const DEBUG_RAW_HEX = false
+const ENABLE_EXTENDED_PAYLOAD = true
 
 // Protocol constants
 const START_FLAG = 0x3C  // '<'
 const STOP_FLAG = 0x3E   // '>'
 const TAG_DETECTION_CMD = 0x82
+const CMD_MSG_CODE = 0x00 // Message code (always 0x00)
+const CMD_OP_CODE = 0x00 // Operation code (almost always 0x00)
+const CMD_PL = 0x01 // Command payload (always 0x01)
 // Bytes to enable detection forwarding from the digibabel
-const DET_ON_CODE = 0x00 // Message code
-const DET_ON_CMD = 0x0C // Command code
-const DET_ON_OP = 0x00 // Operation code
-const DET_ON_PL = 0x0001 // Payload length
+const DET_ON_CMD_CODE = 0x0C // Command code
+// Bytes to disable detection forwarding from the digibabel
+const DET_OFF_CMD_CODE = 0x0D // Command code
+// Bytes to read config from the digibabel (uses DET_ON_CMD_CODE)
+const READ_CFG_OP_CODE = 0x01 // Operation code to read config (used with DET_ON_CMD_CODE)
+const READ_CFG_PL = 0x00 // Command payload to read current config (returns current config in ACK payload)
 // Bytes to disable LED blinking during detections (Lotek notes that LED blinking can reduce the max detection rate)
-const LED_OFF_CODE = 0x00 // Message code
-const LED_OFF_CMD = 0x0D // Command code
-const LED_OFF_OP = 0x00 // Operation code
-const LED_OFF_PL = 0x0001 // Payload length
-const CMD_REQ_PAYLOAD = 0x01
-const DET_ON_ACK_PAYLOAD = 0xFE
-const LED_OFF_ACK_PAYLOAD = 0xFF
+const LED_OFF_CMD_CODE = 0x0E // Command code
+// Extended payload enabled command payload bytes
+const EXT_PL_CMD_CODE = 0x0B // Command code
+const EXT_PL_ON_PL = Buffer.from('04AAAAD391191901', 'hex')
+const EXT_PL_OFF_PL = Buffer.from('04AAAAD391191900', 'hex')
+// Expected payload bytes in the ACK responses to the above commands
+const DET_ON_ACK_PL = 0xFE
+const DET_OFF_ACK_PL = 0xFF
+const LED_OFF_ACK_PL = 0xFE
+const EXT_PL_ON_ACK_PL = EXT_PL_ON_PL
+const EXT_PL_OFF_ACK_PL = EXT_PL_OFF_PL
+// Timeout for ACK responses
 const CMD_ACK_TIMEOUT_MS = 2000
 
 // CRC-16-CCITT (False) implementation
@@ -148,11 +161,6 @@ function hamming74ErrorCorrection(codeword) {
   return { correctedCodeword: correctedCodeword & 0x7F, corrected }
 }
 
-function crcInitFromPayloadLength(length) {
-  // The USB CRC init depends on the payload length in this way: 0x{length}00.
-  return ((length & 0xFF) << 8) & 0xFFFF
-}
-
 function buildFrame(messageCode, commandCode, operationCode, payload) {
   // Build a complete framed DigiBabel command with CRC and delimiters.
   const N = payload.length
@@ -162,7 +170,7 @@ function buildFrame(messageCode, commandCode, operationCode, payload) {
   
   const head = Buffer.from([N, messageCode, commandCode, operationCode])
   const core = Buffer.concat([head, payload])
-  const crc = calcCrc16(core, 0, crcInitFromPayloadLength(N))
+  const crc = calcCrc16(core.slice(1), 0, 0)
   
   return Buffer.concat([
     Buffer.from([START_FLAG]),
@@ -170,6 +178,14 @@ function buildFrame(messageCode, commandCode, operationCode, payload) {
     Buffer.from([(crc >> 8) & 0xFF, crc & 0xFF]),
     Buffer.from([STOP_FLAG])
   ])
+}
+
+function normalizePayload(payload) {
+  // Require a Buffer so callers make payload size explicit at the call site.
+  if (Buffer.isBuffer(payload)) {
+    return payload
+  }
+  throw new Error('Payload must be a Buffer')
 }
 
 class DigiBabel {
@@ -281,8 +297,9 @@ class DigiBabel {
     console.log("Starting DigiBabel read stream using SerialPort at", path)
   }
 
-  sendControlFrame(messageCode, commandCode, operationCode, payloadByte, expectedAckPayload, label) {
-    // Send one control command and resolve only after a matching protocol-level acknowledgement arrives.
+  sendControlFrame(messageCode, commandCode, operationCode, payload, expectedAckPayload, label) {
+    // Send one control command and resolve when a matching protocol-level acknowledgement arrives.
+    // If expectedAckPayload is null/undefined, resolve with whatever payload the response carries.
     if (!this.dev || !this.sp || !this.sp.isOpen) {
       return Promise.reject(new Error(`Cannot send ${label}: serial port not open`))
     }
@@ -291,7 +308,10 @@ class DigiBabel {
       return Promise.reject(new Error(`Cannot send ${label}: another control acknowledgement is pending`))
     }
 
-    const data = buildFrame(messageCode, commandCode, operationCode, Buffer.from([payloadByte]))
+    const payloadBuffer = normalizePayload(payload)
+  const allowAnyAckPayload = expectedAckPayload == null
+  const expectedAckBuffer = allowAnyAckPayload ? null : normalizePayload(expectedAckPayload)
+    const data = buildFrame(messageCode, commandCode, operationCode, payloadBuffer)
     if (this.debugRawHex) {
       const port = this.getPort()
       const ts = (Date.now() / 1000).toFixed(3)
@@ -312,7 +332,8 @@ class DigiBabel {
         messageCode,
         commandCode,
         operationCode,
-        expectedAckPayload,
+        allowAnyAckPayload,
+        expectedAckPayload: expectedAckBuffer,
         resolve,
         reject,
         timeout,
@@ -358,12 +379,18 @@ class DigiBabel {
     clearTimeout(pending.timeout)
     this.pendingControlAck = null
 
-    if (payload.length === 1 && payload[0] === pending.expectedAckPayload) {
+    if (pending.allowAnyAckPayload) {
+      console.log(`Received DigiBabel response for ${pending.label} on port ${this.getPort()}: payload=${payload.toString('hex')}`)
+      pending.resolve(payload)
+      return true
+    }
+
+    if (payload.equals(pending.expectedAckPayload)) {
       console.log(`Received DigiBabel ack for ${pending.label} on port ${this.getPort()}`)
-      pending.resolve()
+      pending.resolve(payload)
     } else {
       const payloadHex = payload.toString('hex')
-      const expectedHex = pending.expectedAckPayload.toString(16).padStart(2, '0')
+      const expectedHex = pending.expectedAckPayload.toString('hex')
       const err = new Error(`Unexpected ack payload for ${pending.label}: ${payloadHex} (expected ${expectedHex})`)
       console.log(err.message)
       pending.reject(err)
@@ -371,37 +398,73 @@ class DigiBabel {
     return true
   }
 
+  logReadConfigPayload(configPayload) {
+    // READ_CFG response payload layout:
+    // bytes 0..3: receiver serial number, byte 4: echoed command payload, byte 5: extended payload enable status.
+    if (!Buffer.isBuffer(configPayload)) {
+      throw new Error('Invalid READ_CFG response: payload is not a Buffer')
+    }
+    if (configPayload.length !== 6) {
+      throw new Error(`Invalid READ_CFG response length ${configPayload.length}; expected 6 bytes`)
+    }
+
+    const receiverSerialHex = configPayload.slice(0, 4).toString('hex')
+    const echoedPayload = configPayload[4] & 0xFF
+    const extPayloadStatus = configPayload[5] & 0xFF
+    const extPayloadEnabled = extPayloadStatus !== 0
+
+    console.log(
+      `DigiBabel config on port ${this.getPort()}: receiverSerial=0x${receiverSerialHex}, ` +
+      `echoedPayload=0x${echoedPayload.toString(16).padStart(2, '0')}, ` +
+      `extendedPayload=${extPayloadEnabled ? 'enabled' : 'disabled'} (0x${extPayloadStatus.toString(16).padStart(2, '0')})`
+    )
+
+    if (echoedPayload !== READ_CFG_PL) {
+      console.log(
+        `Unexpected READ_CFG echoed payload on port ${this.getPort()}: ` +
+        `0x${echoedPayload.toString(16).padStart(2, '0')} (expected 0x${READ_CFG_PL.toString(16).padStart(2, '0')})`
+      )
+    }
+  }
+
   sendInitMessages() {
-    // Run startup command sequence and transition device state to running only after both ACKs succeed.
+    // Run startup command sequence and transition device state to running only after all command responses succeed.
     if (!this.sp || !this.sp.isOpen) return
     
-    try {
-      // Send initialization messages in order:
-      // 1) Disable LED blinking
-      // 2) Enable detection forwarding
-      setTimeout(() => {
-        if (!this.dev || !this.sp || !this.sp.isOpen) return
-        ;(async () => {
-          try {
-            // Keep startup ordering explicit: LED behavior first, then detection forwarding.
-            await this.sendControlFrame(LED_OFF_CODE, LED_OFF_CMD, LED_OFF_OP, CMD_REQ_PAYLOAD, LED_OFF_ACK_PAYLOAD, 'LED disable')
-            await this.sendControlFrame(DET_ON_CODE, DET_ON_CMD, DET_ON_OP, CMD_REQ_PAYLOAD, DET_ON_ACK_PAYLOAD, 'detection forwarding enable')
-
-            if (!this.dev) return
-            const port = this.getPort()
-            this.initialized = true
-            this.matron.emit("devState", port, "running")
-          } catch (initErr) {
-            if (!this.dev || this.dev.state?.startsWith("err")) return
-            const msg = `DigiBabel init failed: ${initErr.message}`
-            console.log(msg)
-            this.matron.emit("devState", this.getPort(), "error", msg)
-          }
-        })()
-      }, 100)
-    } catch (err) {
-      console.log(`Error building init messages: ${err.message}`)
-    }
+    // Send initialization messages in order:
+    // 1) Disable LED blinking
+    // 2) Enable detection forwarding
+    setTimeout(async () => {
+      if (!this.dev || !this.sp || !this.sp.isOpen) return
+      try {
+        // Disable detection forwarding first to avoid receiving detections while changing other settings.
+        await this.sendControlFrame(CMD_MSG_CODE, DET_OFF_CMD_CODE, CMD_OP_CODE, Buffer.from([CMD_PL]), Buffer.from([DET_OFF_ACK_PL]), 'detection forwarding disable')
+        // Request current DigiBabel config and print the returned payload fields.
+        const cfgPayload = await this.sendControlFrame(CMD_MSG_CODE, DET_ON_CMD_CODE, READ_CFG_OP_CODE, Buffer.from([READ_CFG_PL]), null, 'read detection settings')
+        this.logReadConfigPayload(cfgPayload)
+        // Enable or disable extended payloads based on the switch.
+        // Note: the device must be power cycled before the extended payload enable/disable command takes effect!
+        if (ENABLE_EXTENDED_PAYLOAD) {
+          await this.sendControlFrame(CMD_MSG_CODE, EXT_PL_CMD_CODE, CMD_OP_CODE, EXT_PL_ON_PL, EXT_PL_ON_ACK_PL, 'Extended payload enable')
+        } else {
+          await this.sendControlFrame(CMD_MSG_CODE, EXT_PL_CMD_CODE, CMD_OP_CODE, EXT_PL_OFF_PL, EXT_PL_OFF_ACK_PL, 'Extended payload disable')
+        }
+        // Disable LED blinking to maximize detection rate, as suggested by Lotek.
+        await this.sendControlFrame(CMD_MSG_CODE, LED_OFF_CMD_CODE, CMD_OP_CODE, Buffer.from([CMD_PL]), Buffer.from([LED_OFF_ACK_PL]), 'LED disable')
+        // Re-enable detection forwarding
+        await this.sendControlFrame(CMD_MSG_CODE, DET_ON_CMD_CODE, CMD_OP_CODE, Buffer.from([CMD_PL]), Buffer.from([DET_ON_ACK_PL]), 'detection forwarding enable')
+        
+        if (!this.dev) return
+        const port = this.getPort()
+        this.initialized = true
+        this.matron.emit("devState", port, "running")
+      } catch (initErr) {
+        if (!this.dev || this.dev.state?.startsWith("err")) return
+        const msg = `DigiBabel init failed: ${initErr.message}`
+        console.log(msg)
+        this.matron.emit("devState", this.getPort(), "error", msg)
+      }
+    }, 100)
   }
 
   processBuffer() {
@@ -464,9 +527,9 @@ class DigiBabel {
     const crcBytes = frame.slice(5 + length, 5 + length + 2)
     const crcReceived = (crcBytes[0] << 8) | crcBytes[1]
     
-    // Compute CRC over header + payload using init=0x{payloadLength}00
-    const core = frame.slice(1, 5 + length)
-    const crcComputed = calcCrc16(core, 0, crcInitFromPayloadLength(length))
+    // Compute CRC over from command code to end of payload using init=0x0000
+    const core = frame.slice(2, 5 + length)
+    const crcComputed = calcCrc16(core, 0, 0)
     
     if (crcReceived !== crcComputed) {
       if (commandCode === TAG_DETECTION_CMD) {
@@ -555,20 +618,28 @@ class DigiBabel {
       rssiRaw = payload[4]
     }
 
+    // Lotek indicates that RSSI saturation occurs around -41 dB (82 raw), and that it's
+    // possible for very weak signals < -127.5 dB (255 raw) to overflow the byte, resulting
+    // in misleading RSSI readings in the 0 to -41 dB (0-80 raw) range. So here we reassign any
+    // raw RSSI value below 80 to 255.
+    if (rssiRaw < 80) {
+      rssiRaw = 255
+    }
+
     const tagId = tagOnlyForRecord.toString('hex')
     
     let rssiDb
-    if (rssiRaw > 0) {
-      rssiDb = -rssiRaw / 2 // Formula provided by Lotek
-    } else {
-      rssiDb = -Infinity
-    }
+    rssiDb = -rssiRaw / 2 // Formula provided by Lotek
     
     // Get current timestamp in seconds
     const nowSecs = Date.now() / 1000
     
-    // Build the record in the expected format: T<port>,<timestamp>,<tagid>,<rssi>,<valid>
-    const lifetagRecord = `T${port},${nowSecs},${tagId},${rssiDb.toFixed(1)},${valid}`
+    // Build the record in the expected format: T<port>,<timestamp>,<tagid>,<rssi>,<valid>[,<extraPayloadHex>]
+    // For payloads with at least 6 bytes, add an extra column for bytes after index 5.
+    // Exactly 6-byte payloads still include the empty trailing column.
+    const extraPayloadHex = payload.length >= 6 ? payload.slice(6).toString('hex') : null
+    const lifetagRecord = `T${port},${nowSecs},${tagId},${rssiDb.toFixed(1)},${valid}` +
+                (extraPayloadHex !== null ? `,${extraPayloadHex}` : '')
     
     // Emit the gotTag event
     this.matron.emit("gotTag", lifetagRecord)
